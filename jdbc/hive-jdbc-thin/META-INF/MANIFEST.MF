@@ -1,0 +1,27 @@
+# hive-jdbc-0.14.0.2.2.9.7-2-standalone
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: jenkins
+Build-Jdk: 1.6.0_31
+Specification-Title: Hive JDBC
+Specification-Version: 0.14.0.2.2.9.7-2
+Specification-Vendor: The Apache Software Foundation
+Implementation-Title: Hive JDBC
+Implementation-Version: 0.14.0.2.2.9.7-2
+Implementation-Vendor-Id: org.apache.hive
+Implementation-Vendor: The Apache Software Foundation
+
+# hadoop-common-2.6.0
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: acmurthy
+Build-Jdk: 1.6.0_51
+
+# hadoop-auth-2.6.0
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: acmurthy
+Build-Jdk: 1.6.0_51

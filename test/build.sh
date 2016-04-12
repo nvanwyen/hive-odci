@@ -17,5 +17,9 @@ for j in `ls *.jar` ; do
 
 done
 
+echo "Using CLASSPATH=${CP}"
+
 ${javac} -cp ${CP} HiveJdbcClientExample.java
-exit $?
+rc=$?
+echo "build complete"
+exit $rc

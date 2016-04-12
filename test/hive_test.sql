@@ -11,30 +11,92 @@ alter session set current_schema = hive;
 create or replace and compile java source named "HiveJdbcClientExample" as
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import java.sql.Driver;
+import java.sql.DriverManager;
+
+// ForName() class
+import oracle.aurora.vm.OracleRuntime;
+import oracle.aurora.rdbms.Schema;
+import oracle.aurora.rdbms.DbmsJava;
+
+//
+public class ForName
+{
+    private Class from;
+
+    //
+    public ForName( Class from )
+    {
+        this.from = from;
+    }
+
+    //
+    public ForName()
+    {
+        from = OracleRuntime.getCallerClass();
+    }
+
+
+    //
+    public Class lookupWithClassLoader( String name ) throws ClassNotFoundException
+    {
+        //
+        return Class.forName( name, true, from.getClassLoader() );
+    }
+
+
+    //
+    static Class lookupWithSchema( String name, String schema ) throws ClassNotFoundException
+    {
+        Schema s = Schema.lookup(schema);
+        return DbmsJava.classForNameAndSchema( name, s );
+    }
+
+    // //
+    // static Class standardLoad( name ) throws ClassNotFoundException
+    // {
+    //     Class.forName( name );
+    // }
+}
+
+//
 public class HiveJdbcClientExample {
-    /*
-     * 
-     * Before Running this example we should start thrift server. To Start
-     * Thrift server we should run below command in terminal 
-     * hive --service hiveserver
-     */
+
+    //
     private static String driverName = "org.apache.hive.jdbc.HiveDriver";
 
     public static void run() throws SQLException {
+
+        // option 1
         try {
-            Class.forName(driverName);
+            ForName fn = new ForName();
+            fn.lookupWithClassLoader( driverName );
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         }
 
+        /*
+        // option 2
+        ForName.lookupWithSchema( driverName, "HIVE" );
+        */
+
+        /*
+        // option 3
+        try {
+          Class.forName( driverName );
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        */
+
         Connection con = DriverManager.getConnection(
-                "jdbc:hive2://192.168.2.51:10000/default", "oracle", "welcome1");
+                "jdbc:hive2://orabdc.local:10000/default", "oracle", "welcome1");
         Statement stmt = con.createStatement();
 
         String tableName = "movie";
@@ -93,9 +155,3 @@ create or replace procedure hive_test as
 /
 
 show errors
-
-set serveroutput on;
-call dbms_java.set_output( 1000000 );
-
-exec hive_test;
-

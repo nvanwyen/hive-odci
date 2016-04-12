@@ -90,7 +90,7 @@ for jar in ${jars} ; do
 
 done
 
-# loadjava -verbose -force -user "sys/Password99 as sysdba" -schema hive hive-jdbc-1.0.1-standalone.jar 2>&1 | tee hive-jdbc.log
-# loadjava -verbose -force -user "sys/Password99 as sysdba" -schema hive hadoop-core-1.2.1.jar          2>&1 | tee hadoop-core.log
+# loadjava -verbose -force -resolve -user "sys/Password99 as sysdba" -schema hive hive-jdbc-1.0.1-standalone.jar 2>&1 | tee hive-jdbc.log
+# loadjava -verbose -force -resolve -user "sys/Password99 as sysdba" -schema hive hadoop-core-1.2.1.jar          2>&1 | tee hadoop-core.log
 
 exit $?

@@ -23,5 +23,13 @@ exec dbms_java.grant_policy_permission( 'HIVE', 'SYS', 'java.lang.RuntimePermiss
 grant execute on dbms_session to hive;
 
 --
+grant javasyspriv to hive;
+grant javadebugpriv to hive;
+
+--
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'putProviderProperty.HiveSaslPlain', '' );
+
+
+--
 -- ... done!
 --

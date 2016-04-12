@@ -24,7 +24,7 @@ public class HiveJdbcClientExample {
         }
 
         Connection con = DriverManager.getConnection(
-                "jdbc:hive2://192.168.2.51:10000/default", "oracle", "welcome1");
+                "jdbc:hive2://orabdc.local:10000/default", "oracle", "welcome1");
         Statement stmt = con.createStatement();
 
         String tableName = "movie";

@@ -1,0 +1,23 @@
+#!/bin/bash
+
+if [ "`pwd`" != "/projects/cbp/hive/test" ] ; then
+
+    echo "Not in the correct directory: Use /projects/cbp/hive/test"
+    exit 1
+
+fi
+
+if [ "`hostname`" != "ora12c.mtihq.local" ] ; then
+
+    echo "Can only execute on ora12c.mtihq.local"
+    exit 1
+
+fi
+
+( 
+    cd ../source/ && \
+    sqlplus -S "/ as sysdba" @remove_hive.sql && \
+    sqlplus -S "/ as sysdba" @install_hive.sql 
+)
+
+exit $?

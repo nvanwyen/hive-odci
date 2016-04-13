@@ -26,7 +26,7 @@ spool missing_classes.log
     SQL> select text
        2   from dba_errors
        3 where owner = 'HIVE'
-       4   and dbms_java.longname( name ) like 'org/apache/hive/jdbc/HiveDriver'
+       4   and dbms_java.longname( name ) like 'org/apache/hive/jdbc/HiveDriver';
 
     TEXT
     -------------------------------------------------------------------------------------------
@@ -142,5 +142,44 @@ end;
      order by class asc;
 
 /* *** */
+
+
+/* *** compiled works ****
+
+    alter java class hive."org/apache/thrift/TBase" resolve;
+    alter java class hive."org/apache/hive/service/cli/thrift/TCLIService$Client" resolve;
+    alter java class hive."org/apache/hive/jdbc/HiveConnection" resolve;
+    alter java class hive."org/apache/hive/jdbc/HiveDriver" resolve;
+
+*** */
+
+/* ***
+
+    -- Error: Cannot load class com.sun.security.sasl.ClientFactoryImpl
+
+    col owner for a30
+    col object_name for a30
+
+    select owner,
+           object_name
+      from dba_objects
+     where object_type like '%JAVA%'
+       and object_name like '%com%sun%security%sasl%';
+
+    OWNER                  OBJECT_NAME
+    ------------------------------ ------------------------------
+    SYS                com/sun/security/sasl/Provider
+
+
+    select owner,
+           object_name
+      from dba_objects
+     where object_type like '%JAVA%'
+       and object_name like '%javax%security%auth%';
+       --and object_name like '%javax%security%auth%callback%';
+
+    no rows selected
+
+*** */
 
 exit

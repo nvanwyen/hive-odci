@@ -1,5 +1,3 @@
-//package com.test.hiveclient;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -7,13 +5,8 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class HiveJdbcClientExample {
-    /*
-     * 
-     * Before Running this example we should start thrift server. To Start
-     * Thrift server we should run below command in terminal 
-     * hive --service hiveserver &
-     */
-    private static String driverName = "org.apache.hive.jdbc.HiveDriver";
+    //
+    private static String driverName = "com.ddtek.jdbc.hive.HiveDriver";
 
     public static void main(String[] args) throws SQLException {
         try {
@@ -23,8 +16,9 @@ public class HiveJdbcClientExample {
             System.exit(1);
         }
 
-        Connection con = DriverManager.getConnection(
-                "jdbc:hive2://orabdc.local:10000/default", "oracle", "welcome1");
+        System.out.println("Using driver: " + driverName );
+
+        Connection con = DriverManager.getConnection( "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1" );
         Statement stmt = con.createStatement();
 
         String tableName = "movie";

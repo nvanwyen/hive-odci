@@ -90,6 +90,32 @@
 # identified through missing_classes.sql
 #
 
+##################### loadjava -order \
+#####################          -verbose \
+#####################          -resolve \
+#####################          -recursivejars \
+#####################          -resolver "((* hive) (* sys) (* public))" \
+#####################          -user "sys/Password99 as sysdba" \
+#####################          -schema hive \
+#####################          hive-jdbc-thin.jar \
+#####################     2>&1 | tee --append loadjava.`date +%Y%m%d%H%M%S`.log && \
+##################### loadjava -order \
+#####################          -verbose \
+#####################          -genmissing \
+#####################          -resolver "((* hive) (* sys) (* public))" \
+#####################          -user "sys/Password99 as sysdba" \
+#####################          -schema hive \
+#####################          hive-jdbc-thin.jar \
+#####################     2>&1 | tee --append loadjava.`date +%Y%m%d%H%M%S`.log
+##################### 
+##################### #
+##################### sqlplus -S "/ as sysdba" << !
+#####################     --
+#####################     exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'putProviderProperty.HiveSaslPlain', '' );
+#####################     exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
+#####################     exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
+##################### !
+
 loadjava -order \
          -verbose \
          -resolve \
@@ -97,23 +123,19 @@ loadjava -order \
          -resolver "((* hive) (* sys) (* public))" \
          -user "sys/Password99 as sysdba" \
          -schema hive \
-         hive-jdbc-thin.jar \
-    2>&1 | tee --append loadjava.`date +%Y%m%d%H%M%S`.log && \
-loadjava -order \
-         -verbose \
-         -genmissing \
-         -resolver "((* hive) (* sys) (* public))" \
-         -user "sys/Password99 as sysdba" \
-         -schema hive \
-         hive-jdbc-thin.jar \
+         hive.jar \
     2>&1 | tee --append loadjava.`date +%Y%m%d%H%M%S`.log
 
-#
-sqlplus -S "/ as sysdba" << !
-    --
-    exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'putProviderProperty.HiveSaslPlain', '' );
-    exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
-    exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
-!
+####################### 
+## loadjava -order \
+##          -verbose \
+##          -genmissing \
+##          -resolver "((* hive) (* sys) (* public))" \
+##          -user "sys/Password99 as sysdba" \
+##          -schema hive \
+##          hive.jar \
+##     2>&1 | tee --append loadjava.`date +%Y%m%d%H%M%S`.log
+
+
 
 exit $?

@@ -18,85 +18,22 @@ import java.sql.Statement;
 import java.sql.Driver;
 import java.sql.DriverManager;
 
-// ForName() class
-import oracle.aurora.vm.OracleRuntime;
-import oracle.aurora.rdbms.Schema;
-import oracle.aurora.rdbms.DbmsJava;
-
-//
-public class ForName
-{
-    private Class from;
-
-    //
-    public ForName( Class from )
-    {
-        this.from = from;
-    }
-
-    //
-    public ForName()
-    {
-        from = OracleRuntime.getCallerClass();
-    }
-
-
-    //
-    public Class lookupWithClassLoader( String name ) throws ClassNotFoundException
-    {
-        //
-        return Class.forName( name, true, from.getClassLoader() );
-    }
-
-
-    //
-    static Class lookupWithSchema( String name, String schema ) throws ClassNotFoundException
-    {
-        Schema s = Schema.lookup(schema);
-        return DbmsJava.classForNameAndSchema( name, s );
-    }
-
-    // //
-    // static Class standardLoad( name ) throws ClassNotFoundException
-    // {
-    //     Class.forName( name );
-    // }
-}
-
 //
 public class HiveJdbcClientExample {
 
     //
-    private static String driverName = "org.apache.hive.jdbc.HiveDriver";
+    private static String driverName = "com.ddtek.jdbc.hive.HiveDriver";
 
     public static void run() throws SQLException {
 
-        // option 1
         try {
-            ForName fn = new ForName();
-            fn.lookupWithClassLoader( driverName );
+            Class.forName(driverName);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         }
 
-        /*
-        // option 2
-        ForName.lookupWithSchema( driverName, "HIVE" );
-        */
-
-        /*
-        // option 3
-        try {
-          Class.forName( driverName );
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            System.exit(1);
-        }
-        */
-
-        Connection con = DriverManager.getConnection(
-                "jdbc:hive2://orabdc.local:10000/default", "oracle", "welcome1");
+        Connection con = DriverManager.getConnection( "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1" );
         Statement stmt = con.createStatement();
 
         String tableName = "movie";

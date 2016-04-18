@@ -10,7 +10,7 @@ set pagesize 50000
 
 set serveroutput on
 
-prompt ... Please be patent, this may take awhile!
+prompt ... Please be patient, this may take awhile!
 prompt ... running 2 pass java class resolve on all objects currently "not resolved"
 
 set timing on

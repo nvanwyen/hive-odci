@@ -10,7 +10,7 @@ prompt ... running hive.tys.sql
 alter session set current_schema = hive;
 
 --
-create or repalce type hive_t as object 
+create or replace type hive_t as object 
 (
     --
     key integer,

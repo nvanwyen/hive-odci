@@ -20,6 +20,10 @@ prompt ... running install_hive.sql
 @@hive.vws.sql
 
 --
+@@impl.pks.sql
+@@impl.pkb.sql
+
+--
 @@bind.typ.sql
 
 --
@@ -45,6 +49,21 @@ prompt ... running install_hive.sql
 
 --
 @@hive.gnt.sql
+
+--
+prompt ... show post installation errors
+
+--
+set linesize 160
+set pagesize 50000
+
+col name for a30 head "name"
+col text for a80 head "text" word_wrap
+
+select name,
+       text
+  from all_errors
+ where owner = 'HIVE';
 
 --
 exit

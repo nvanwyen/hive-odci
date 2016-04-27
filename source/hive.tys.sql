@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 --
--- 2016-04-06, NV - hive.tys.sql
+-- 2016-04-24, NV - hive.tys.sql
 --
 
 --
@@ -9,33 +9,29 @@ prompt ... running hive.tys.sql
 --
 alter session set current_schema = hive;
 
--- generic ANYTYPE abstraction for Hive queries
-
 --
-create or replace type hive_t as object
+create or repalce type hive_t as object 
 (
-    type anytype, -- transient record type
+    --
+    key integer,
 
-    static function odcitabledescribe( type  out anytype,
-                                       stmt  in  varchar2 ) return number,
+    --
+    static function odcitablestart( ctx out hive_t,
+                                    stm in varchar2 ) return number as
+    language java
+    name 'oracle.mti.hive.table_start( oracle.sql.struct[], java.sql.resultset ) return java.math.bigdecimal',
 
-    static function odcitableprepare( this  out hive_t,
-                                      info  in  sys.odcitabfuncinfo,
-                                      stmt  in  varchar2 ) return number,
+    --
+    member function odcitablefetch( self   in out hive_t,
+                                    nrows  in     number,
+                                    rws    out    anydataset ) return number as
+    language java
+    name 'oracle.mti.hive.table_fetch( oracle.sql.STRUCT[], java.math.bigdecimal, oracle.sql.array[] ) return java.math.bigdecimal',
 
-    static function odcitablestart( this in out hive_t,
-                                    stmt in     varchar2 ) return number,
+    --
+    member function odcitableclose( self in hive_t ) return number as
+    language java
+    name 'oracle.mti.hive.table_close( oracle.sql.STRUCT[] ) return java.math.bigdecimal'
 
-    member function odcitablefetch( this  in out hive_t,
-                                    rows  in     number,
-                                    type  out    anydataset ) return number,
-
-    member function odcitableclose( this in hive_t ) return number
 );
 /
-
-show errors
-
---
--- ... done!
---

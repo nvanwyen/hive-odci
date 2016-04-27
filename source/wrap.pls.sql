@@ -169,9 +169,33 @@ declare
 begin
 
     -- package specifications
-    -- none
+    begin
+
+        --
+        wrap_( spec_( 'HIVE', 'IMPL' ) );
+        dbms_output.put_line( 'HIVE.IMPL Spec wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping body [HIVE.IMPL]: ' || sqlerrm );
+
+    end;
 
     -- package bodies
+    begin
+
+        --
+        wrap_( body_( 'HIVE', 'IMPL' ) );
+        dbms_output.put_line( 'HIVE.IMPL Body wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping body [HIVE.IMPL]: ' || sqlerrm );
+
+    end;
+
     begin
 
         --

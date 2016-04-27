@@ -13,9 +13,6 @@ alter session set current_schema = hive;
 create or replace package body hive as
 
     --
-    connect_ session;
-
-    --
     function param_( n in varchar2 ) return varchar2 is
 
         v varchar2( 4000 );
@@ -37,68 +34,13 @@ create or replace package body hive as
 
     end param_;
 
-    --
-    function connection_ return session is
-    begin
-
-        return connect_;
-
-    end connection_;
-
-    --
-    procedure connection_( con in session ) is
-    begin
-
-        --
-        connect_.host := case when ( con.host is null )
-                              then case when ( connect_.host is null )
-                                        then param_( 'default_hive_host' )
-                                        else connect_.host
-                                   end
-                              else con.host
-                         end;
-
-        --
-        connect_.port := case when ( con.port is null )
-                              then case when ( connect_.port is null )
-                                        then param_( 'default_hive_port' )
-                                        else connect_.port
-                                   end
-                              else con.port
-                         end;
-
-        --
-        connect_.user := case when ( con.user is null )
-                              then case when ( connect_.user is null )
-                                        then param_( 'default_hive_user' )
-                                        else connect_.user
-                                   end
-                              else con.user
-                         end;
-
-        --
-        connect_.pass := case when ( con.pass is null )
-                              then case when ( connect_.pass is null )
-                                        then param_( 'default_hive_pass' )
-                                        else connect_.pass
-                                   end
-                              else con.pass
-                         end;
-
-    end connection_;
-
     -- 
     procedure connection( usr in varchar2,
                           pwd in varchar2 ) is
-
-        con session := connect_;
-
     begin
 
-        con.user := usr;
-        con.pass := pwd;
-
-        connection( con );
+        --
+        impl.connection( usr, pwd );
 
     end connection;
 
@@ -107,37 +49,10 @@ create or replace package body hive as
                           prt in service,
                           usr in varchar2,
                           pwd in varchar2 ) is
-
-        con session := connect_;
-
     begin
 
         --
-        con.host := case when ( hst is null )
-                         then param_( 'default_hive_host' )
-                         else hst
-                    end;
-
-        --
-        con.port := case when ( prt is null )
-                         then param_( 'default_hive_port' )
-                         else prt
-                    end;
-
-        --
-        con.user := case when ( usr is null )
-                         then param_( 'default_hive_user' )
-                         else usr
-                    end;
-
-        --
-        con.pass := case when ( pwd is null )
-                         then param_( 'default_hive_pass' )
-                         else pwd
-                    end;
-
-        --
-        connection( con );
+        impl.connection( hst, prt, usr, pwd );
 
     end connection;
 
@@ -145,7 +60,8 @@ create or replace package body hive as
     procedure connection( con in session ) is
     begin
 
-        connection_( con );
+        --
+        impl.connection( con );
 
     end connection;
 
@@ -156,9 +72,11 @@ create or replace package body hive as
 
     begin
 
-        con := connection_;
+        --
+        con := impl.connection;
         con.pass := null;
 
+        --
         return con;
 
     end connection;

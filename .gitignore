@@ -8,5 +8,8 @@
 *.plx
 
 #
+push.sh
+
+#
 archive
 depend

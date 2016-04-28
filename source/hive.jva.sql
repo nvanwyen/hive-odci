@@ -25,12 +25,13 @@ import oracle.sql.*;
 import oracle.jdbc.*;
 import oracle.CartridgeServices.*;
 
-// stored context records
-public class hive_context
+//
+class hive_exception extends Exception
 {
-    ResultSet rset;
-    String stmnt;
-    public hive_context( String st, ResultSet rs ) { stmnt = st; rset = rs; }
+    public hive_exception( String msg )
+    {
+        super( msg );
+    }
 };
 
 //
@@ -116,7 +117,19 @@ public class hive_connection
             }
         }
         else
-            return "";
+        {
+            if ( host_.length() == 0 )
+                throw hive_exception( "Missing host in connection data" );
+
+            if ( port_.length() == 0 )
+                throw hive_exception( "Missing port in connection data" );
+
+            if ( user_.length() == 0 )
+                throw hive_exception( "Missing user in connection data" );
+
+            if ( pass_.length() == 0 )
+                throw hive_exception( "Missing password in connection data" );
+        }
 
         return url_;
     }
@@ -179,11 +192,11 @@ public class hive_connection
         }
         catch ( SQLException ex )
         {
-            ok = false;
+            throw hive_exception( ex.getMessage() );
         }
         catch ( Exception ex )
         {
-            ok = false;
+            throw hive_exception( ex.getMessage() );
         }
         finally
         {
@@ -203,9 +216,15 @@ public class hive_connection
     }
 
     //
+    public Connection getConnection()
+    {
+        return conn_;
+    }
+
+    //
     public Connection createConnection() throws SQLException
     {
-        if ( conn_ == null )
+        if ( getConnection() == null )
         {
             //
             if ( loadConnection() )
@@ -215,27 +234,162 @@ public class hive_connection
                 if ( url.length() > 0 )
                     conn_ = DriverManager.getConnection( url );
             }
+            else
+                throw hive_exception( "Could not load connection data" );
         }
 
         return conn_;
     }
+};
+
+// stored context records
+public class hive_context
+{
+    // connectivity
+    //
+    private hive_connection   hcn_;
+
+    // locals
+    private String            sql_;
+    private PreparedStatement stm_;
+    private ResultSet         rst_;
+    private ResultSetMetaData rmd_;
+
+    // ctor
+    //
+    public hive_context( String sql )
+    {
+        sql_ = sql;
+
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw hive_exception( "No SQL defined for hive context" );
+
+        if ( hcn_ == null )
+            hcn_ = new hive_connection();
+
+        hcn_.loadDriver();
+        hcn_.createConnection();
+    }
+
+    // members
+    //
+    public String getSql()                          { return sql_; }
+    public PreparedStatement getPreparedStatement() { setPreparedStatement(); return stm_; }
+    public ResultSet getResultSet()                 { setResultSet(); return rst_; }
+    public ResultSetMetaData getResultSetMetaData() { setResultSetMetaData(); return rmd_; }
+
+    // metadata
+    //
+    public int columnCount()                        { return rmd_.getColumnCount(); }
+    public int columnType( int i )                  { return rmd_.getColumnType( i ); }
+
+    // recordset
+    //
+    public boolean next()                           { return rst_.next(); }
+    public int rowNumber()                          { return rst_.getRow(); }
+
+    // data
+    //
+    public BigDecimal getBigDecimal( int i )        { return rst_.getBigDecimal( i ); }
+    public BigDecimal getBigDecimal( String c )     { return rst_.getBigDecimal( c ); }
 
     //
-    public ResultSet createResultSet( String stmnt ) throws SQLException
-    {
-        ResultSet rset;
+    public boolean getBoolean( int i )              { return rst_.getBoolean( i ); }
+    public boolean getBoolean( String c )           { return rst_.getBoolean( c ); }
 
-        if ( createConnection() != null )
+    //
+    public int getInt( int i )                      { return rst_.getInt( i ); }
+    public int getInt( String c )                   { return rst_.getInt( c ); }
+
+    //
+    public long getLong( int i )                    { return rst_.getLong( i ); }
+    public long getLong( String c )                 { return rst_.getLong( c ); }
+
+    //
+    public float getFloat( int i )                  { return rst_.getFloat( i ); }
+    public float getFloat( String c )               { return rst_.getFloat( c ); }
+
+    //
+    public Date getDate( int i )                    { return rst_.getDate( i ); }
+    public Date getDate( String c )                 { return rst_.getDate( c ); }
+
+    //
+    public String getString( int i )                { return rst_.getString( i ); }
+    public String getString( String c )             { return rst_.getString( c ); }
+
+    //
+    public Timestamp getTimestamp( int i )          { return rst_.getTimestamp( i ); }
+    public Timestamp getTimestamp( String c )       { return rst_.getTimestamp( c ); }
+
+    //
+    public ResultSetMetaData descSql()
+    {
+        ResultSetMetaData rmd;
+
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw hive_exception( "No SQL defined for hive context" );
+
+        if ( rst_ == null )
         {
-            PreparedStatement stm = conn_.prepareStatement( limitSql( stmnt ) );
-            rset = stm.executeQuery();
+            PreparedStatement stm = hcn_.getConnection().prepareStatement( limitSql( sql_ ) );
+            ResultSet rst = stm.executeQuery();
+            rmd = rst.getMetaData();
+        }
+        else
+        {
+            if ( setResultSetMetaData() )
+                rmd = getResultSetMetaData();
         }
 
-        return rset;
+        return rmd;
+    }
+
+    // private functions ...
+
+    //
+    private boolean setPreparedStatement()
+    {
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw hive_exception( "No SQL defined for hive context" );
+
+        if ( stm_ == null )
+            stm_ = hcn_.getConnection().prepareStatement(sql_ );
+
+        return ( ! ( stm_ == null ) );
     }
 
     //
-    public static String limitSql( String sql )
+    private boolean setResultSet()
+    {
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw hive_exception( "No SQL defined for hive context" );
+
+        if ( rst_ == null )
+        {
+            if ( setPreparedStatement() )
+                rst_ = stm_.executeQuery();
+        }
+
+        return ( ! ( rst_ == null ) );
+    }
+
+    //
+    private boolean setResultSetMetaData()
+    {
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw hive_exception( "No SQL defined for hive context" );
+
+        if ( rmd_ == null )
+        {
+            if ( setResultSet() )
+                rmd_ = rst_.getMetaData();
+        }
+
+        return ( ! ( rmd_ == null ) );
+    }
+
+    //
+    private static String limitSql( String sql )
     {
         String qry = sql.trim();
         
@@ -271,21 +425,12 @@ public class hive_connection
 public class hive implements SQLData 
 {
     //
-    private hive_connection hive_;
-
-    //
     private String sql_;        // SQL type name
     private BigDecimal key_;    // Context key
 
     //
     final static BigDecimal SUCCESS = new BigDecimal( 0 );
     final static BigDecimal FAILURE = new BigDecimal( 1 );
-
-    //
-    public hive()
-    {
-        hive_.loadDriver();
-    }
 
     // override (SQLData inheritence)
     public String getSQLTypeName() throws SQLException 

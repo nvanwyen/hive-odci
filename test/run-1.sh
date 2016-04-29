@@ -19,7 +19,7 @@ done
 
 echo "Using CLASSPATH=${CP}" ; echo
 
-${java} -cp ${CP} hiveodic
+${java} -cp ${CP} hiveodic ${@}
 rc=$?
 echo ; echo "run complete"
 exit $rc

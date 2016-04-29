@@ -271,6 +271,22 @@ public class hive_context
         hcn_.createConnection();
     }
 
+    //
+    public boolean ready()
+    {
+        return ( ! ( rst_ == null ) );
+    }
+
+    //
+    public void clear()
+    {
+        hcn_ = null;
+        sql_ = null;
+        stm_ = null;
+        rst_ = null;
+        rmd_ = null;
+    }
+
     // members
     //
     public String getSql()                          { return sql_; }
@@ -286,9 +302,13 @@ public class hive_context
     // recordset
     //
     public boolean next()                           { return rst_.next(); }
-    public int rowNumber()                          { return rst_.getRow(); }
+    public int rowNumber()                          { return ( ready() ) ? rst_.getRow() : -1; }
 
     // data
+    //
+    public Object getObject( int i )                { return rst_.getObject( i ); }
+    public Object getObject( String c )             { return rst_.getObject( c ); }
+
     //
     public BigDecimal getBigDecimal( int i )        { return rst_.getBigDecimal( i ); }
     public BigDecimal getBigDecimal( String c )     { return rst_.getBigDecimal( c ); }
@@ -322,6 +342,15 @@ public class hive_context
     public Timestamp getTimestamp( String c )       { return rst_.getTimestamp( c ); }
 
     //
+    public boolean execute()
+    {
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw hive_exception( "No SQL defined for hive context" );
+
+        return setResultSet();
+    }
+
+    //
     public ResultSetMetaData descSql()
     {
         ResultSetMetaData rmd;
@@ -353,7 +382,7 @@ public class hive_context
             throw hive_exception( "No SQL defined for hive context" );
 
         if ( stm_ == null )
-            stm_ = hcn_.getConnection().prepareStatement(sql_ );
+            stm_ = hcn_.getConnection().prepareStatement( sql_ );
 
         return ( ! ( stm_ == null ) );
     }
@@ -433,30 +462,35 @@ public class hive implements SQLData
     final static BigDecimal FAILURE = new BigDecimal( 1 );
 
     // override (SQLData inheritence)
-    public String getSQLTypeName() throws SQLException 
+    public String getSQLTypeName()
+        throws SQLException 
     {
         return sql_;
     }
 
     // override (SQLData inheritence)
-    public void readSQL( SQLInput stream, String type ) throws SQLException 
+    public void readSQL( SQLInput stream, String type )
+        throws SQLException 
     {
         sql_ = type;
         key_ = stream.readBigDecimal();
     }
 
     // override (SQLData inheritence)
-    public void writeSQL( SQLOutput stream ) throws SQLException 
+    public void writeSQL( SQLOutput stream )
+        throws SQLException 
     {
         stream.writeBigDecimal( key_ );
     }
 
     //
-    static public BigDecimal ODCITableStart( STRUCT[] sctx, String stmt ) throws SQLException
+    static public BigDecimal ODCITableStart( STRUCT[] sctx, String stmt )
+        throws SQLException
     {
+        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+
         // create context and result
-        hive_context ctx = new hive_context( stmt, hive_.createResultSet( stmt ) );
-        Connection con = DriverManager.getConnection("jdbc:default:connection:");
+        hive_context ctx = new hive_context( stmt );
 
         // register stored context with cartridge services
         int key;
@@ -480,6 +514,79 @@ public class hive implements SQLData
         return SUCCESS;
     }
 
+    static public BigDecimal ODCITableFetch( BigDecimal key, BigDecimal max, java.sql.Array[] out )
+        throws SQLException
+    {
+        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+        hive_context ctx = (hive_context)ContextManager.getContext( key.intValue() );
+
+        //
+        if ( ! ctx.ready() )
+        {
+            if ( ! ctx.execute() )
+                return FAILURE;
+        }
+
+        //
+        StructDescriptor dsc = new StructDescriptor( "columns_t", con );
+
+        //
+        for ( int i = 0; i < max; ++i )
+        {
+            if ( ctx.next() )
+            {
+                Object[] cols = new Object[ ctx.getColumnCount() ];
+
+                for ( int c = 1; i <= ctx.getColumnCount(); ++c )
+                {
+                    Object col = ctx.getObject( i );
+                    int typ = ( col instanceof Timestamp ) ? 91 : ctx.columnType( i );
+
+                    Object[] atr =                      // column_t
+                    {
+                        new BigDecimal( typ ),          // typecode
+                        ( typ == 12 )   ? col : null,   // v2_column
+                        ( typ == 2 )    ? col : null,   // num_column
+                        ( typ == 91 )   ? col : null,   // date_column
+                        ( typ == 2005 ) ? col : null,   // clob_column
+                        null,                           // raw_column
+                        null,                           // raw_error
+                        null,                           // raw_length
+                        null,                           // ids_column
+                        null,                           // iym_column
+                        ( typ == 93 )   ? col : null,   // ts_column
+                        ( typ == -101 ) ? col : null,   // tstz_column
+                        ( typ == -102 ) ? col : null,   // tsltz_column
+                        new Integer( 0 ),               // cvl_offset
+                        null                            // cvl_length
+                    };
+
+                    //
+                    cols[ i ] = new STRUCT( dsc, con, atr );
+                }
+
+                //
+                ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "row_t", con );
+
+                ARRAY arr = new ARRAY( ary, con, cols );
+                out[ 0 ] = arr;
+            }
+            else
+                out[ 0 ] = null;
+        }
+
+        return SUCCESS;
+    }
+
+    //
+    static public BigDecimal ODCITableClose( BigDecimal key )
+        throws SQLException
+    {
+        hive_context ctx = (hive_context)ContextManager.clearContext( key.intValue() );
+        ctx.clear();
+
+        return SUCCESS;
+    }
 
 };
 /

@@ -15,21 +15,6 @@ create or replace package impl as
     -- Internet Corporation for Assigned Names and Numbers (service)
     subtype service is binary_integer range 0 .. 65536; -- 16 bit (2^16)
 
-    -- HQL metadata
-    type metadata is record ( precision integer,
-                              scale     integer,
-                              length    integer,
-                              csid      integer,
-                              csfrm     integer,
-                              schema    varchar2( 30 ),
-                              type      anytype,
-                              name      varchar2( 30 ),
-                              version   varchar2( 30 ),
-                              attr_cnt  integer,
-                              attr_type anytype,
-                              attr_name varchar2( 128 ),
-                              typecode  integer );
-
     -- 
     type session is record ( host varchar2( 256 ),
                              port service,

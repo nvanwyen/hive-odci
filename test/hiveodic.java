@@ -9,6 +9,8 @@ import java.sql.Types;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.lang.IllegalArgumentException;
+
 public class hiveodic {
     //
     private static String driverName = "com.ddtek.jdbc.hive.HiveDriver";
@@ -138,7 +140,41 @@ public class hiveodic {
     }
 
     //
+    public static int parse_args( String[] args )
+    {
+        int opt = 0;
+
+        for ( int i = 0; i < args.length; ++i )
+        {
+            if ( args[i].equalsIgnoreCase( "describe" ) )
+                opt |= 1;
+            else if ( args[i].equalsIgnoreCase( "desc" ) )
+                opt |= 1;
+            else if ( args[i].equalsIgnoreCase( "-d" ) )
+                opt |= 1;
+            else if ( args[i].equalsIgnoreCase( "query" ) )
+                opt |= 2;
+            else if ( args[i].equalsIgnoreCase( "-q" ) )
+                opt |= 2;
+            else if ( args[i].equalsIgnoreCase( "both" ) )
+                opt |= 3;
+            else if ( args[i].equalsIgnoreCase( "-b" ) )
+                opt |= 3;
+            else 
+                throw new IllegalArgumentException( "Unknown argument [" + args[i] + "]" );
+        }
+
+        if ( opt == 0 )
+            opt = 1;        // default "describe"
+
+        return opt;
+    }
+
+    //
     public static void main(String[] args) throws SQLException {
+        //
+        int run = parse_args( args );
+
         try {
             Class.forName(driverName);
         } catch (ClassNotFoundException e) {
@@ -156,8 +192,13 @@ public class hiveodic {
         //String sql = "select a.movie_id, a.title, b.avg_rating from movie a, movie_rating b where a.movie_id = b.movie_id and a.movie_id > 36000 and lower( a.title ) like '%here%' limit 10";
         //String sql = "select * from movie_view";
         //String sql = "select count(*) count_of from movie_view";
-        descSql( con, limitSql( sql ) );
-        querySql( con, sql );
+
+        if ( ( run & 1 ) == 1 )
+            descSql( con, limitSql( sql ) );
+
+        if ( ( run & 2 ) == 2 )
+            querySql( con, sql );
+
         con.close();
     }
 }

@@ -98,7 +98,6 @@ create or replace package body hive as
 
     end ddl;
 
-
 end hive;
 /
 

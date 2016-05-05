@@ -14,7 +14,6 @@ create or replace package hive as
 
     -- implementation subtypes
     subtype service  is impl.service;
-    subtype metadata is impl.metadata;
     subtype session  is impl.session;
 
     -- 

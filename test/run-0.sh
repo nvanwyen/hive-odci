@@ -21,5 +21,4 @@ echo "Using CLASSPATH=${CP}"
 
 ${java} -cp ${CP} HiveJdbcClientExample
 rc=$?
-echo "run complete"
 exit $rc

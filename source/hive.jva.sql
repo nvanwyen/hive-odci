@@ -3,6 +3,8 @@
 -- 2016-04-24, NV - hive.jva.sql
 --
 
+set linesize 160
+
 --
 prompt ... running hive.jva.sql
 
@@ -10,9 +12,8 @@ prompt ... running hive.jva.sql
 alter session set current_schema = hive;
 
 --
-create or replace and compile java source "hive" as
+create or replace and compile java source named "hive" as
 
-//
 package oracle.mti;
 
 //
@@ -20,13 +21,29 @@ import java.io.*;
 import java.util.*;
 import java.sql.*;
 import java.math.BigDecimal;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSetMetaData;
+import java.sql.Statement;
+import java.sql.Types;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 //
-import oracle.sql.*;
-import oracle.jdbc.*;
+import oracle.sql.ARRAY;
+import oracle.sql.ArrayDescriptor;
+import oracle.sql.CLOB;
+import oracle.sql.STRUCT;
+import oracle.sql.StructDescriptor;
+
+import oracle.ODCI.*;
 import oracle.CartridgeServices.*;
 
 //
-class hive_exception extends Exception
+public class hive_exception extends Exception
 {
     public hive_exception( String msg )
     {
@@ -35,11 +52,75 @@ class hive_exception extends Exception
 };
 
 //
+public class hive_parameter
+{
+    //
+    static public String value( String name )
+    {
+        //
+        String val = null;
+
+        //
+        Connection con = null;
+        PreparedStatement stm = null;
+
+        try
+        {
+            String sql = "select value " +
+                           "from param$ " +
+                          "where name = ?";
+
+            //
+            con = DriverManager.getConnection( "jdbc:default:connection:" );
+
+            //
+            stm = con.prepareStatement( sql );
+            stm.setString( 1, name );
+
+            //
+            ResultSet rst = stm.executeQuery();
+
+            if ( rst.next() )
+                val = rst.getString( "value" );
+
+            //
+            rst.close();
+            stm.close();
+        }
+        catch ( SQLException ex )
+        {
+            //
+        }
+        catch ( Exception ex )
+        {
+            //
+        }
+        finally
+        {
+            try
+            {
+                //
+                if ( stm != null )
+                    stm.close();
+            }
+            catch ( SQLException ex ) {}
+            catch ( Exception ex ) {}
+
+            // *** do not close the "default" connection ***
+        }
+
+        //
+        return val;
+    }
+};
+
+// stored context records
 public class hive_connection
 {
     //
-    private static String driver_ = "com.ddtek.jdbc.hive.HiveDriver";
-    String url_ = "jdbc:datadirect:hive://%h%:%p%;User=%u%;Password=%w%";
+    private static hive_parameter param_;
+    private static String driver_ = param_.value( "hive_jdbc_driver" );
+    String url_ = param_.value( "hive_jdbc_url" );
 
     //
     private String host_;
@@ -61,13 +142,6 @@ public class hive_connection
     }
 
     //
-    public hive_connection( String host, String port )
-    {
-        host_ = host;
-        port_ = port;
-    }
-
-    //
     public hive_connection( String host, String port, String user, String pass )
     {
         host_ = host;
@@ -77,13 +151,20 @@ public class hive_connection
     }
 
     //
-    static public loadDriver() throws ClassNotFoundException
+    static public void loadDriver() throws hive_exception
     {
-        Class.forName( getDriverName() );
+        try
+        {
+            Class.forName( driver_ );
+        }
+        catch ( ClassNotFoundException e )
+        {
+            throw new hive_exception( "Driver class not foound: " + driver_ );
+        }
     }
 
     //
-    static public getDriverName()
+    static public String getDriverName()
     {
         return driver_;
     }
@@ -101,7 +182,7 @@ public class hive_connection
     public String getPass() { return pass_; }
 
     //
-    public String getUrl()
+    public String getUrl() throws hive_exception
     {
         if ( ( host_.length() > 0 )
           && ( port_.length() > 0 )
@@ -119,100 +200,40 @@ public class hive_connection
         else
         {
             if ( host_.length() == 0 )
-                throw hive_exception( "Missing host in connection data" );
+                throw new hive_exception( "Missing host in connection data" );
 
             if ( port_.length() == 0 )
-                throw hive_exception( "Missing port in connection data" );
+                throw new hive_exception( "Missing port in connection data" );
 
             if ( user_.length() == 0 )
-                throw hive_exception( "Missing user in connection data" );
+                throw new hive_exception( "Missing user in connection data" );
 
             if ( pass_.length() == 0 )
-                throw hive_exception( "Missing password in connection data" );
+                throw new hive_exception( "Missing password in connection data" );
         }
 
         return url_;
     }
 
     //
-    public boolean loadConnection() throws SQLException
+    public boolean loadConnection()
     {
-        boolean ok = false;
-        Connection con = null;
-        PreparedStatement stm = null;
+        if ( host_.length() == 0 )
+            host_ = param_.value( "default_hive_host" );
 
-        try
-        {
-            String sql = "select name, " +
-                                "value " +
-                           "from param$ " +
-                          "where name in ( 'default_hive_host', " +
-                                          "'default_hive_port', " +
-                                          "'default_hive_user', " +
-                                          "'default_hive_pass' )";
+        if ( port_.length() == 0 )
+            port_ = param_.value( "default_hive_port" );
 
-            //
-            con = new OracleDriver().defaultConnection();
-            stm = con.prepareStatement( sql );
+        if ( user_.length() == 0 )
+            user_ = param_.value( "default_hive_user" );
 
-            ResultSet rst = stm.executeQuery();
+        if ( pass_.length() == 0 )
+            pass_ = param_.value( "default_hive_pass" );
 
-            while ( rst.next() )
-            {
-                String name = rst.getString( "name" );
-                String value = rst.getString( "value" );
-
-                if ( name.length() > 0 )
-                {
-                    if ( name.trim().equalsIgnoreCase( "default_hive_host" ) )
-                    {
-                        if ( host_.length == 0 )
-                            host_ = value;
-                    }
-                    else if ( name.trim().equalsIgnoreCase( "default_hive_port" ) )
-                    {
-                        if ( port_.length == 0 )
-                            port_ = value;
-                    }
-                    else if ( name.trim().equalsIgnoreCase( "default_hive_user" ) )
-                    {
-                        if ( user_.length == 0 )
-                            user_ = value;
-                    }
-                    else if ( name.trim().equalsIgnoreCase( "default_hive_pass" ) )
-                    {
-                        if ( pass_.length == 0 )
-                            pass_ = value;
-                    }
-                }
-            }
-
-            //
-            ok = true;
-        }
-        catch ( SQLException ex )
-        {
-            throw hive_exception( ex.getMessage() );
-        }
-        catch ( Exception ex )
-        {
-            throw hive_exception( ex.getMessage() );
-        }
-        finally
-        {
-            try
-            {
-                //
-                if ( stm != null )
-                    stm.close();
-            }
-            catch ( SQLException x ) {}
-            catch ( Exception x )    {}
-
-            // *** do not close the "default" connection ***
-        }
-
-        return ok;
+        return ( ( host_.length() > 0 )
+              && ( port_.length() > 0 )
+              && ( user_.length() > 0 )
+              && ( pass_.length() > 0 ) );
     }
 
     //
@@ -222,7 +243,7 @@ public class hive_connection
     }
 
     //
-    public Connection createConnection() throws SQLException
+    public Connection createConnection() throws SQLException, hive_exception
     {
         if ( getConnection() == null )
         {
@@ -235,14 +256,14 @@ public class hive_connection
                     conn_ = DriverManager.getConnection( url );
             }
             else
-                throw hive_exception( "Could not load connection data" );
+                throw new hive_exception( "Could not load connection data" );
         }
 
         return conn_;
     }
 };
 
-// stored context records
+//
 public class hive_context
 {
     // connectivity
@@ -257,12 +278,12 @@ public class hive_context
 
     // ctor
     //
-    public hive_context( String sql )
+    public hive_context( String sql ) throws SQLException, hive_exception
     {
         sql_ = sql;
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
-            throw hive_exception( "No SQL defined for hive context" );
+            throw new hive_exception( "No SQL defined for hive context" );
 
         if ( hcn_ == null )
             hcn_ = new hive_connection();
@@ -289,74 +310,180 @@ public class hive_context
 
     // members
     //
-    public String getSql()                          { return sql_; }
-    public PreparedStatement getPreparedStatement() { setPreparedStatement(); return stm_; }
-    public ResultSet getResultSet()                 { setResultSet(); return rst_; }
-    public ResultSetMetaData getResultSetMetaData() { setResultSetMetaData(); return rmd_; }
+    public String getSql()
+    {
+        return sql_;
+    }
+
+    //
+    public PreparedStatement getPreparedStatement() throws SQLException, hive_exception
+    {
+        setPreparedStatement(); return stm_;
+    }
+
+    //
+    public ResultSet getResultSet() throws SQLException, hive_exception
+    {
+        setResultSet(); return rst_;
+    }
+
+    //
+    public ResultSetMetaData getResultSetMetaData() throws SQLException, hive_exception
+    {
+        setResultSetMetaData(); return rmd_;
+    }
 
     // metadata
     //
-    public int columnCount()                        { return rmd_.getColumnCount(); }
-    public int columnType( int i )                  { return rmd_.getColumnType( i ); }
+    public int columnCount() throws SQLException
+    {
+        return rmd_.getColumnCount();
+    }
+
+    //
+    public int columnType( int i ) throws SQLException
+    {
+        return rmd_.getColumnType( i );
+    }
 
     // recordset
     //
-    public boolean next()                           { return rst_.next(); }
-    public int rowNumber()                          { return ( ready() ) ? rst_.getRow() : -1; }
+    public boolean next() throws SQLException
+    {
+        return rst_.next();
+    }
+
+    //
+    public int rowNumber() throws SQLException
+    {
+        return ( ready() ) ? rst_.getRow() : -1;
+    }
 
     // data
     //
-    public Object getObject( int i )                { return rst_.getObject( i ); }
-    public Object getObject( String c )             { return rst_.getObject( c ); }
+    public Object getObject( int i ) throws SQLException
+    {
+        return rst_.getObject( i );
+    }
 
     //
-    public BigDecimal getBigDecimal( int i )        { return rst_.getBigDecimal( i ); }
-    public BigDecimal getBigDecimal( String c )     { return rst_.getBigDecimal( c ); }
+    public Object getObject( String c ) throws SQLException
+    {
+        return rst_.getObject( c );
+    }
 
     //
-    public boolean getBoolean( int i )              { return rst_.getBoolean( i ); }
-    public boolean getBoolean( String c )           { return rst_.getBoolean( c ); }
+    public BigDecimal getBigDecimal( int i ) throws SQLException
+    {
+        return rst_.getBigDecimal( i );
+    }
 
     //
-    public int getInt( int i )                      { return rst_.getInt( i ); }
-    public int getInt( String c )                   { return rst_.getInt( c ); }
+    public BigDecimal getBigDecimal( String c ) throws SQLException
+    {
+        return rst_.getBigDecimal( c );
+    }
 
     //
-    public long getLong( int i )                    { return rst_.getLong( i ); }
-    public long getLong( String c )                 { return rst_.getLong( c ); }
+    public boolean getBoolean( int i ) throws SQLException
+    {
+        return rst_.getBoolean( i );
+    }
 
     //
-    public float getFloat( int i )                  { return rst_.getFloat( i ); }
-    public float getFloat( String c )               { return rst_.getFloat( c ); }
+    public boolean getBoolean( String c ) throws SQLException
+    {
+        return rst_.getBoolean( c );
+    }
 
     //
-    public Date getDate( int i )                    { return rst_.getDate( i ); }
-    public Date getDate( String c )                 { return rst_.getDate( c ); }
+    public int getInt( int i ) throws SQLException
+    {
+        return rst_.getInt( i );
+    }
 
     //
-    public String getString( int i )                { return rst_.getString( i ); }
-    public String getString( String c )             { return rst_.getString( c ); }
+    public int getInt( String c ) throws SQLException
+    {
+        return rst_.getInt( c );
+    }
 
     //
-    public Timestamp getTimestamp( int i )          { return rst_.getTimestamp( i ); }
-    public Timestamp getTimestamp( String c )       { return rst_.getTimestamp( c ); }
+    public long getLong( int i ) throws SQLException
+    {
+        return rst_.getLong( i );
+    }
 
     //
-    public boolean execute()
+    public long getLong( String c ) throws SQLException
+    {
+        return rst_.getLong( c );
+    }
+
+    //
+    public float getFloat( int i ) throws SQLException
+    {
+        return rst_.getFloat( i );
+    }
+
+    //
+    public float getFloat( String c ) throws SQLException
+    {
+        return rst_.getFloat( c );
+    }
+
+    //
+    public Date getDate( int i ) throws SQLException
+    {
+        return rst_.getDate( i );
+    }
+
+    //
+    public Date getDate( String c ) throws SQLException
+    {
+        return rst_.getDate( c );
+    }
+
+    //
+    public String getString( int i ) throws SQLException
+    {
+        return rst_.getString( i );
+    }
+
+    //
+    public String getString( String c ) throws SQLException
+    {
+        return rst_.getString( c );
+    }
+
+    //
+    public Timestamp getTimestamp( int i ) throws SQLException
+    {
+        return rst_.getTimestamp( i );
+    }
+
+    //
+    public Timestamp getTimestamp( String c ) throws SQLException
+    {
+        return rst_.getTimestamp( c );
+    }
+
+    //
+    public boolean execute() throws SQLException, hive_exception
     {
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
-            throw hive_exception( "No SQL defined for hive context" );
+            throw new hive_exception( "No SQL defined for hive context" );
 
         return setResultSet();
     }
 
     //
-    public ResultSetMetaData descSql()
+    public ResultSetMetaData descSql() throws SQLException, hive_exception
     {
-        ResultSetMetaData rmd;
+        ResultSetMetaData rmd = null;
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
-            throw hive_exception( "No SQL defined for hive context" );
+            throw new hive_exception( "No SQL defined for hive context" );
 
         if ( rst_ == null )
         {
@@ -376,10 +503,10 @@ public class hive_context
     // private functions ...
 
     //
-    private boolean setPreparedStatement()
+    private boolean setPreparedStatement() throws SQLException, hive_exception
     {
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
-            throw hive_exception( "No SQL defined for hive context" );
+            throw new hive_exception( "No SQL defined for hive context" );
 
         if ( stm_ == null )
             stm_ = hcn_.getConnection().prepareStatement( sql_ );
@@ -388,10 +515,10 @@ public class hive_context
     }
 
     //
-    private boolean setResultSet()
+    private boolean setResultSet() throws SQLException, hive_exception
     {
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
-            throw hive_exception( "No SQL defined for hive context" );
+            throw new hive_exception( "No SQL defined for hive context" );
 
         if ( rst_ == null )
         {
@@ -403,10 +530,10 @@ public class hive_context
     }
 
     //
-    private boolean setResultSetMetaData()
+    private boolean setResultSetMetaData() throws SQLException, hive_exception
     {
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
-            throw hive_exception( "No SQL defined for hive context" );
+            throw new hive_exception( "No SQL defined for hive context" );
 
         if ( rmd_ == null )
         {
@@ -484,8 +611,76 @@ public class hive implements SQLData
     }
 
     //
+    static public BigDecimal ODCITableDescribe( STRUCT[] sctx, String stmt )
+        throws SQLException, hive_exception
+    {
+        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+        hive_context ctx = new hive_context( stmt );
+
+        ResultSetMetaData rmd = ctx.descSql();
+
+        OracleCallableStatement cs = con.prepareCall( "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;" );
+        cs.registerOutParameter( 1, OracleTypes.OPAQUE, "SYS.ANYTYPE" );
+        cs.execute();
+
+        Object[] obj = new Object[ 1 ];
+        obj[ 0 ] = cs.getObject( 1 );
+        
+        if ( rmd.getColumnCount() > 0 )
+        {
+
+            for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
+            {
+                cs = con.prepareCall( "begin anytype.addattr( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;" );
+
+                //
+                cs.registerOutParameter( 1, OracleTypes.OPAQUE, "SYS.ANYTYPE" );
+                cs.setObject( obj[ 0 ] );
+
+                //
+                cs.setString( 2, rmd.getColumnName( i ) );
+                cs.setInt( 3, rmd.getColumnType( i ) );
+
+                // always null
+                cs.setInt( 4, null );
+                cs.setInt( 5, null );
+
+                // length
+                switch ( rmd.getColumnType( i ) )
+                {
+                    case java.sql.Types.CHAR:
+                    case java.sql.Types.VARCHAR:
+                        {
+                            if ( rmd.getPrecision( i ) > 4000 )
+                                cs.setInt( 6, 4000 );
+                            else
+                                cs.setInt( 6, rmd.getPrecision( i ) );
+                        }
+                        break;
+
+                    defaut:
+                        cs.setInt( 6, null );
+                }
+
+                // always null
+                cs.setInt( 7, null );
+                cs.setInt( 8, null );
+
+                //
+                cs.execute();
+                obj[ 0 ] = cs.getObject( 1 );
+            }
+
+            StructDescriptor dsc = new StructDescriptor( "ANYTYPE", con );
+            sctx[ 0 ] = new STRUCT( dsc, con, obj );
+        }
+
+        return SUCCESS;
+    }
+
+    //
     static public BigDecimal ODCITableStart( STRUCT[] sctx, String stmt )
-        throws SQLException
+        throws SQLException, hive_exception
     {
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
@@ -515,7 +710,7 @@ public class hive implements SQLData
     }
 
     static public BigDecimal ODCITableFetch( BigDecimal key, BigDecimal max, java.sql.Array[] out )
-        throws SQLException
+        throws SQLException, InvalidKeyException, hive_exception
     {
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
         hive_context ctx = (hive_context)ContextManager.getContext( key.intValue() );
@@ -531,13 +726,13 @@ public class hive implements SQLData
         StructDescriptor dsc = new StructDescriptor( "columns_t", con );
 
         //
-        for ( int i = 0; i < max; ++i )
+        for ( int i = 0; i < max.intValue(); ++i )
         {
             if ( ctx.next() )
             {
-                Object[] cols = new Object[ ctx.getColumnCount() ];
+                Object[] cols = new Object[ ctx.columnCount() ];
 
-                for ( int c = 1; i <= ctx.getColumnCount(); ++c )
+                for ( int c = 1; i <= ctx.columnCount(); ++c )
                 {
                     Object col = ctx.getObject( i );
                     int typ = ( col instanceof Timestamp ) ? 91 : ctx.columnType( i );
@@ -580,7 +775,7 @@ public class hive implements SQLData
 
     //
     static public BigDecimal ODCITableClose( BigDecimal key )
-        throws SQLException
+        throws SQLException, InvalidKeyException
     {
         hive_context ctx = (hive_context)ContextManager.clearContext( key.intValue() );
         ctx.clear();

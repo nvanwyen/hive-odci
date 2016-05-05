@@ -16,22 +16,27 @@ create or replace type hive_t as object
     key integer,
 
     --
-    static function odcitablestart( ctx out hive_t,
+    static function ODCITableStart( ctx out hive_t,
                                     stm in varchar2 ) return number as
     language java
-    name 'oracle.mti.hive.table_start( oracle.sql.struct[], java.sql.resultset ) return java.math.bigdecimal',
+    name 'oracle.mti.hive.ODCITableStart( oracle.sql.STRUCT[], java.lang.String ) return java.math.BigDecimal',
 
     --
-    member function odcitablefetch( self   in out hive_t,
-                                    nrows  in     number,
-                                    rws    out    anydataset ) return number as
+    member function ODCITableFetch( self in out hive_t,
+                                    max  in     number,
+                                    rws  out    anydataset ) return number as
     language java
-    name 'oracle.mti.hive.table_fetch( oracle.sql.STRUCT[], java.math.bigdecimal, oracle.sql.array[] ) return java.math.bigdecimal',
+    name 'oracle.mti.hive.ODCITableFetch( java.math.BigDecimal, oracle.sql.Array[] ) return java.math.BigDecimal',
 
     --
-    member function odcitableclose( self in hive_t ) return number as
+    member function ODCITableClose( self in hive_t ) return number as
     language java
-    name 'oracle.mti.hive.table_close( oracle.sql.STRUCT[] ) return java.math.bigdecimal'
-
+    name 'oracle.mti.hive.ODCITableFetch( oracle.sql.STRUCT[] ) return java.math.BigDecimal'
 );
 /
+
+show errors
+
+--
+-- ... done!
+--

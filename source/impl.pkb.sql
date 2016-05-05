@@ -157,64 +157,6 @@ create or replace package body impl as
 
     end connection;
 
-    --
-    procedure begin_create( rec in out anytype ) is
-    begin
-
-        anytype.begincreate( dbms_types.typecode_object, rec );
-
-    end begin_create;
-
-    --
-    procedure add_attribute( name  in     varchar2,
-                             type  in     number,
-                             prec  in     number,
-                             scale in     number,
-                             len   in     number,
-                             chrid in     number,
-                             chrfm in     number,
-                             rec   in out anytype ) is
-    begin
-
-        rec.addattr( name, type, prec, scale, len, chrid, chrfm ); 
-
-    end add_attribute;
-
-    --
-    procedure row_instance( rec in out anydataset ) is
-    begin
-
-        rec.AddInstance();
-
-    end row_instance;
-
-    --
-    procedure row_piecewise( rec in out anydataset ) is
-    begin
-
-        rec.PieceWise();
-
-    end row_piecewise;
-
-    --
-    procedure end_create( rec in out anytype ) is
-    begin
-
-        rec.endcreate();
-
-    end end_create;
-
-    --
-    procedure swap_anytype( rec1 in     anytype,
-                            rec2 in out anytype ) is
-    begin
-
-        anytype.begincreate( dbms_types.typecode_table, rec2 );
-        rec2.setinfo( null, null, null, null, null, rec1, dbms_types.typecode_object, 0 );
-        rec2.endcreate();
-
-    end swap_anytype;
-
 end impl;
 /
 

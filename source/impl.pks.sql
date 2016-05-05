@@ -37,32 +37,6 @@ create or replace package impl as
     --
     function connection return session;
 
-    --
-    procedure begin_create( rec in out anytype );
-
-    --
-    procedure add_attribute( name  in     varchar2,
-                             type  in     number,
-                             prec  in     number,
-                             scale in     number,
-                             len   in     number,
-                             chrid in     number,
-                             chrfm in     number,
-                             rec   in out anytype );
-
-    --
-    procedure end_create( rec in out anytype );
-
-    --
-    procedure swap_anytype( rec1 in     anytype,
-                            rec2 in out anytype );
-
-    --
-    procedure row_instance( rec in out anytype );
-
-    --
-    procedure row_piecewise( rec in out anytype );
-
 end impl;
 /
 

@@ -18,27 +18,13 @@ package oracle.mti;
 
 //
 import java.io.*;
-import java.util.*;
 import java.sql.*;
-import java.math.BigDecimal;
+import java.math.*;
+import java.util.*;
+import java.util.regex.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSetMetaData;
-import java.sql.Statement;
-import java.sql.Types;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-//
-import oracle.sql.ARRAY;
-import oracle.sql.ArrayDescriptor;
-import oracle.sql.CLOB;
-import oracle.sql.STRUCT;
-import oracle.sql.StructDescriptor;
-
+import oracle.sql.*;
+import oracle.jdbc.*;
 import oracle.ODCI.*;
 import oracle.CartridgeServices.*;
 
@@ -119,8 +105,11 @@ public class hive_connection
 {
     //
     private static hive_parameter param_;
-    private static String driver_ = param_.value( "hive_jdbc_driver" );
-    String url_ = param_.value( "hive_jdbc_url" );
+    // private static String driver_ = param_.value( "hive_jdbc_driver" );
+    // String url_ = param_.value( "hive_jdbc_url" );
+
+    private static String driver_ = "com.ddtek.jdbc.hive.HiveDriver";
+    String url_ = "jdbc:datadirect:hive://%host%:%port%;User=%user%;Password=%pass%";
 
     //
     private String host_;
@@ -132,7 +121,13 @@ public class hive_connection
     Connection conn_;
 
     //
-    public hive_connection() {}
+    public hive_connection()
+    {
+        host_ = "";
+        port_ = "";
+        user_ = "";
+        pass_ = "";
+    }
 
     //
     public hive_connection( String host, String port )
@@ -212,6 +207,8 @@ public class hive_connection
                 throw new hive_exception( "Missing password in connection data" );
         }
 
+        url_ = "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1";
+        System.out.println( url_ );
         return url_;
     }
 
@@ -219,16 +216,16 @@ public class hive_connection
     public boolean loadConnection()
     {
         if ( host_.length() == 0 )
-            host_ = param_.value( "default_hive_host" );
+            host_ = "orabdc.local"; // param_.value( "default_hive_host" );
 
         if ( port_.length() == 0 )
-            port_ = param_.value( "default_hive_port" );
+            port_ = "10000"; // param_.value( "default_hive_port" );
 
         if ( user_.length() == 0 )
-            user_ = param_.value( "default_hive_user" );
+            user_ = "oracle"; // param_.value( "default_hive_user" );
 
         if ( pass_.length() == 0 )
-            pass_ = param_.value( "default_hive_pass" );
+            pass_ = "welcome1"; // param_.value( "default_hive_pass" );
 
         return ( ( host_.length() > 0 )
               && ( port_.length() > 0 )
@@ -245,20 +242,26 @@ public class hive_connection
     //
     public Connection createConnection() throws SQLException, hive_exception
     {
+System.out.println( "debug 201" );
         if ( getConnection() == null )
         {
+System.out.println( "debug 202" );
             //
             if ( loadConnection() )
             {
+System.out.println( "debug 203" );
                 String url = getUrl();
 
+System.out.println( "debug 204" );
                 if ( url.length() > 0 )
                     conn_ = DriverManager.getConnection( url );
+System.out.println( "debug 205" );
             }
             else
                 throw new hive_exception( "Could not load connection data" );
         }
 
+System.out.println( "debug 206" );
         return conn_;
     }
 };
@@ -280,16 +283,22 @@ public class hive_context
     //
     public hive_context( String sql ) throws SQLException, hive_exception
     {
+System.out.println( "debug 101" );
         sql_ = sql;
 
+System.out.println( "debug 102" );
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
 
+System.out.println( "debug 103" );
         if ( hcn_ == null )
             hcn_ = new hive_connection();
 
+System.out.println( "debug 104" );
         hcn_.loadDriver();
+System.out.println( "debug 105" );
         hcn_.createConnection();
+System.out.println( "debug 106" );
     }
 
     //
@@ -614,36 +623,45 @@ public class hive implements SQLData
     static public BigDecimal ODCITableDescribe( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
-        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+System.out.println( "devug 1" );
         hive_context ctx = new hive_context( stmt );
 
+System.out.println( "devug 2" );
+        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+System.out.println( "devug 3" );
+        OracleCallableStatement stm = null;
+
         ResultSetMetaData rmd = ctx.descSql();
+System.out.println( "devug 4" );
 
-        OracleCallableStatement cs = con.prepareCall( "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;" );
-        cs.registerOutParameter( 1, OracleTypes.OPAQUE, "SYS.ANYTYPE" );
-        cs.execute();
+        stm = (OracleCallableStatement)con.prepareCall( "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;" );
+        stm.registerOutParameter( 1, OracleTypes.OPAQUE /*, "SYS.ANYTYPE"*/ );
+        stm.execute();
 
+System.out.println( "devug 5" );
         Object[] obj = new Object[ 1 ];
-        obj[ 0 ] = cs.getObject( 1 );
+        obj[ 0 ] = stm.getObject( 1 );
         
         if ( rmd.getColumnCount() > 0 )
         {
 
+System.out.println( "devug 6" );
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
-                cs = con.prepareCall( "begin anytype.addattr( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;" );
+                stm = (OracleCallableStatement)con.prepareCall( "begin anytype.addattr( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;" );
 
                 //
-                cs.registerOutParameter( 1, OracleTypes.OPAQUE, "SYS.ANYTYPE" );
-                cs.setObject( obj[ 0 ] );
+                stm.registerOutParameter( 1, OracleTypes.OPAQUE /*, "SYS.ANYTYPE"*/ );
+                stm.setObject( 1, obj[ 0 ] );
+System.out.println( "devug 7" );
 
                 //
-                cs.setString( 2, rmd.getColumnName( i ) );
-                cs.setInt( 3, rmd.getColumnType( i ) );
+                stm.setString( 2, rmd.getColumnName( i ) );
+                stm.setInt( 3, rmd.getColumnType( i ) );
 
                 // always null
-                cs.setInt( 4, null );
-                cs.setInt( 5, null );
+                stm.setNull( 4, java.sql.Types.INTEGER );
+                stm.setNull( 5, java.sql.Types.INTEGER );
 
                 // length
                 switch ( rmd.getColumnType( i ) )
@@ -652,29 +670,32 @@ public class hive implements SQLData
                     case java.sql.Types.VARCHAR:
                         {
                             if ( rmd.getPrecision( i ) > 4000 )
-                                cs.setInt( 6, 4000 );
+                                stm.setInt( 6, 4000 );
                             else
-                                cs.setInt( 6, rmd.getPrecision( i ) );
+                                stm.setInt( 6, rmd.getPrecision( i ) );
                         }
                         break;
 
-                    defaut:
-                        cs.setInt( 6, null );
+                    default:
+                        stm.setNull( 6, java.sql.Types.INTEGER );
                 }
 
                 // always null
-                cs.setInt( 7, null );
-                cs.setInt( 8, null );
+                stm.setNull( 7, java.sql.Types.INTEGER );
+                stm.setNull( 8, java.sql.Types.INTEGER );
 
                 //
-                cs.execute();
-                obj[ 0 ] = cs.getObject( 1 );
+                stm.execute();
+                obj[ 0 ] = stm.getObject( 1 );
+System.out.println( "devug 8" );
             }
 
             StructDescriptor dsc = new StructDescriptor( "ANYTYPE", con );
             sctx[ 0 ] = new STRUCT( dsc, con, obj );
+System.out.println( "devug 9" );
         }
 
+System.out.println( "devug 10" );
         return SUCCESS;
     }
 

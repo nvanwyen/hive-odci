@@ -207,6 +207,7 @@ public class hive_connection
                 throw new hive_exception( "Missing password in connection data" );
         }
 
+        // debug only
         url_ = "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1";
         System.out.println( url_ );
         return url_;
@@ -242,26 +243,20 @@ public class hive_connection
     //
     public Connection createConnection() throws SQLException, hive_exception
     {
-System.out.println( "debug 201" );
         if ( getConnection() == null )
         {
-System.out.println( "debug 202" );
             //
             if ( loadConnection() )
             {
-System.out.println( "debug 203" );
                 String url = getUrl();
 
-System.out.println( "debug 204" );
                 if ( url.length() > 0 )
                     conn_ = DriverManager.getConnection( url );
-System.out.println( "debug 205" );
             }
             else
                 throw new hive_exception( "Could not load connection data" );
         }
 
-System.out.println( "debug 206" );
         return conn_;
     }
 };
@@ -283,22 +278,16 @@ public class hive_context
     //
     public hive_context( String sql ) throws SQLException, hive_exception
     {
-System.out.println( "debug 101" );
         sql_ = sql;
 
-System.out.println( "debug 102" );
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
 
-System.out.println( "debug 103" );
         if ( hcn_ == null )
             hcn_ = new hive_connection();
 
-System.out.println( "debug 104" );
         hcn_.loadDriver();
-System.out.println( "debug 105" );
         hcn_.createConnection();
-System.out.println( "debug 106" );
     }
 
     //
@@ -623,29 +612,22 @@ public class hive implements SQLData
     static public BigDecimal ODCITableDescribe( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
-System.out.println( "devug 1" );
         hive_context ctx = new hive_context( stmt );
 
-System.out.println( "devug 2" );
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
-System.out.println( "devug 3" );
         OracleCallableStatement stm = null;
 
         ResultSetMetaData rmd = ctx.descSql();
-System.out.println( "devug 4" );
 
         stm = (OracleCallableStatement)con.prepareCall( "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;" );
         stm.registerOutParameter( 1, OracleTypes.OPAQUE /*, "SYS.ANYTYPE"*/ );
         stm.execute();
 
-System.out.println( "devug 5" );
         Object[] obj = new Object[ 1 ];
         obj[ 0 ] = stm.getObject( 1 );
         
         if ( rmd.getColumnCount() > 0 )
         {
-
-System.out.println( "devug 6" );
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
                 stm = (OracleCallableStatement)con.prepareCall( "begin anytype.addattr( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;" );
@@ -653,7 +635,6 @@ System.out.println( "devug 6" );
                 //
                 stm.registerOutParameter( 1, OracleTypes.OPAQUE /*, "SYS.ANYTYPE"*/ );
                 stm.setObject( 1, obj[ 0 ] );
-System.out.println( "devug 7" );
 
                 //
                 stm.setString( 2, rmd.getColumnName( i ) );
@@ -678,6 +659,7 @@ System.out.println( "devug 7" );
 
                     default:
                         stm.setNull( 6, java.sql.Types.INTEGER );
+                        break;
                 }
 
                 // always null
@@ -687,15 +669,12 @@ System.out.println( "devug 7" );
                 //
                 stm.execute();
                 obj[ 0 ] = stm.getObject( 1 );
-System.out.println( "devug 8" );
             }
 
             StructDescriptor dsc = new StructDescriptor( "ANYTYPE", con );
             sctx[ 0 ] = new STRUCT( dsc, con, obj );
-System.out.println( "devug 9" );
         }
 
-System.out.println( "devug 10" );
         return SUCCESS;
     }
 

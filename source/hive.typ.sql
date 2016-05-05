@@ -22,6 +22,12 @@ create or replace type hive_t as object
     name 'oracle.mti.hive.ODCITableStart( oracle.sql.STRUCT[], java.lang.String ) return java.math.BigDecimal',
 
     --
+    static function ODCITableDescribe( typ out anytype,
+                                       stm in varchar2 ) return number as
+    language java
+    name 'oracle.mti.hive.ODCITableDescribe( oracle.sql.STRUCT[], java.lang.String ) return java.math.BigDecimal',
+
+    --
     member function ODCITableFetch( self in out hive_t,
                                     max  in     number,
                                     rws  out    anydataset ) return number as

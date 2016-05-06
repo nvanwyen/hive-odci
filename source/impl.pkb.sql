@@ -157,6 +157,56 @@ create or replace package body impl as
 
     end connection;
 
+    --
+    procedure initialize( obj out nocopy anytype ) is
+
+        typ anytype;
+
+    begin
+
+        --
+        anytype.begincreate( dbms_types.typecode_object, typ );
+        obj := typ;
+
+    end initialize;
+
+    --
+    procedure finalize( obj in out nocopy anytype ) is
+    begin
+
+        obj.endcreate;
+
+    end finalize;
+
+    --
+    procedure attribute( obj   in out nocopy anytype,
+                         name  in            varchar2,
+                         code  in            pls_integer,
+                         prec  in            pls_integer,
+                         scale in            pls_integer,
+                         len   in            pls_integer,
+                         csid  in            pls_integer,
+                         csfrm in            pls_integer,
+                         attr  in            anytype default null) is
+    begin
+
+
+        --
+        obj.addattr( name, code, prec, scale, len, csid, csfrm, attr );
+
+    end attribute;
+
+    --
+    procedure clone( trg in out nocopy anytype,
+                     src in            anytype ) is
+    begin
+
+        initialize( trg );
+        trg.setinfo( null, null, null, null, null, src, dbms_types.typecode_object, 0 );
+        finalize( trg );
+
+    end clone;
+
 end impl;
 /
 

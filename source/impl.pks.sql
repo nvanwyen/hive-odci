@@ -37,6 +37,25 @@ create or replace package impl as
     --
     function connection return session;
 
+    --
+    procedure initialize( obj out nocopy anytype );
+    procedure finalize( obj in out nocopy anytype );
+
+    --
+    procedure attribute( obj   in out nocopy anytype,
+                         name  in            varchar2,
+                         code  in            pls_integer,
+                         prec  in            pls_integer,
+                         scale in            pls_integer,
+                         len   in            pls_integer,
+                         csid  in            pls_integer,
+                         csfrm in            pls_integer,
+                         attr  in            anytype default null);
+
+    --
+    procedure clone( trg in out nocopy anytype,
+                     src in            anytype );
+
 end impl;
 /
 

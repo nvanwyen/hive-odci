@@ -68,28 +68,33 @@ public class hiveodic {
 
         System.out.println( "Describing: " + sql );
 
+        // type values: http://docs.oracle.com/javase/7/docs/api/constant-values.html#java.sql.Types
+
         if ( rmd.getColumnCount() > 0 )
         {
-            System.out.format( "%-20s %-10s %5s %12s %-8s\n", 
+            System.out.format( "%-30s %-10s %5s %12s %12s %-8s\n", 
                                "Name", 
                                "Type",
                                "Code",
                                "Precision",
+                               "Scale",
                                "Nullable" );
-            System.out.format( "%-20s %-10s %12s %-8s\n", 
-                               "--------------------", 
-                               "----------",
-                               "------------",
-                               "------------",
-                               "--------" );
+            System.out.format( "%30s %10s %5s %12s %12s %8s\n", 
+                               "------------------------------", 
+                               "----------", 
+                               "-----", 
+                               "------------", 
+                               "------------", 
+                               "----------" );
 
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
-                System.out.format( "%-20s %-10s %5d %12d %-8s\n", 
+                System.out.format( "%-30s %-10s %5d %12d %12d %-8s\n", 
                                    rmd.getColumnName(i), 
                                    rmd.getColumnTypeName(i),
                                    rmd.getColumnType(i),
                                    rmd.getPrecision(i),
+                                   rmd.getScale(i),
                                    ( ( rmd.isNullable(i) == 0 ) ? "FALSE" : "TRUE" ) );
             }
         }

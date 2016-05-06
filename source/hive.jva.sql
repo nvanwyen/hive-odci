@@ -29,6 +29,55 @@ import oracle.ODCI.*;
 import oracle.CartridgeServices.*;
 
 //
+public class DBMS_TYPES
+{
+    /*
+        This java class duplicates the PL/SQL SYS.DBMS_TYPES
+        package specification type codes for convenience
+        as of 12c (may not be applicable in later version)
+    */
+    public static final int TYPECODE_DATE            =  12;
+    public static final int TYPECODE_NUMBER          =   2;
+    public static final int TYPECODE_RAW             =  95;
+    public static final int TYPECODE_CHAR            =  96;
+    public static final int TYPECODE_VARCHAR2        =   9;
+    public static final int TYPECODE_VARCHAR         =   1;
+    public static final int TYPECODE_MLSLABEL        = 105;
+    public static final int TYPECODE_BLOB            = 113;
+    public static final int TYPECODE_BFILE           = 114;
+    public static final int TYPECODE_CLOB            = 112;
+    public static final int TYPECODE_CFILE           = 115;
+    public static final int TYPECODE_TIMESTAMP       = 187;
+    public static final int TYPECODE_TIMESTAMP_TZ    = 188;
+    public static final int TYPECODE_TIMESTAMP_LTZ   = 232;
+    public static final int TYPECODE_INTERVAL_YM     = 189;
+    public static final int TYPECODE_INTERVAL_DS     = 190;
+
+    public static final int TYPECODE_REF             = 110;
+    public static final int TYPECODE_OBJECT          = 108;
+    public static final int TYPECODE_VARRAY          = 247;            /* COLLECTION TYPE */
+    public static final int TYPECODE_TABLE           = 248;            /* COLLECTION TYPE */
+    public static final int TYPECODE_NAMEDCOLLECTION = 122;
+    public static final int TYPECODE_OPAQUE          = 58;             /* OPAQUE TYPE */
+
+    /* 
+        These typecodes are for use in AnyData api only and are short forms
+        for the corresponding char typecodes with a charset form of SQLCS_NCHAR.
+    */
+    public static final int TYPECODE_NCHAR           = 286;
+    public static final int TYPECODE_NVARCHAR2       = 287;
+    public static final int TYPECODE_NCLOB           = 288;
+
+    /* Typecodes for Binary Float, Binary Double and Urowid. */
+    public static final int TYPECODE_BFLOAT          = 100;
+    public static final int TYPECODE_BDOUBLE         = 101;
+    public static final int TYPECODE_UROWID          = 104;
+
+    public static final int SUCCESS                  = 0;
+    public static final int NO_DATA                  = 100;
+};
+
+//
 public class hive_exception extends Exception
 {
     public hive_exception( String msg )
@@ -612,6 +661,9 @@ public class hive implements SQLData
     static public BigDecimal ODCITableDescribe( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
+        //String sql = "begin impl.initialize( ? ); end;";
+        String sql = "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;";
+
         hive_context ctx = new hive_context( stmt );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
@@ -619,8 +671,8 @@ public class hive implements SQLData
 
         ResultSetMetaData rmd = ctx.descSql();
 
-        stm = (OracleCallableStatement)con.prepareCall( "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;" );
-        stm.registerOutParameter( 1, OracleTypes.OPAQUE /*, "SYS.ANYTYPE"*/ );
+        stm = (OracleCallableStatement)con.prepareCall( sql );
+        stm.registerOutParameter( 1, OracleTypes.OPAQUE, "ANYTYPE" );
         stm.execute();
 
         Object[] obj = new Object[ 1 ];
@@ -630,46 +682,153 @@ public class hive implements SQLData
         {
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
-                stm = (OracleCallableStatement)con.prepareCall( "begin anytype.addattr( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;" );
+                sql = "begin impl.attribute( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;";
+                stm = (OracleCallableStatement)con.prepareCall( sql );
 
                 //
-                stm.registerOutParameter( 1, OracleTypes.OPAQUE /*, "SYS.ANYTYPE"*/ );
+                stm.registerOutParameter( 1, OracleTypes.OPAQUE, "ANYTYPE" );
                 stm.setObject( 1, obj[ 0 ] );
 
                 //
+                //System.out.format( "Processing column [%s]: ", rmd.getColumnName( i ) );
                 stm.setString( 2, rmd.getColumnName( i ) );
-                stm.setInt( 3, rmd.getColumnType( i ) );
 
-                // always null
-                stm.setNull( 4, java.sql.Types.INTEGER );
-                stm.setNull( 5, java.sql.Types.INTEGER );
-
-                // length
+                //
                 switch ( rmd.getColumnType( i ) )
                 {
-                    case java.sql.Types.CHAR:
                     case java.sql.Types.VARCHAR:
+                    case java.sql.Types.CHAR:
+                    case java.sql.Types.NVARCHAR:
+                    case java.sql.Types.NCHAR:
                         {
+                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_VARCHAR2" );
+                            stm.setInt( 3, DBMS_TYPES.TYPECODE_VARCHAR2 );
+
+                            stm.setNull( 4, java.sql.Types.INTEGER );
+                            stm.setNull( 5, java.sql.Types.INTEGER );
+
                             if ( rmd.getPrecision( i ) > 4000 )
                                 stm.setInt( 6, 4000 );
                             else
                                 stm.setInt( 6, rmd.getPrecision( i ) );
+
+                            stm.setNull( 7, java.sql.Types.INTEGER );
+                            stm.setNull( 8, java.sql.Types.INTEGER );
+                            stm.setNull( 9, java.sql.Types.INTEGER );
                         }
                         break;
 
+                    case java.sql.Types.BIGINT:
+                    case java.sql.Types.DOUBLE:
+                    case java.sql.Types.FLOAT:
+                    case java.sql.Types.INTEGER:
+                    case java.sql.Types.NUMERIC:
+                    case java.sql.Types.REAL:
+                    case java.sql.Types.SMALLINT:
+                    case java.sql.Types.TINYINT:
+                    case java.sql.Types.DECIMAL:
+                    case java.sql.Types.BOOLEAN:
+                        {
+                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_NUMBER" );
+                            stm.setInt( 3, DBMS_TYPES.TYPECODE_NUMBER );
+
+                            stm.setNull( 4, java.sql.Types.INTEGER );
+                            stm.setNull( 5, java.sql.Types.INTEGER );
+                            stm.setNull( 6, java.sql.Types.INTEGER );
+                            stm.setNull( 7, java.sql.Types.INTEGER );
+                            stm.setNull( 8, java.sql.Types.INTEGER );
+                            stm.setNull( 9, java.sql.Types.INTEGER );
+                        }
+                        break;
+
+                    case java.sql.Types.CLOB:
+                    case java.sql.Types.NCLOB:
+                        {
+                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_CLOB" );
+                            stm.setInt( 3, DBMS_TYPES.TYPECODE_CLOB );
+
+                            stm.setNull( 4, java.sql.Types.INTEGER );
+                            stm.setNull( 5, java.sql.Types.INTEGER );
+                            stm.setNull( 6, java.sql.Types.INTEGER );
+                            stm.setNull( 7, java.sql.Types.INTEGER );
+                            stm.setNull( 8, java.sql.Types.INTEGER );
+                            stm.setNull( 9, java.sql.Types.INTEGER );
+                        }
+                        break;
+
+                    case java.sql.Types.BLOB:
+                        {
+                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_BLOB" );
+                            stm.setInt( 3, DBMS_TYPES.TYPECODE_BLOB );
+
+                            stm.setNull( 4, java.sql.Types.INTEGER );
+                            stm.setNull( 5, java.sql.Types.INTEGER );
+                            stm.setNull( 6, java.sql.Types.INTEGER );
+                            stm.setNull( 7, java.sql.Types.INTEGER );
+                            stm.setNull( 8, java.sql.Types.INTEGER );
+                            stm.setNull( 9, java.sql.Types.INTEGER );
+                        }
+                        break;
+
+                    case java.sql.Types.DATE:
+                    case java.sql.Types.TIME:
+                    case java.sql.Types.TIMESTAMP:
+                        {
+                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_DATE" );
+                            stm.setInt( 3, DBMS_TYPES.TYPECODE_DATE );
+
+                            stm.setNull( 4, java.sql.Types.INTEGER );
+                            stm.setNull( 5, java.sql.Types.INTEGER );
+                            stm.setNull( 6, java.sql.Types.INTEGER );
+                            stm.setNull( 7, java.sql.Types.INTEGER );
+                            stm.setNull( 8, java.sql.Types.INTEGER );
+                            stm.setNull( 9, java.sql.Types.INTEGER );
+                        }
+                        break;
+
+                    case java.sql.Types.LONGNVARCHAR:
+                    case java.sql.Types.LONGVARBINARY:
+                    case java.sql.Types.LONGVARCHAR:
+                    case java.sql.Types.ARRAY:
+                    case java.sql.Types.BINARY:
+                    case java.sql.Types.BIT:
+                    case java.sql.Types.DATALINK:
+                    case java.sql.Types.DISTINCT:
+                    case java.sql.Types.JAVA_OBJECT:
+                    case java.sql.Types.NULL:
+                    case java.sql.Types.OTHER:
+                    case java.sql.Types.REF:
+                    case java.sql.Types.ROWID:
+                    case java.sql.Types.SQLXML:
+                    case java.sql.Types.STRUCT:
+                    case java.sql.Types.VARBINARY:
                     default:
-                        stm.setNull( 6, java.sql.Types.INTEGER );
+                        {
+                            //System.out.format( "%s\n", "NULL" );
+                            stm.setNull( 3, java.sql.Types.INTEGER );
+                            stm.setNull( 4, java.sql.Types.INTEGER );
+                            stm.setNull( 5, java.sql.Types.INTEGER );
+                            stm.setNull( 6, java.sql.Types.INTEGER );
+                            stm.setNull( 7, java.sql.Types.INTEGER );
+                            stm.setNull( 8, java.sql.Types.INTEGER );
+                            stm.setNull( 9, java.sql.Types.INTEGER );
+                        }
                         break;
                 }
-
-                // always null
-                stm.setNull( 7, java.sql.Types.INTEGER );
-                stm.setNull( 8, java.sql.Types.INTEGER );
 
                 //
                 stm.execute();
                 obj[ 0 ] = stm.getObject( 1 );
             }
+
+            //
+            sql = "begin impl.finalize( ? ); end;";
+            stm = (OracleCallableStatement)con.prepareCall( sql );
+            stm.registerOutParameter( 1, OracleTypes.OPAQUE, "ANYTYPE" );
+            stm.setObject( 1, obj[ 0 ] );
+            stm.execute();
+
+            obj[ 0 ] = stm.getObject( 1 );
 
             StructDescriptor dsc = new StructDescriptor( "ANYTYPE", con );
             sctx[ 0 ] = new STRUCT( dsc, con, obj );
@@ -703,7 +862,7 @@ public class hive implements SQLData
         Object[] imp = new Object[ 1 ];
         imp[ 0 ] = new BigDecimal( key );
 
-        StructDescriptor dsc = new StructDescriptor( "hive_t", con );
+        StructDescriptor dsc = new StructDescriptor( "HIVE_T", con );
         sctx[ 0 ] = new STRUCT( dsc, con, imp );
 
         return SUCCESS;

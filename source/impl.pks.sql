@@ -56,6 +56,9 @@ create or replace package impl as
     procedure clone( trg in out nocopy anytype,
                      src in            anytype );
 
+--    --
+--    procedure output( obj in anytype );
+
 end impl;
 /
 

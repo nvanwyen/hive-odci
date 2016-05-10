@@ -169,7 +169,8 @@ public class hiveodic {
             else if ( args[i].equalsIgnoreCase( "-b" ) )
                 opt |= 3;
             else 
-                throw new IllegalArgumentException( "Unknown argument [" + args[i] + "]" );
+                throw new IllegalArgumentException( "Unknown argument [" + args[i] + "]: " +
+                                                    "use describe|desc|-d|query|-q|both|-b" );
         }
 
         if ( opt == 0 )

@@ -7,7 +7,7 @@
 prompt ... running impl.pkb.sql
 
 --
-alter session set current_schema = hive;
+GGalter session set current_schema = hive;
 
 --
 create or replace package body impl as
@@ -206,6 +206,64 @@ create or replace package body impl as
         finalize( trg );
 
     end clone;
+
+--    --
+--    procedure output( obj in anytype ) is
+--
+--        typ anytype;
+--        val varchar2( 32767 );
+--        ret number;
+--
+--    BEGIN
+--
+--        case obj.gettype( typ )
+--        when dbms_types.typecode_number then
+--            val := 'number: ' || to_char( obj.accessnumber );
+--        when dbms_types.typecode_varchar2 then
+--            val := 'varchar2: ' || obj.accessvarchar2;
+--        when dbms_types.typecode_char then
+--            val := 'char: ' || rtrim( obj.accesschar );
+--        when dbms_types.typecode_date then
+--            val := 'date: ' || to_char( obj.accessdate, 'yyyy-mm-dd hh24:mi:ss' );
+--        when dbms_types.typecode_object then
+--            execute immediate 'declare ' ||
+--                              '    o ' || obj.gettypename || '; ' ||
+--                              '    a anydata := :ad; ' ||
+--                              'begin ' ||
+--                              '    :res := a.getobject( o ); ' ||
+--                              '    :ret := o.print(); ' ||
+--                              'end;'
+--                              using in obj, out ret, out val;
+--            val := obj.GetTypeName || ': ' || val;
+-- 	    when dbms_types.typecode_ref then
+--            execute immediate 'declare ' ||
+--                              '    r ' || obj.gettypename || '; ' ||
+--                              '    o ' || substr( obj.gettypename,
+--                                                  instr( obj.gettypename, ' ' ) ) || '; ' ||
+--                              '    a anydata := :ad; ' ||
+--                              'begin ' ||
+--                              '    :res := a.getref( r ); ' ||
+--                              '    utl_ref.select_object( r, o );' ||
+--                              '    :ret := o.print(); ' ||
+--                              'end;'
+--                              using in obj, out ret, out val;
+--            val := obj.GetTypeName || ': ' || val;
+--        else
+--            val := '<data of type ' || obj.gettypename ||'>';
+--        end case;
+--
+--    dbms_output.put_line( val );
+--
+--    exception
+--        when others
+--            then
+--                if instr( sqlerrm, 'component ''print'' must be declared' ) > 0 then
+--                    dbms_output.put_line( obj.gettypename || ': <no print() function>' );
+--                else
+--                    dbms_output.put_line( 'error: ' || sqlerrm );
+--                end if;
+--
+--    end output;
 
 end impl;
 /

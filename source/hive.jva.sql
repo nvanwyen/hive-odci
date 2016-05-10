@@ -75,6 +75,112 @@ public class DBMS_TYPES
 
     public static final int SUCCESS                  = 0;
     public static final int NO_DATA                  = 100;
+
+    //
+    static public int to_jdbc_type( int typ )
+    {
+        int ret = 0;
+
+        //
+        switch ( typ )
+        {
+            case TYPECODE_VARCHAR2:
+                ret = java.sql.Types.VARCHAR;
+                break;
+
+            case TYPECODE_NUMBER:
+                ret = java.sql.Types.INTEGER;
+                break;
+
+            case TYPECODE_CLOB:
+                ret = java.sql.Types.CLOB;
+                break;
+
+            case TYPECODE_BLOB:
+                ret = java.sql.Types.BLOB;
+                break;
+
+            case TYPECODE_DATE:
+                ret = java.sql.Types.DATE;
+                break;
+
+            case TYPECODE_OBJECT:
+            default:
+                ret = java.sql.Types.STRUCT;
+                break;
+        }
+
+        //
+        return ret;
+    }
+
+    //
+    static public int to_dbms_type( int typ )
+    {
+        int ret = 0;
+
+        //
+        switch ( typ )
+        {
+            case java.sql.Types.VARCHAR:
+            case java.sql.Types.CHAR:
+            case java.sql.Types.NVARCHAR:
+            case java.sql.Types.NCHAR:
+                ret = TYPECODE_VARCHAR2;
+                break;
+
+            case java.sql.Types.BIGINT:
+            case java.sql.Types.DOUBLE:
+            case java.sql.Types.FLOAT:
+            case java.sql.Types.INTEGER:
+            case java.sql.Types.NUMERIC:
+            case java.sql.Types.REAL:
+            case java.sql.Types.SMALLINT:
+            case java.sql.Types.TINYINT:
+            case java.sql.Types.DECIMAL:
+            case java.sql.Types.BOOLEAN:
+                ret = TYPECODE_NUMBER;
+                break;
+
+            case java.sql.Types.CLOB:
+            case java.sql.Types.NCLOB:
+                ret = TYPECODE_CLOB;
+                break;
+
+            case java.sql.Types.BLOB:
+                ret = TYPECODE_BLOB;
+                break;
+
+            case java.sql.Types.DATE:
+            case java.sql.Types.TIME:
+            case java.sql.Types.TIMESTAMP:
+                ret = TYPECODE_DATE;
+                break;
+
+            case java.sql.Types.LONGNVARCHAR:
+            case java.sql.Types.LONGVARBINARY:
+            case java.sql.Types.LONGVARCHAR:
+            case java.sql.Types.ARRAY:
+            case java.sql.Types.BINARY:
+            case java.sql.Types.BIT:
+            case java.sql.Types.DATALINK:
+            case java.sql.Types.DISTINCT:
+            case java.sql.Types.JAVA_OBJECT:
+            case java.sql.Types.NULL:
+            case java.sql.Types.OTHER:
+            case java.sql.Types.REF:
+            case java.sql.Types.ROWID:
+            case java.sql.Types.SQLXML:
+            case java.sql.Types.STRUCT:
+            case java.sql.Types.VARBINARY:
+            default:
+                ret = TYPECODE_OBJECT; // ? unknown ?
+                break;
+        }
+
+        //
+        return ret;
+    }
 };
 
 //
@@ -258,7 +364,7 @@ public class hive_connection
 
         // debug only
         url_ = "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1";
-        System.out.println( url_ );
+        //System.out.println( url_ );
         return url_;
     }
 
@@ -628,6 +734,45 @@ public class hive_context
 public class hive implements SQLData 
 {
     //
+    public static class attribute
+    {
+        public String name;
+        public int    code;
+        public int    prec;
+        public int    scale;
+        public int    len;
+        public int    csid;
+        public int    csfrm;
+
+        attribute()
+        {
+            name  = "";
+            code  = -1;
+            prec  = -1;
+            scale = -1;
+            len   = -1;
+            csid  = -1;
+            csfrm = -1;
+        }
+
+        public String toString()
+        {
+            String str = new String();
+
+            str +=                          "\n";
+            str += "... name:  " +  name  + "\n";
+            str += "... code:  " +  code  + "\n";
+            str += "... prec:  " +  prec  + "\n";
+            str += "... scale: " +  scale + "\n";
+            str += "... len:   " +  len   + "\n";
+            str += "... csid:  " +  csid  + "\n";
+            str += "... csfrm: " +  csfrm + "\n";
+
+            return str;
+        }
+    };
+
+    //
     private String sql_;        // SQL type name
     private BigDecimal key_;    // Context key
 
@@ -639,6 +784,7 @@ public class hive implements SQLData
     public String getSQLTypeName()
         throws SQLException 
     {
+        //System.out.println( "getSQLTypeName called" );
         return sql_;
     }
 
@@ -646,6 +792,7 @@ public class hive implements SQLData
     public void readSQL( SQLInput stream, String type )
         throws SQLException 
     {
+        //System.out.println( "readSQL called" );
         sql_ = type;
         key_ = stream.readBigDecimal();
     }
@@ -654,185 +801,97 @@ public class hive implements SQLData
     public void writeSQL( SQLOutput stream )
         throws SQLException 
     {
+        //System.out.println( "writeSQL called" );
         stream.writeBigDecimal( key_ );
     }
 
     //
-    static public BigDecimal ODCITableDescribe( STRUCT[] sctx, String stmt )
+    static public BigDecimal SqlDesc( String stmt, oracle.sql.ARRAY[] attr )
         throws SQLException, hive_exception
     {
-        //String sql = "begin impl.initialize( ? ); end;";
-        String sql = "begin anytype.begincreate( dbms_types.typecode_object, ? ); end;";
+        //System.out.println( "SqlDesc called" );
 
+        ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = new hive_context( stmt );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
-        OracleCallableStatement stm = null;
 
         ResultSetMetaData rmd = ctx.descSql();
+        //System.out.println( "SqlDesc: rmd.getColumnCount() = " + rmd.getColumnCount() );
 
-        stm = (OracleCallableStatement)con.prepareCall( sql );
-        stm.registerOutParameter( 1, OracleTypes.OPAQUE, "ANYTYPE" );
-        stm.execute();
-
-        Object[] obj = new Object[ 1 ];
-        obj[ 0 ] = stm.getObject( 1 );
-        
         if ( rmd.getColumnCount() > 0 )
         {
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
-                sql = "begin impl.attribute( ?, ?, ?, ?, ?, ?, ?, ?, ? ); end;";
-                stm = (OracleCallableStatement)con.prepareCall( sql );
+                attribute atr = new attribute();
 
-                //
-                stm.registerOutParameter( 1, OracleTypes.OPAQUE, "ANYTYPE" );
-                stm.setObject( 1, obj[ 0 ] );
+                atr.name = rmd.getColumnName( i );
+                atr.code = DBMS_TYPES.to_dbms_type( rmd.getColumnType( i ) );
 
-                //
-                //System.out.format( "Processing column [%s]: ", rmd.getColumnName( i ) );
-                stm.setString( 2, rmd.getColumnName( i ) );
-
-                //
-                switch ( rmd.getColumnType( i ) )
+                switch ( atr.code )
                 {
-                    case java.sql.Types.VARCHAR:
-                    case java.sql.Types.CHAR:
-                    case java.sql.Types.NVARCHAR:
-                    case java.sql.Types.NCHAR:
+                    case DBMS_TYPES.TYPECODE_VARCHAR2:
                         {
-                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_VARCHAR2" );
-                            stm.setInt( 3, DBMS_TYPES.TYPECODE_VARCHAR2 );
-
-                            stm.setNull( 4, java.sql.Types.INTEGER );
-                            stm.setNull( 5, java.sql.Types.INTEGER );
-
                             if ( rmd.getPrecision( i ) > 4000 )
-                                stm.setInt( 6, 4000 );
+                                atr.len = 4000;
                             else
-                                stm.setInt( 6, rmd.getPrecision( i ) );
-
-                            stm.setNull( 7, java.sql.Types.INTEGER );
-                            stm.setNull( 8, java.sql.Types.INTEGER );
-                            stm.setNull( 9, java.sql.Types.INTEGER );
+                            {
+                                if ( rmd.getPrecision( i ) > 0 )
+                                    atr.len = rmd.getPrecision( i );
+                                else
+                                    atr.len = -1;
+                            }
                         }
                         break;
 
-                    case java.sql.Types.BIGINT:
-                    case java.sql.Types.DOUBLE:
-                    case java.sql.Types.FLOAT:
-                    case java.sql.Types.INTEGER:
-                    case java.sql.Types.NUMERIC:
-                    case java.sql.Types.REAL:
-                    case java.sql.Types.SMALLINT:
-                    case java.sql.Types.TINYINT:
-                    case java.sql.Types.DECIMAL:
-                    case java.sql.Types.BOOLEAN:
-                        {
-                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_NUMBER" );
-                            stm.setInt( 3, DBMS_TYPES.TYPECODE_NUMBER );
-
-                            stm.setNull( 4, java.sql.Types.INTEGER );
-                            stm.setNull( 5, java.sql.Types.INTEGER );
-                            stm.setNull( 6, java.sql.Types.INTEGER );
-                            stm.setNull( 7, java.sql.Types.INTEGER );
-                            stm.setNull( 8, java.sql.Types.INTEGER );
-                            stm.setNull( 9, java.sql.Types.INTEGER );
-                        }
+                    case DBMS_TYPES.TYPECODE_NUMBER:
+                        atr.prec = rmd.getPrecision( i );
+                        atr.scale = rmd.getScale( i );
                         break;
 
-                    case java.sql.Types.CLOB:
-                    case java.sql.Types.NCLOB:
-                        {
-                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_CLOB" );
-                            stm.setInt( 3, DBMS_TYPES.TYPECODE_CLOB );
-
-                            stm.setNull( 4, java.sql.Types.INTEGER );
-                            stm.setNull( 5, java.sql.Types.INTEGER );
-                            stm.setNull( 6, java.sql.Types.INTEGER );
-                            stm.setNull( 7, java.sql.Types.INTEGER );
-                            stm.setNull( 8, java.sql.Types.INTEGER );
-                            stm.setNull( 9, java.sql.Types.INTEGER );
-                        }
+                    case DBMS_TYPES.TYPECODE_CLOB:
+                        atr.len = rmd.getPrecision( i );
                         break;
 
-                    case java.sql.Types.BLOB:
-                        {
-                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_BLOB" );
-                            stm.setInt( 3, DBMS_TYPES.TYPECODE_BLOB );
-
-                            stm.setNull( 4, java.sql.Types.INTEGER );
-                            stm.setNull( 5, java.sql.Types.INTEGER );
-                            stm.setNull( 6, java.sql.Types.INTEGER );
-                            stm.setNull( 7, java.sql.Types.INTEGER );
-                            stm.setNull( 8, java.sql.Types.INTEGER );
-                            stm.setNull( 9, java.sql.Types.INTEGER );
-                        }
+                    case DBMS_TYPES.TYPECODE_BLOB:
+                        atr.len = rmd.getPrecision( i );
                         break;
 
-                    case java.sql.Types.DATE:
-                    case java.sql.Types.TIME:
-                    case java.sql.Types.TIMESTAMP:
-                        {
-                            //System.out.format( "%s\n", "DBMS_TYPES.TYPECODE_DATE" );
-                            stm.setInt( 3, DBMS_TYPES.TYPECODE_DATE );
-
-                            stm.setNull( 4, java.sql.Types.INTEGER );
-                            stm.setNull( 5, java.sql.Types.INTEGER );
-                            stm.setNull( 6, java.sql.Types.INTEGER );
-                            stm.setNull( 7, java.sql.Types.INTEGER );
-                            stm.setNull( 8, java.sql.Types.INTEGER );
-                            stm.setNull( 9, java.sql.Types.INTEGER );
-                        }
+                    case DBMS_TYPES.TYPECODE_DATE:
                         break;
 
-                    case java.sql.Types.LONGNVARCHAR:
-                    case java.sql.Types.LONGVARBINARY:
-                    case java.sql.Types.LONGVARCHAR:
-                    case java.sql.Types.ARRAY:
-                    case java.sql.Types.BINARY:
-                    case java.sql.Types.BIT:
-                    case java.sql.Types.DATALINK:
-                    case java.sql.Types.DISTINCT:
-                    case java.sql.Types.JAVA_OBJECT:
-                    case java.sql.Types.NULL:
-                    case java.sql.Types.OTHER:
-                    case java.sql.Types.REF:
-                    case java.sql.Types.ROWID:
-                    case java.sql.Types.SQLXML:
-                    case java.sql.Types.STRUCT:
-                    case java.sql.Types.VARBINARY:
+                    case DBMS_TYPES.TYPECODE_OBJECT:
                     default:
-                        {
-                            //System.out.format( "%s\n", "NULL" );
-                            stm.setNull( 3, java.sql.Types.INTEGER );
-                            stm.setNull( 4, java.sql.Types.INTEGER );
-                            stm.setNull( 5, java.sql.Types.INTEGER );
-                            stm.setNull( 6, java.sql.Types.INTEGER );
-                            stm.setNull( 7, java.sql.Types.INTEGER );
-                            stm.setNull( 8, java.sql.Types.INTEGER );
-                            stm.setNull( 9, java.sql.Types.INTEGER );
-                        }
                         break;
                 }
 
-                //
-                stm.execute();
-                obj[ 0 ] = stm.getObject( 1 );
+
+                //System.out.println( "SqlDesc: atr = " + atr.toString() );
+
+                Object[] obj = new Object[] { new String( atr.name ),
+                                              new Integer( atr.code ),
+                                              new Integer( atr.prec ),
+                                              new Integer( atr.scale ),
+                                              new Integer( atr.len ),
+                                              new Integer( atr.csid ),
+                                              new Integer( atr.csfrm ) };
+
+                //System.out.println( "SqlDesc: obj[] = " + obj.toString() );
+
+
+                StructDescriptor ids = StructDescriptor.createDescriptor( "ATTRIBUTE", con );
+                STRUCT itm = new STRUCT( ids, con, obj );
+                col.add( itm );
             }
-
-            //
-            sql = "begin impl.finalize( ? ); end;";
-            stm = (OracleCallableStatement)con.prepareCall( sql );
-            stm.registerOutParameter( 1, OracleTypes.OPAQUE, "ANYTYPE" );
-            stm.setObject( 1, obj[ 0 ] );
-            stm.execute();
-
-            obj[ 0 ] = stm.getObject( 1 );
-
-            StructDescriptor dsc = new StructDescriptor( "ANYTYPE", con );
-            sctx[ 0 ] = new STRUCT( dsc, con, obj );
         }
+
+        //System.out.println( "SqlDesc: col = " + col.toString() );
+
+        ArrayDescriptor des = ArrayDescriptor.createDescriptor( "ATTRIBUTES", con );
+        STRUCT[] dat = col.toArray( new STRUCT[ col.size() ] );
+
+        attr[0] = new ARRAY( des, con, dat );
+        //System.out.println( "SqlDesc: attr[0] = " + attr[0].toString() );
 
         return SUCCESS;
     }
@@ -841,6 +900,8 @@ public class hive implements SQLData
     static public BigDecimal ODCITableStart( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
+        //System.out.println( "ODCITableStart called" );
+
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         // create context and result
@@ -871,6 +932,8 @@ public class hive implements SQLData
     static public BigDecimal ODCITableFetch( BigDecimal key, BigDecimal max, java.sql.Array[] out )
         throws SQLException, InvalidKeyException, hive_exception
     {
+        //System.out.println( "ODCITableFetch called" );
+
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
         hive_context ctx = (hive_context)ContextManager.getContext( key.intValue() );
 
@@ -936,12 +999,13 @@ public class hive implements SQLData
     static public BigDecimal ODCITableClose( BigDecimal key )
         throws SQLException, InvalidKeyException
     {
+        //System.out.println( "ODCITableClose called" );
+
         hive_context ctx = (hive_context)ContextManager.clearContext( key.intValue() );
         ctx.clear();
 
         return SUCCESS;
     }
-
 };
 /
 

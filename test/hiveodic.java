@@ -196,11 +196,12 @@ public class hiveodic {
 
         //String sql = "select * from movie where movie_id > 36000 and lower( title ) like '%here%' limit 10";
         //String sql = "select * from movie where movie_id > 0";
-        String sql = "select * from cust";
+        //String sql = "select * from cust";
         ////String sql = "select * from movie_view limit 10";
         //String sql = "select a.movie_id, a.title, b.avg_rating from movie a, movie_rating b where a.movie_id = b.movie_id and a.movie_id > 36000 and lower( a.title ) like '%here%' limit 10";
         //String sql = "select * from movie_view";
         //String sql = "select count(*) count_of from movie_view";
+        String sql = "select * from movieapp_log_odistage";
 
         if ( ( run & 1 ) == 1 )
             descSql( con, limitSql( sql ) );

@@ -364,7 +364,7 @@ public class hive_connection
 
         // debug only
         url_ = "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1";
-        //System.out.println( url_ );
+        System.out.println( url_ );
         return url_;
     }
 
@@ -730,6 +730,58 @@ public class hive_context
     }
 };
 
+// stored context manager (since the Oracle one is broken)
+public hive_manager
+{
+    private BigDecimal key_;
+    private HashMap<BigDecimal, Object> map_;
+
+    //
+    hive_manager()
+    {
+        key_ = new BigDecimal( 1 );
+        map_ = new HashMap<BigDecimal, Object>();
+    }
+
+    //
+    private BigDecimal nextKey()
+    {
+        key_ = key_.add( 1 );
+        return key_;
+    }
+
+    //
+    public BigDecimal createContext( Object obj )
+    {
+        BigDecimal key = nextKey();
+
+        map_.put( key, obj );
+        return key;
+    }
+
+    //
+    public Object getContext( BigDecimal key )
+    {
+        Object obj = map_.get( key ).getValue();
+
+        if ( obj == null )
+            throw new hive_exception( "Invalid context key: " + key.intValue() );
+
+        return obj;
+    }
+
+    //
+    public Object removeContext( BigDecimal key )
+    {
+        Object obj = getContext( key );
+
+        if ( obj != null )
+            map_.remove( key );
+
+        return obj;
+    }
+};
+
 //
 public class hive implements SQLData 
 {
@@ -773,8 +825,10 @@ public class hive implements SQLData
     };
 
     //
-    private String sql_;        // SQL type name
-    private BigDecimal key_;    // Context key
+    private static String sql_;        // SQL type name
+    private static BigDecimal key_;    // Context key
+
+    private static hive_manager context_;
 
     //
     final static BigDecimal SUCCESS = new BigDecimal( 0 );
@@ -784,7 +838,7 @@ public class hive implements SQLData
     public String getSQLTypeName()
         throws SQLException 
     {
-        //System.out.println( "getSQLTypeName called" );
+        System.out.println( "getSQLTypeName called" );
         return sql_;
     }
 
@@ -792,7 +846,7 @@ public class hive implements SQLData
     public void readSQL( SQLInput stream, String type )
         throws SQLException 
     {
-        //System.out.println( "readSQL called" );
+        System.out.println( "readSQL called" );
         sql_ = type;
         key_ = stream.readBigDecimal();
     }
@@ -801,7 +855,7 @@ public class hive implements SQLData
     public void writeSQL( SQLOutput stream )
         throws SQLException 
     {
-        //System.out.println( "writeSQL called" );
+        System.out.println( "writeSQL called" );
         stream.writeBigDecimal( key_ );
     }
 
@@ -809,15 +863,18 @@ public class hive implements SQLData
     static public BigDecimal SqlDesc( String stmt, oracle.sql.ARRAY[] attr )
         throws SQLException, hive_exception
     {
-        //System.out.println( "SqlDesc called" );
+        System.out.println( "SqlDesc called" );
 
         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = new hive_context( stmt );
 
+        if ( ctx == null )
+            throw new hive_exception( "Context not created for SqlDesc" );
+
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         ResultSetMetaData rmd = ctx.descSql();
-        //System.out.println( "SqlDesc: rmd.getColumnCount() = " + rmd.getColumnCount() );
+        System.out.println( "SqlDesc: rmd.getColumnCount() = " + rmd.getColumnCount() );
 
         if ( rmd.getColumnCount() > 0 )
         {
@@ -900,19 +957,21 @@ public class hive implements SQLData
     static public BigDecimal ODCITableStart( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
-        //System.out.println( "ODCITableStart called" );
+        System.out.println( "ODCITableStart called" );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
-        // create context and result
+        //
         hive_context ctx = new hive_context( stmt );
 
-        // register stored context with cartridge services
-        int key;
+        if ( ctx == null )
+            throw new hive_exception( "Context not created for ODCITableStart" );
 
+        //
         try
         {
-            key = ContextManager.setContext( ctx );
+            key_ = new BigDecimal( ContextManager.setContext( ctx ) );
+            System.out.println( "ODCITableStart set key_ = " + key_ );
         }
         catch ( CountException ex )
         {
@@ -921,7 +980,7 @@ public class hive implements SQLData
 
         //
         Object[] imp = new Object[ 1 ];
-        imp[ 0 ] = new BigDecimal( key );
+        imp[ 0 ] = key_;
 
         StructDescriptor dsc = new StructDescriptor( "HIVE_T", con );
         sctx[ 0 ] = new STRUCT( dsc, con, imp );
@@ -929,13 +988,16 @@ public class hive implements SQLData
         return SUCCESS;
     }
 
-    static public BigDecimal ODCITableFetch( BigDecimal key, BigDecimal max, java.sql.Array[] out )
+    static public BigDecimal SqlFetch( BigDecimal num, ARRAY[] out )
         throws SQLException, InvalidKeyException, hive_exception
     {
-        //System.out.println( "ODCITableFetch called" );
+        System.out.println( "SqlFetch called: key_ = " + key_ );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
-        hive_context ctx = (hive_context)ContextManager.getContext( key.intValue() );
+        hive_context ctx = (hive_context)ContextManager.getContext( key_.intValue() );
+
+        if ( ctx == null )
+            throw new hive_exception( "Context not found for SqlFetch" );
 
         //
         if ( ! ctx.ready() )
@@ -945,10 +1007,11 @@ public class hive implements SQLData
         }
 
         //
-        StructDescriptor dsc = new StructDescriptor( "columns_t", con );
+        StructDescriptor dsc = new StructDescriptor( "DATA", con );
 
         //
-        for ( int i = 0; i < max.intValue(); ++i )
+        System.out.println( "SqlFetch requesting the next " + num + " record(s)" );
+        for ( int i = 0; i < num.intValue(); ++i )
         {
             if ( ctx.next() )
             {
@@ -957,25 +1020,16 @@ public class hive implements SQLData
                 for ( int c = 1; i <= ctx.columnCount(); ++c )
                 {
                     Object col = ctx.getObject( i );
-                    int typ = ( col instanceof Timestamp ) ? 91 : ctx.columnType( i );
+                    int typ = DBMS_TYPES.to_dbms_type( ctx.columnType( i ) );
 
-                    Object[] atr =                      // column_t
+                    Object[] atr =
                     {
-                        new BigDecimal( typ ),          // typecode
-                        ( typ == 12 )   ? col : null,   // v2_column
-                        ( typ == 2 )    ? col : null,   // num_column
-                        ( typ == 91 )   ? col : null,   // date_column
-                        ( typ == 2005 ) ? col : null,   // clob_column
-                        null,                           // raw_column
-                        null,                           // raw_error
-                        null,                           // raw_length
-                        null,                           // ids_column
-                        null,                           // iym_column
-                        ( typ == 93 )   ? col : null,   // ts_column
-                        ( typ == -101 ) ? col : null,   // tstz_column
-                        ( typ == -102 ) ? col : null,   // tsltz_column
-                        new Integer( 0 ),               // cvl_offset
-                        null                            // cvl_length
+                        new BigDecimal( typ ),                                  // code
+                        ( typ == DBMS_TYPES.TYPECODE_VARCHAR2 ) ? col : null,   // val_varchar2
+                        ( typ == DBMS_TYPES.TYPECODE_NUMBER )   ? col : null,   // val_number
+                        ( typ == DBMS_TYPES.TYPECODE_DATE )     ? col : null,   // val_date
+                        ( typ == DBMS_TYPES.TYPECODE_CLOB )     ? col : null,   // val_clob
+                        ( typ == DBMS_TYPES.TYPECODE_BLOB )     ? col : null    // val_blob
                     };
 
                     //
@@ -983,7 +1037,7 @@ public class hive implements SQLData
                 }
 
                 //
-                ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "row_t", con );
+                ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "RECORDS", con );
 
                 ARRAY arr = new ARRAY( ary, con, cols );
                 out[ 0 ] = arr;
@@ -996,12 +1050,12 @@ public class hive implements SQLData
     }
 
     //
-    static public BigDecimal ODCITableClose( BigDecimal key )
+    static public BigDecimal ODCITableClose()
         throws SQLException, InvalidKeyException
     {
-        //System.out.println( "ODCITableClose called" );
+        System.out.println( "ODCITableClose called" );
 
-        hive_context ctx = (hive_context)ContextManager.clearContext( key.intValue() );
+        hive_context ctx = (hive_context)ContextManager.clearContext( key_.intValue() );
         ctx.clear();
 
         return SUCCESS;

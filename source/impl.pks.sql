@@ -38,26 +38,14 @@ create or replace package impl as
     function connection return session;
 
     --
-    procedure initialize( obj out nocopy anytype );
-    procedure finalize( obj in out nocopy anytype );
+    function sql_describe( stm in varchar2, atr out attributes ) return number as
+    language java
+    name 'oracle.mti.hive.SqlDesc( java.lang.String, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
 
     --
-    procedure attribute( obj   in out nocopy anytype,
-                         name  in            varchar2,
-                         code  in            pls_integer,
-                         prec  in            pls_integer,
-                         scale in            pls_integer,
-                         len   in            pls_integer,
-                         csid  in            pls_integer,
-                         csfrm in            pls_integer,
-                         attr  in            anytype default null);
-
-    --
-    procedure clone( trg in out nocopy anytype,
-                     src in            anytype );
-
---    --
---    procedure output( obj in anytype );
+    function sql_fetch( max in number, rws out records ) return number as
+    language java
+    name 'oracle.mti.hive.SqlFetch( java.math.BigDecimal, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
 
 end impl;
 /

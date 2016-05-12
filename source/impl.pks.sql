@@ -38,14 +38,24 @@ create or replace package impl as
     function connection return session;
 
     --
-    function sql_describe( stm in varchar2, atr out attributes ) return number as
-    language java
-    name 'oracle.mti.hive.SqlDesc( java.lang.String, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
+    function sql_describe( stm in  varchar2,
+                           atr out attributes ) return number;
 
     --
-    function sql_fetch( max in number, rws out records ) return number as
-    language java
-    name 'oracle.mti.hive.SqlFetch( java.math.BigDecimal, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
+    function sql_describe( key in  number,
+                           typ out anytype ) return number;
+
+    --
+    function sql_open( stm in  varchar2,
+                       key out number ) return number;
+
+    --
+    function sql_fetch( key in  number,
+                        num in  number,
+                        rws out records ) return number;
+
+    --
+    function sql_close( key in number ) return number;
 
 end impl;
 /

@@ -16,14 +16,18 @@ create or replace type hive_t as object
     key integer,
 
     --
-    static function ODCITableStart( ctx out hive_t,
-                                    stm in varchar2 ) return number as
-    language java
-    name 'oracle.mti.hive.ODCITableStart( oracle.sql.STRUCT[], java.lang.String ) return java.math.BigDecimal',
+    static function ODCITableDescribe( typ out anytype,
+                                       stm in  varchar2 ) return number,
+
+--  --
+--  static function ODCITableStart( ctx in out hive_t,
+--                                  stm in     varchar2 ) return number,
 
     --
-    static function ODCITableDescribe( typ out anytype,
-                                       stm in varchar2 ) return number,
+    static function ODCITableStart( ctx in out hive_t,
+                                    stm in     varchar2 ) return number as
+    language java
+    name 'oracle.mti.hive.SqlOpen( oracle.sql.STRUCT[], java.lang.String ) return java.math.BigDecimal',
 
     --
     member function ODCITableFetch( self in out hive_t,
@@ -31,15 +35,14 @@ create or replace type hive_t as object
                                     rws  out    anydataset ) return number,
 
     --
-    member function ODCITableClose( self in hive_t ) return number as
-    language java
-    name 'oracle.mti.hive.ODCITableClose() return java.math.BigDecimal'
+    member function ODCITableClose( self in hive_t ) return number
 );
 /
 
 --
 create or replace type body hive_t as
 
+    --
     static function ODCITableDescribe( typ out anytype,
                                        stm in  varchar2 ) return number is
 
@@ -104,68 +107,109 @@ create or replace type body hive_t as
 
     end;
 
+--  --
+--  static function ODCITableStart( ctx in out hive_t,
+--                                  stm in     varchar2 ) return number is
+--
+--      hid number;
+--      ret number;
+--
+--  begin
+--
+--      ret := impl.sql_open( stm, hid );
+--
+--      if ( ret = odciconst.success ) then
+--
+--          dbms_output.put_line( 'key; ' || hid );
+--          ctx.key := hid;
+--
+--      end if;
+--
+--      return ret;
+--
+--  end;
+
     --
     member function ODCITableFetch( self in out hive_t,
                                     num  in     number,
                                     rws  out    anydataset ) return number is
 
-        col anytype; 
-
-        --
         ret number  := odciconst.error;
         rec records := records();
+
+        ref anytype;
 
     begin
 
         --
-        ret := impl.sql_fetch( num, rec );
+        ret := impl.sql_describe( self.key, ref );
 
-        --
         if ( ret = odciconst.success ) then
 
-            if ( rec.count > 0 ) then
+            ret := impl.sql_fetch( self.key, num, rec );
 
-                anydataset.begincreate( dbms_types.typecode_object, col, rws );
-                rws.addinstance();
-                rws.piecewise();
+            --
+            if ( ret = odciconst.success ) then
 
-                --
-                for i in 1 .. rec.count loop
+                if ( rec.count > 0 ) then
+
+                    anydataset.begincreate( dbms_types.typecode_object, ref, rws );
+                    rws.addinstance();
+                    rws.piecewise();
 
                     --
-                    case ( rec( i ).code )
+                    for i in 1 .. rec.count loop
 
-                        when dbms_types.typecode_varchar2 then
-                            rws.setvarchar2( rec( i ).val_varchar2 );
+                        --
+                        case rec( i ).code
 
-                        when dbms_types.typecode_number then
-                            rws.setnumber( rec( i ).val_number );
+                            when dbms_types.typecode_varchar2 then
+                                rws.setvarchar2( rec( i ).val_varchar2 );
 
-                        when dbms_types.typecode_date then
-                            rws.setdate( rec( i ).val_date );
+                            when dbms_types.typecode_number then
+                                rws.setnumber( rec( i ).val_number );
 
-                        when dbms_types.typecode_clob then
-                            rws.setclob( rec( i ).val_clob );
+                            when dbms_types.typecode_date then
+                                rws.setdate( rec( i ).val_date );
 
-                        when dbms_types.typecode_blob then
-                            rws.setblob( rec( i ).val_blob );
+                            when dbms_types.typecode_clob then
+                                rws.setclob( rec( i ).val_clob );
 
-                    end case;
+                            when dbms_types.typecode_blob then
+                                rws.setblob( rec( i ).val_blob );
 
-                end loop;
+                            else
+                                raise_application_error( -20010, 'Record type code [' 
+                                                               || to_char( rec( i ).code )
+                                                               ||' ] not supported for column index ['
+                                                               || to_char( i ) || ']' );
 
-                --
-                rws.endcreate();
+                        end case;
 
-            else
+                    end loop;
 
-                ret := odciconst.error;
+                    --
+                    rws.endcreate();
+
+                else
+
+                    ret := odciconst.error;
+
+                end if;
 
             end if;
 
         end if;
 
         return ret;
+
+    end;
+
+    --
+    member function ODCITableClose( self in hive_t ) return number is
+    begin
+
+        return impl.sql_close( self.key );
 
     end;
 

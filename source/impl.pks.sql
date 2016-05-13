@@ -38,8 +38,11 @@ create or replace package impl as
     function connection return session;
 
     --
+    function sql_describe( stm in varchar2 ) return anytype;
+
+    --
     function sql_describe( stm in  varchar2,
-                           atr out attributes ) return number;
+                           typ out anytype ) return number;
 
     --
     function sql_describe( key in  number,

@@ -651,7 +651,6 @@ public class hive_context
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
 
-        System.out.println( "hive_context execute" );
         return setResultSet();
     }
 
@@ -696,8 +695,6 @@ public class hive_context
     //
     private boolean setResultSet() throws SQLException, hive_exception
     {
-        System.out.println( "hive_context setResultSet" );
-
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
 
@@ -1103,7 +1100,7 @@ public class hive implements SQLData
     static public BigDecimal SqlOpen( String stmt )
         throws SQLException, hive_exception
     {
-        System.out.println( "SqlOpen called" );
+        System.out.println( "SqlOpen called [String]: " + stmt );
 
         if ( manager_ == null )
         {
@@ -1114,7 +1111,7 @@ public class hive implements SQLData
         hive_context ctx = new hive_context( stmt );
         key_ = manager_.createContext( ctx );
 
-        System.out.println( "SqlOpen key: " + key_ );
+        System.out.println( "SqlOpen returning key: " + key_ );
 
         return key_;
     }
@@ -1123,7 +1120,7 @@ public class hive implements SQLData
     static public BigDecimal SqlOpen( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
-        System.out.println( "SqlOpen called" );
+        System.out.println( "SqlOpen called [STRUCT]: " + sctx );
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         //

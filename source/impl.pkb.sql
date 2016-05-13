@@ -41,6 +41,64 @@ create or replace package body impl as
     name 'oracle.mti.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
+    procedure desc_( att in attributes, typ out anytype ) is
+
+        --
+        col anytype; 
+
+    begin
+
+        if ( att.count > 0 ) then
+
+            -- --
+            -- debug_attributes( 'desc_', att ); /* *** debug *** */
+            -- --
+
+            anytype.begincreate( dbms_types.typecode_object, col );
+
+            --
+            for i in 1 .. att.count loop
+
+                begin
+
+                --
+                col.addattr( att( i ).name,
+                             case when att( i ).code  = -1 then null else att( i ).code  end,
+                             case when att( i ).prec  = -1 then null else att( i ).prec  end,
+                             case when att( i ).scale = -1 then null else att( i ).scale end,
+                             case when att( i ).len   = -1 then null else att( i ).len   end,
+                             case when att( i ).csid  = -1 then null else att( i ).csid  end,
+                             case when att( i ).csfrm = -1 then null else att( i ).csfrm end );
+
+                exception
+                    when others then
+                        raise_application_error( -20002, 'WTF!' );
+
+                end;
+
+            end loop;
+
+            --
+            col.endcreate;
+
+            --
+            debug_info( 'desc_: col', col ); /* *** debug *** */
+            --
+
+            --
+            anytype.begincreate( dbms_types.typecode_table, typ );
+            typ.setinfo( null, null, null, null, null, col, dbms_types.typecode_object, 0 );
+            typ.endcreate();
+
+            --
+            debug_info( 'desc_: typ', typ ); /* *** debug *** */
+            --
+
+        end if;
+
+    end desc_;
+
+    --
     function param_( n in varchar2 ) return varchar2 is
 
         v varchar2( 4000 );
@@ -183,20 +241,57 @@ create or replace package body impl as
     end connection;
 
     --
-    function sql_describe( stm in  varchar2,
-                           atr out attributes ) return number is
+    function sql_describe( stm in varchar2 ) return anytype is
+
+        ret number   := odciconst.error;
+        typ anytype;
+
     begin
 
-        return describe_( stm, atr );
+        ret := sql_describe( stm, typ );
+
+        if ( ret = odciconst.success ) then
+
+            return typ;
+
+        end if;
+
+        return null;
+
+    end sql_describe;
+
+    --
+    function sql_describe( stm in  varchar2,
+                           typ out anytype ) return number is
+        --
+        ret number     := odciconst.error;
+        att attributes := attributes();
+
+    begin
+
+        ret := describe_( stm, att );
+
+        if ( ret = odciconst.success ) then
+
+            if ( att.count > 0 ) then
+
+                desc_( att, typ );
+
+            else
+
+                ret := odciconst.error;
+
+            end if;
+
+        end if;
+
+        return ret;
 
     end sql_describe;
 
     --
     function sql_describe( key in  number,
                            typ out anytype ) return number is
-
-        --
-        col anytype; 
 
         --
         ret number     := odciconst.error;
@@ -210,37 +305,12 @@ create or replace package body impl as
 
             if ( att.count > 0 ) then
 
-                anytype.begincreate( dbms_types.typecode_object, col );
+                desc_( att, typ );
 
                 --
-                for i in 1 .. att.count loop
-
-                    begin
-
-                    --
-                    col.addattr( att( i ).name,
-                                 case when att( i ).code  = -1 then null else att( i ).code  end,
-                                 case when att( i ).prec  = -1 then null else att( i ).prec  end,
-                                 case when att( i ).scale = -1 then null else att( i ).scale end,
-                                 case when att( i ).len   = -1 then null else att( i ).len   end,
-                                 case when att( i ).csid  = -1 then null else att( i ).csid  end,
-                                 case when att( i ).csfrm = -1 then null else att( i ).csfrm end );
-
-                    exception
-                        when others then
-                            raise_application_error( -20002, 'WTF!' );
-
-                    end;
-
-                end loop;
-
+                debug_attributes( 'sql_describe', att ); /* *** debug *** */
+                debug_info( 'sql_describe: typ', typ );       /* *** debug *** */
                 --
-                col.endcreate;
-
-                --
-                anytype.begincreate( dbms_types.typecode_table, typ );
-                typ.setinfo( null, null, null, null, null, col, dbms_types.typecode_object, 0 );
-                typ.endcreate();
 
             else
 

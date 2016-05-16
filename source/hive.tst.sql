@@ -1,3 +1,5 @@
+set linesize 160
+set pagesize 50000
 
 alter session set current_schema = hive;
 
@@ -11,15 +13,19 @@ exec debug_clear;
 -- select * from table( hive_q( 'select * from movies' ) );
 -- select * from table( hive_q( 'select * from cust' ) );
 
-select * from table( hive_q( 'select cust_id, last_name, first_name from cust' ) );
+-- select * from table( hive_q( 'select cust_id, last_name, first_name from cust' ) );
 -- select * from table( hive_q( 'select last_name, first_name from cust' ) );
 
--- col nam for a30
--- col cod for 9990
--- col pre for 9990
--- col sca for 9990
--- col len for 9990
--- col csi for 9990
--- col csf for 9990
--- --
--- select * from hive.test$;
+col cust_id    for 9999990
+col last_name  for a30
+col first_name for a30
+select * from table( hive_q( 'select cust_id, last_name, first_name from cust' ) );
+
+-- create table hive.cust as
+-- select * from table( hive_q( 'select cust_id, last_name, first_name from cust' ) );
+-- 
+-- select * from hive.cust;
+
+
+-- @@hive.dbx.sql
+exit

@@ -42,6 +42,7 @@ create or replace type data as object
     val_varchar2  varchar2( 32767 ),
     val_number    number,
     val_date      date,
+    val_timestamp timestamp,
     val_clob      clob,
     val_blob      blob
     -- other data type not yet supported

@@ -38,6 +38,9 @@ create or replace package impl as
     function connection return session;
 
     --
+    function sql_key( stm in varchar2 ) return number;
+
+    --
     function sql_describe( stm in varchar2 ) return anytype;
 
     --

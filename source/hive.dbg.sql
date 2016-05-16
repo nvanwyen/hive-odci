@@ -14,10 +14,20 @@ prompt
 alter session set current_schema = hive;
 
 --
+drop table dbg$log$;
 drop table dbg$record$;
 drop table dbg$attribute$;
 drop table dbg$info$elem$;
 drop table dbg$info$;
+
+--
+create table dbg$log$
+(
+    stamp   timestamp,
+    txt     varchar2( 4000 ),
+    msg     varchar2( 4000 )
+)
+/
 
 --
 create table dbg$record$
@@ -30,6 +40,7 @@ create table dbg$record$
     val_varchar2  varchar2( 4000 ),
     val_number    number,
     val_date      date,
+    val_timestamp timestamp,
     val_clob      clob,
     val_blob      blob
 )
@@ -100,6 +111,37 @@ end debug_clear;
 show errors
 
 --
+create or replace procedure debug_log( txt in varchar2,
+                                       msg in varchar2 ) is
+
+    pragma autonomous_transaction;
+
+begin
+
+    insert into dbg$log$ a
+    (
+        a.stamp,
+        a.txt,
+        a.msg
+    )
+    values
+    (
+        current_timestamp,
+        txt,
+        msg
+    );
+
+    commit;
+
+    exception
+        when others then rollback;
+
+end debug_log;
+/
+
+show errors
+
+--
 create or replace procedure debug_records( txt in varchar2,
                                            key in number,
                                            num in number,
@@ -123,6 +165,7 @@ begin
                 r.val_varchar2,
                 r.val_number,
                 r.val_date,
+                r.val_timestamp,
                 r.val_clob,
                 r.val_blob
             )
@@ -136,6 +179,7 @@ begin
                 rec( i ).val_varchar2,
                 rec( i ).val_number,
                 rec( i ).val_date,
+                rec( i ).val_timestamp,
                 rec( i ).val_clob,
                 rec( i ).val_blob
             );

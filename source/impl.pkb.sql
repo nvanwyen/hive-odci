@@ -16,6 +16,11 @@ create or replace package body impl as
     connect_ session;
 
     --
+    function key_( stm in varchar2 ) return number as
+    language java
+    name 'oracle.mti.hive.SqlKey( java.lang.String ) return java.math.BigDecimal';
+
+    --
     function describe_( stm in varchar2, atr out attributes ) return number as
     language java
     name 'oracle.mti.hive.SqlDesc( java.lang.String, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
@@ -51,15 +56,14 @@ create or replace package body impl as
         if ( att.count > 0 ) then
 
             -- --
-            -- debug_attributes( 'desc_', att ); /* *** debug *** */
+            -- debug_attributes( 'desc_: att', att );
             -- --
+            
 
             anytype.begincreate( dbms_types.typecode_object, col );
 
             --
             for i in 1 .. att.count loop
-
-                begin
 
                 --
                 col.addattr( att( i ).name,
@@ -70,29 +74,23 @@ create or replace package body impl as
                              case when att( i ).csid  = -1 then null else att( i ).csid  end,
                              case when att( i ).csfrm = -1 then null else att( i ).csfrm end );
 
-                exception
-                    when others then
-                        raise_application_error( -20002, 'WTF!' );
-
-                end;
-
             end loop;
 
             --
             col.endcreate;
 
-            --
-            debug_info( 'desc_: col', col ); /* *** debug *** */
-            --
+            -- --
+            -- debug_info( 'desc_: col', col );
+            -- --
 
             --
             anytype.begincreate( dbms_types.typecode_table, typ );
             typ.setinfo( null, null, null, null, null, col, dbms_types.typecode_object, 0 );
             typ.endcreate();
 
-            --
-            debug_info( 'desc_: typ', typ ); /* *** debug *** */
-            --
+            -- --
+            -- debug_info( 'desc_: typ', typ );
+            -- --
 
         end if;
 
@@ -241,6 +239,14 @@ create or replace package body impl as
     end connection;
 
     --
+    function sql_key( stm in varchar2 ) return number is
+    begin
+
+        return key_( stm );
+
+    end sql_key;
+
+    --
     function sql_describe( stm in varchar2 ) return anytype is
 
         ret number   := odciconst.error;
@@ -307,10 +313,10 @@ create or replace package body impl as
 
                 desc_( att, typ );
 
-                --
-                debug_attributes( 'sql_describe', att ); /* *** debug *** */
-                debug_info( 'sql_describe: typ', typ );       /* *** debug *** */
-                --
+                -- --
+                -- debug_attributes( 'sql_describe: att', att );
+                -- debug_info( 'sql_describe: typ', typ );
+                -- --
 
             else
 

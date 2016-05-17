@@ -13,12 +13,7 @@ alter session set current_schema = hive;
 create or replace package body impl as
 
     --
-    connect_ session;
-
-    --
-    function key_( stm in varchar2 ) return number as
-    language java
-    name 'oracle.mti.hive.SqlKey( java.lang.String ) return java.math.BigDecimal';
+    session_ connection := connection( null, null, null, null );
 
     --
     function describe_( stm in varchar2, atr out attributes ) return number as
@@ -44,6 +39,16 @@ create or replace package body impl as
     function close_( key in number ) return number as
     language java
     name 'oracle.mti.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
+
+    --
+    function con_( con in connection ) return number as
+    language java
+    name 'oracle.mti.hive.SqlConnection( oracle.sql.STRUCT ) return java.math.BigDecimal';
+
+    --
+    function bnd_( bnd in binds ) return number as
+    language java
+    name 'oracle.mti.hive.SqlBinding( oracle.sql.ARRAY ) return java.math.BigDecimal';
 
     --
     procedure desc_( att in attributes, typ out anytype ) is
@@ -119,49 +124,49 @@ create or replace package body impl as
     end param_;
 
     --
-    function connection_ return session is
+    function connection_ return connection is
     begin
 
-        return connect_;
+        return session_;
 
     end connection_;
 
     --
-    procedure connection_( con in session ) is
+    procedure connection_( con in connection ) is
     begin
 
         --
-        connect_.host := case when ( con.host is null )
-                              then case when ( connect_.host is null )
+        session_.host := case when ( con.host is null )
+                              then case when ( session_.host is null )
                                         then param_( 'default_hive_host' )
-                                        else connect_.host
+                                        else session_.host
                                    end
                               else con.host
                          end;
 
         --
-        connect_.port := case when ( con.port is null )
-                              then case when ( connect_.port is null )
+        session_.port := case when ( con.port is null )
+                              then case when ( session_.port is null )
                                         then param_( 'default_hive_port' )
-                                        else connect_.port
+                                        else session_.port
                                    end
                               else con.port
                          end;
 
         --
-        connect_.user := case when ( con.user is null )
-                              then case when ( connect_.user is null )
+        session_.name := case when ( con.name is null )
+                              then case when ( session_.name is null )
                                         then param_( 'default_hive_user' )
-                                        else connect_.user
+                                        else session_.name
                                    end
-                              else con.user
+                              else con.name
                          end;
 
         --
-        connect_.pass := case when ( con.pass is null )
-                              then case when ( connect_.pass is null )
+        session_.pass := case when ( con.pass is null )
+                              then case when ( session_.pass is null )
                                         then param_( 'default_hive_pass' )
-                                        else connect_.pass
+                                        else session_.pass
                                    end
                               else con.pass
                          end;
@@ -169,27 +174,27 @@ create or replace package body impl as
     end connection_;
 
     -- 
-    procedure connection( usr in varchar2,
-                          pwd in varchar2 ) is
+    procedure session( usr in varchar2,
+                       pwd in varchar2 ) is
 
-        con session := connect_;
+        con connection := session_;
 
     begin
 
-        con.user := usr;
+        con.name := usr;
         con.pass := pwd;
 
-        connection( con );
+        session( con );
 
-    end connection;
+    end session;
 
     -- 
-    procedure connection( hst in varchar2,
-                          prt in service,
-                          usr in varchar2,
-                          pwd in varchar2 ) is
+    procedure session( hst in varchar2,
+                       prt in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2 ) is
 
-        con session := connect_;
+        con connection := session_;
 
     begin
 
@@ -206,7 +211,7 @@ create or replace package body impl as
                     end;
 
         --
-        con.user := case when ( usr is null )
+        con.name := case when ( usr is null )
                          then param_( 'default_hive_user' )
                          else usr
                     end;
@@ -218,33 +223,25 @@ create or replace package body impl as
                     end;
 
         --
-        connection( con );
+        session( con );
 
-    end connection;
+    end session;
 
     --
-    procedure connection( con in session ) is
+    procedure session( con in connection ) is
     begin
 
         connection_( con );
 
-    end connection;
+    end session;
 
     --
-    function connection return session is
+    function session return connection is
     begin
 
         return connection_;
 
-    end connection;
-
-    --
-    function sql_key( stm in varchar2 ) return number is
-    begin
-
-        return key_( stm );
-
-    end sql_key;
+    end session;
 
     --
     function sql_describe( stm in varchar2 ) return anytype is
@@ -356,6 +353,54 @@ create or replace package body impl as
         return close_( key );
 
     end sql_close;
+
+--    /* ************************************** TESTING ************************************** */
+--
+--    --
+--    procedure test_connection is
+--
+--        r number;
+--
+--    begin
+--
+--        session( 'host-x', '1234', 'jdoe', 'password' );
+--        r := con_( connection_ );
+--
+--        /*
+--            set serveroutput on
+--            exec dbms_java.set_output( 1000000 );
+--            exec impl.test_connection;
+--        */
+--
+--    end test_connection;
+--
+--    --
+--    procedure test_binding is
+--
+--        b binds := binds();
+--        r number;
+--
+--    begin
+--
+--        b.extend;
+--        b( b.count ) := bind( 'A', 1, 1 );
+--
+--        b.extend;
+--        b( b.count ) := bind( 'B', 2, 2 );
+--
+--        b.extend;
+--        b( b.count ) := bind( 'C', 3, 3 );
+--
+--        --r := bnd_( b );
+--        r := bnd_( null );
+--
+--        /*
+--            set serveroutput on
+--            exec dbms_java.set_output( 1000000 );
+--            exec impl.test_binding;
+--        */
+--
+--    end test_binding;
 
 end impl;
 /

@@ -12,33 +12,21 @@ alter session set current_schema = hive;
 --
 create or replace package impl as
 
-    -- Internet Corporation for Assigned Names and Numbers (service)
-    subtype service is binary_integer range 0 .. 65536; -- 16 bit (2^16)
+    -- 
+    procedure session( usr in varchar2,
+                       pwd in varchar2 );
 
     -- 
-    type session is record ( host varchar2( 256 ),
-                             port service,
-                             user varchar2( 256 ),
-                             pass varchar2( 256 ) );
-
-    -- 
-    procedure connection( usr in varchar2,
-                          pwd in varchar2 );
-
-    -- 
-    procedure connection( hst in varchar2,
-                          prt in service,
-                          usr in varchar2,
-                          pwd in varchar2 );
+    procedure session( hst in varchar2,
+                       prt in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2 );
 
     --
-    procedure connection( con in session );
+    procedure session( con in connection );
 
     --
-    function connection return session;
-
-    --
-    function sql_key( stm in varchar2 ) return number;
+    function session return connection;
 
     --
     function sql_describe( stm in varchar2 ) return anytype;
@@ -62,6 +50,10 @@ create or replace package impl as
 
     --
     function sql_close( key in number ) return number;
+
+--    --
+--    procedure test_connection;
+--    procedure test_binding;
 
 end impl;
 /

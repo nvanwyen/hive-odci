@@ -23,6 +23,7 @@ create table filter$
     key   varchar2( 64 )    not null,
     seq   number            not null,
     type  number            not null,
+    scope number            not null,
     value varchar2( 4000 )      null
 )
 /

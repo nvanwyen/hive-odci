@@ -247,12 +247,7 @@ create or replace type body hive_t as
     member function ODCITableClose( self in hive_t ) return number is
     begin
 
-        -- --
-        -- debug_log( 'ODCITableClose', 'called' );
-        -- --
-
-        -- return impl.sql_close( self.key );
-        return odciconst.success;
+        return impl.sql_close( self.key );
 
     end;
 

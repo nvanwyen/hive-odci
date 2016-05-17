@@ -60,5 +60,20 @@ create or replace type records as table of data;
 show errors
 
 --
+drop type connection;
+
+-- 
+create or replace type connection as object
+(
+    host varchar2( 256 ),
+    port varchar2( 256 ),
+    name varchar2( 256 ),
+    pass varchar2( 256 ) 
+);
+/
+
+show errors
+
+--
 -- ... done!
 --

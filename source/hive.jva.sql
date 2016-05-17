@@ -29,6 +29,22 @@ import oracle.ODCI.*;
 import oracle.CartridgeServices.*;
 
 //
+public class debug
+{
+    //
+    static void log( String msg )
+    {
+        // log to db
+    }
+
+    //
+    static void output( String msg )
+    {
+        System.out.println( msg );
+    }
+};
+
+//
 public class DBMS_TYPES
 {
     /*
@@ -318,6 +334,242 @@ public class hive_parameter
     }
 };
 
+//
+public class hive_session
+{
+    String sql_;
+
+    public String host;
+    public String port;
+    public String name;
+    public String pass;
+
+    //
+    public hive_session()
+    {
+        host = "";
+        port = "";
+        name = "";
+        pass = "";
+    }
+
+    //
+    public hive_session( String h, String p, String n, String w )
+    {
+        host = h;
+        port = p;
+        name = n;
+        pass = w;
+    }
+
+    //
+    public hive_session( oracle.sql.STRUCT obj )
+        throws SQLException
+    {
+        if ( obj != null )
+        {
+            oracle.sql.Datum[] atr = obj.getOracleAttributes();
+
+            if ( atr.length > 0 )
+            {
+                if ( atr[ 0 ] != null )
+                    host = atr[ 0 ].toString();
+                else
+                    host = "";
+            }
+            else
+                host = "";
+
+            if ( atr.length > 1 )
+            {
+                if ( atr[ 1 ] != null )
+                    port = atr[ 1 ].toString();
+                else
+                    port = "";
+            }
+            else
+                port = "";
+
+            if ( atr.length > 2 )
+            {
+                if ( atr[ 2 ] != null )
+                    name = atr[ 2 ].toString();
+                else
+                    name = "";
+            }
+            else
+                name = "";
+
+            if ( atr.length > 3 )
+            {
+                if ( atr[ 3 ] != null )
+                    pass = atr[ 3 ].toString();
+                else
+                    pass = "";
+            }
+            else
+                pass = "";
+        }
+    }
+
+    //
+    public String toString()
+    {
+        String str = "";
+
+        str += "host: " + host + "\n";
+        str += "port: " + port + "\n";
+        str += "name: " + name + "\n";
+        str += "pass: " + pass + "\n";
+
+        return str;
+    }
+};
+
+//
+public class hive_bind
+{
+    //
+    public static final long UNKNOWN        =  0;
+    //
+    public static final long REF_IN         =  1;
+    public static final long REF_OUT        =  2;
+    public static final long REF_INOUT      =  3;
+    //
+    public static final long TYPE_BOOL      =  1;
+    public static final long TYPE_DATE      =  2;
+    public static final long TYPE_FLOAT     =  3;
+    public static final long TYPE_INT       =  4;
+    public static final long TYPE_LONG      =  5;
+    public static final long TYPE_NULL      =  6;
+    public static final long TYPE_ROWID     =  7;
+    public static final long TYPE_SHORT     =  8;
+    public static final long TYPE_STRING    =  9;
+    public static final long TYPE_TIME      = 10;
+    public static final long TYPE_TIMESTAMP = 11;
+    public static final long TYPE_URL       = 12;
+
+    //
+    public String value;
+    public long   type;
+    public long   scope;
+
+    //
+    public hive_bind()
+    {
+        value = "";
+        type  = UNKNOWN;
+        scope = UNKNOWN;
+    }
+
+    //
+    public hive_bind( String v, long t, long s )
+    {
+        value = v;
+        type  = t;
+        scope = s;
+    }
+
+    //
+    public hive_bind( oracle.sql.STRUCT obj )
+        throws SQLException
+    {
+        if ( obj != null )
+        {
+            oracle.sql.Datum[] atr = obj.getOracleAttributes();
+
+            if ( atr.length > 0 )
+            {
+                if ( atr[ 0 ] != null )
+                    value = atr[ 0 ].toString();
+                else
+                    value = "";
+            }
+            else
+                value = "";
+
+            if ( atr.length > 1 )
+            {
+                if ( atr[ 1 ] != null )
+                    type = atr[ 1 ].longValue();
+                else
+                    type = UNKNOWN;
+            }
+            else
+                type = UNKNOWN;
+
+            if ( atr.length > 2 )
+            {
+                if ( atr[ 2 ] != null )
+                    scope = atr[ 2 ].longValue();
+                else
+                    scope = UNKNOWN;
+            }
+            else
+                scope = UNKNOWN;
+        }
+    }
+
+    //
+    public String toString()
+    {
+        String str = "";
+
+        str += "value: " + value + "\n";
+        str += "type:  " + type  + "\n";
+        str += "scope: " + scope + "\n";
+
+        return str;
+    }
+};
+
+//
+public class hive_bindings
+{
+    public ArrayList<hive_bind> binds;
+
+    //
+    public hive_bindings()
+    {
+        binds = new ArrayList<hive_bind>();
+    }
+
+    //
+    public hive_bindings( ArrayList<hive_bind> b )
+    {
+        binds = b;
+    }
+
+    //
+    public hive_bindings( oracle.sql.ARRAY obj )
+        throws SQLException
+    {
+        binds = new ArrayList<hive_bind>();
+
+        if ( obj != null )
+        { 
+            Datum[] dat = obj.getOracleArray();
+
+            for ( int i = 0; i < dat.length; ++i )
+            {
+                if ( dat[ i ] != null )
+                    binds.add( new hive_bind( (STRUCT)dat[ i ] ) );
+            }
+        }
+    }
+
+    //
+    public String toString()
+    {
+        String str = "";
+
+        for ( hive_bind bnd : binds )
+            str += bnd.toString();
+
+        return str;
+    }
+};
+
 // stored context records
 public class hive_connection
 {
@@ -330,10 +582,7 @@ public class hive_connection
     String url_ = "jdbc:datadirect:hive://%host%:%port%;User=%user%;Password=%pass%";
 
     //
-    private String host_;
-    private String port_;
-    private String user_;
-    private String pass_;
+    public hive_session session;
 
     //
     Connection conn_;
@@ -341,26 +590,33 @@ public class hive_connection
     //
     public hive_connection()
     {
-        host_ = "";
-        port_ = "";
-        user_ = "";
-        pass_ = "";
+        session = new hive_session();
+    }
+
+    //
+    public hive_connection( hive_session con )
+    {
+        session = con;
     }
 
     //
     public hive_connection( String host, String port )
     {
-        host_ = host;
-        port_ = port;
+        session = new hive_session();
+
+        session.host = host;
+        session.port = port;
     }
 
     //
-    public hive_connection( String host, String port, String user, String pass )
+    public hive_connection( String host, String port, String name, String pass )
     {
-        host_ = host;
-        port_ = port;
-        user_ = user;
-        pass_ = pass;
+        session = new hive_session();
+
+        session.host = host;
+        session.port = port;
+        session.name = name;
+        session.pass = pass;
     }
 
     //
@@ -383,73 +639,77 @@ public class hive_connection
     }
 
     //
-    public void setHost( String val ) { host_ = val; }
-    public void setPort( String val ) { port_ = val; }
-    public void setUser( String val ) { user_ = val; }
-    public void setPass( String val ) { pass_ = val; }
+    public void setSession( hive_session val ) { session = val; }
+    public hive_session getSession() { return session; }
 
     //
-    public String getHost() { return host_; }
-    public String getPort() { return port_; }
-    public String getUser() { return user_; }
-    public String getPass() { return pass_; }
+    public void setHost( String val ) { session.host = val; }
+    public void setPort( String val ) { session.port = val; }
+    public void setUser( String val ) { session.name = val; }
+    public void setPass( String val ) { session.pass = val; }
+
+    //
+    public String getHost() { return session.host; }
+    public String getPort() { return session.port; }
+    public String getUser() { return session.name; }
+    public String getPass() { return session.pass; }
 
     //
     public String getUrl() throws hive_exception
     {
-        if ( ( host_.length() > 0 )
-          && ( port_.length() > 0 )
-          && ( user_.length() > 0 )
-          && ( pass_.length() > 0 ) )
+        if ( ( session.host.length() > 0 )
+          && ( session.port.length() > 0 )
+          && ( session.name.length() > 0 )
+          && ( session.pass.length() > 0 ) )
         {
             if ( url_.indexOf( '%' ) >= 0 )
             {
-                url_.replace( "%h%", host_ );
-                url_.replace( "%p%", port_ );
-                url_.replace( "%u%", user_ );
-                url_.replace( "%w%", pass_ );
+                url_.replace( "%h%", session.host );
+                url_.replace( "%p%", session.port );
+                url_.replace( "%u%", session.name );
+                url_.replace( "%w%", session.pass );
             }
         }
         else
         {
-            if ( host_.length() == 0 )
+            if ( session.host.length() == 0 )
                 throw new hive_exception( "Missing host in connection data" );
 
-            if ( port_.length() == 0 )
+            if ( session.port.length() == 0 )
                 throw new hive_exception( "Missing port in connection data" );
 
-            if ( user_.length() == 0 )
+            if ( session.name.length() == 0 )
                 throw new hive_exception( "Missing user in connection data" );
 
-            if ( pass_.length() == 0 )
+            if ( session.pass.length() == 0 )
                 throw new hive_exception( "Missing password in connection data" );
         }
 
         //
         url_ = "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1";
-        //System.out.println( url_ );
+        //debug.output( url_ );
         return url_;
     }
 
     //
     public boolean loadConnection()
     {
-        if ( host_.length() == 0 )
-            host_ = "orabdc.local"; // param_.value( "default_hive_host" );
+        if ( session.host.length() == 0 )
+            session.host = "orabdc.local"; // param_.value( "default_hive_host" );
 
-        if ( port_.length() == 0 )
-            port_ = "10000"; // param_.value( "default_hive_port" );
+        if ( session.port.length() == 0 )
+            session.port = "10000"; // param_.value( "default_hive_port" );
 
-        if ( user_.length() == 0 )
-            user_ = "oracle"; // param_.value( "default_hive_user" );
+        if ( session.name.length() == 0 )
+            session.name = "oracle"; // param_.value( "default_hive_user" );
 
-        if ( pass_.length() == 0 )
-            pass_ = "welcome1"; // param_.value( "default_hive_pass" );
+        if ( session.pass.length() == 0 )
+            session.pass = "welcome1"; // param_.value( "default_hive_pass" );
 
-        return ( ( host_.length() > 0 )
-              && ( port_.length() > 0 )
-              && ( user_.length() > 0 )
-              && ( pass_.length() > 0 ) );
+        return ( ( session.host.length() > 0 )
+              && ( session.port.length() > 0 )
+              && ( session.name.length() > 0 )
+              && ( session.pass.length() > 0 ) );
     }
 
     //
@@ -492,11 +752,14 @@ public class hive_context
     private ResultSet         rst_;
     private ResultSetMetaData rmd_;
 
+    //
+    private long rec_;
+
     // ctor
     //
     public hive_context( String sql ) throws SQLException, hive_exception
     {
-        //System.out.println( "hive_context ctor: " + sql );
+        //debug.output( "hive_context ctor: " + sql );
         sql_ = sql;
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
@@ -507,19 +770,21 @@ public class hive_context
 
         hcn_.loadDriver();
         hcn_.createConnection();
+
+        rec_ = 0;
     }
 
     //
     public boolean ready()
     {
-        //System.out.println( "hive_context ready: " + ( ! ( rst_ == null ) ) );
+        //debug.output( "hive_context ready: " + ( ! ( rst_ == null ) ) );
         return ( ! ( rst_ == null ) );
     }
 
     //
     public void clear()
     {
-        //System.out.println( "hive_context clear" );
+        //debug.output( "hive_context clear" );
         hcn_ = null;
         sql_ = null;
         stm_ = null;
@@ -564,7 +829,7 @@ public class hive_context
             rmd_ = rst_.getMetaData();
         }
 
-        //System.out.println( "hive_context columnCount rmd_: " + rmd_ );
+        //debug.output( "hive_context columnCount rmd_: " + rmd_ );
         return rmd_.getColumnCount();
     }
 
@@ -579,7 +844,7 @@ public class hive_context
             rmd_ = rst_.getMetaData();
         }
 
-        //System.out.println( "hive_context columnType rmd_: " + rmd_ );
+        //debug.output( "hive_context columnType rmd_: " + rmd_ );
         return rmd_.getColumnType( i );
     }
 
@@ -587,8 +852,15 @@ public class hive_context
     //
     public boolean next() throws SQLException
     {
-        //System.out.println( "hive_context next rst_: " + rst_ );
+        ++rec_;
+
+        //debug.output( "hive_context next rst_: " + rst_ );
         return rst_.next();
+    }
+
+    public long fetched()
+    {
+        return rec_;
     }
 
     //
@@ -709,7 +981,7 @@ public class hive_context
     //
     public boolean execute() throws SQLException, hive_exception
     {
-        //System.out.println( "hive_context execute" );
+        //debug.output( "hive_context execute" );
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
@@ -751,7 +1023,7 @@ public class hive_context
         if ( stm_ == null )
             stm_ = hcn_.getConnection().prepareStatement( sql_ );
 
-        //System.out.println( "hive_context setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
+        //debug.output( "hive_context setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
         return ( ! ( stm_ == null ) );
     }
 
@@ -767,7 +1039,7 @@ public class hive_context
                 rst_ = stm_.executeQuery();
         }
 
-        //System.out.println( "hive_context setResultSet returns: " + ( ! ( rst_ == null ) ) );
+        //debug.output( "hive_context setResultSet returns: " + ( ! ( rst_ == null ) ) );
         return ( ! ( rst_ == null ) );
     }
 
@@ -783,7 +1055,7 @@ public class hive_context
                 rmd_ = rst_.getMetaData();
         }
 
-        //System.out.println( "hive_context setResultSetMetaData returns: " + ( ! ( rmd_ == null ) ) );
+        //debug.output( "hive_context setResultSetMetaData returns: " + ( ! ( rmd_ == null ) ) );
         return ( ! ( rmd_ == null ) );
     }
 
@@ -869,14 +1141,14 @@ public class hive_manager
             key = nextKey();
             map_.put( key, ctx );
 
-            //System.out.println( "hive_manager new map size: " + map_.size() );
+            //debug.output( "hive_manager new map size: " + map_.size() );
         }
         else
         {
-            //System.out.println( "hive_manager found existing context" );
+            //debug.output( "hive_manager found existing context" );
         }
 
-        //System.out.println( "hive_manager createContext return: " + key );
+        //debug.output( "hive_manager createContext return: " + key );
         return key;
     }
 
@@ -970,7 +1242,7 @@ public class hive implements SQLData
     public String getSQLTypeName()
         throws SQLException 
     {
-        //System.out.println( "getSQLTypeName called" );
+        //debug.output( "getSQLTypeName called" );
         return sql_;
     }
 
@@ -978,7 +1250,7 @@ public class hive implements SQLData
     public void readSQL( SQLInput stream, String type )
         throws SQLException 
     {
-        //System.out.println( "readSQL called" );
+        //debug.output( "readSQL called" );
         sql_ = type;
         key_ = stream.readBigDecimal();
     }
@@ -987,28 +1259,15 @@ public class hive implements SQLData
     public void writeSQL( SQLOutput stream )
         throws SQLException 
     {
-        //System.out.println( "writeSQL called" );
+        //debug.output( "writeSQL called" );
         stream.writeBigDecimal( key_ );
-    }
-
-    //
-    static public BigDecimal SqlKey( String stmt )
-        throws SQLException, hive_exception
-    {
-        BigDecimal key = new BigDecimal( 0 );
-        //System.out.println( "SqlDesc called" );
-
-        //
-        key = SqlOpen( stmt );
-
-        return key;
     }
 
     //
     static public BigDecimal SqlDesc( String stmt, oracle.sql.ARRAY[] attr )
         throws SQLException, hive_exception
     {
-        //System.out.println( "SqlDesc called" );
+        //debug.output( "SqlDesc called" );
 
         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = new hive_context( stmt );
@@ -1019,7 +1278,7 @@ public class hive implements SQLData
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         ResultSetMetaData rmd = ctx.descSql();
-        //System.out.println( "SqlDesc: columns: " + rmd.getColumnCount() );
+        //debug.output( "SqlDesc: columns: " + rmd.getColumnCount() );
 
         if ( rmd.getColumnCount() > 0 )
         {
@@ -1122,7 +1381,7 @@ public class hive implements SQLData
     static public BigDecimal SqlDesc( BigDecimal key, oracle.sql.ARRAY[] attr )
         throws SQLException, hive_exception
     {
-        //System.out.println( "SqlDesc called" );
+        //debug.output( "SqlDesc called" );
 
         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = manager_.getContext( key );
@@ -1133,7 +1392,7 @@ public class hive implements SQLData
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         ResultSetMetaData rmd = ctx.descSql();
-        //System.out.println( "SqlDesc: columns: " + rmd.getColumnCount() );
+        //debug.output( "SqlDesc: columns: " + rmd.getColumnCount() );
 
         if ( rmd.getColumnCount() > 0 )
         {
@@ -1207,18 +1466,18 @@ public class hive implements SQLData
     static public BigDecimal SqlOpen( String stmt )
         throws SQLException, hive_exception
     {
-        //System.out.println( "SqlOpen called [String]: " + stmt );
+        //debug.output( "SqlOpen called [String]: " + stmt );
 
         if ( manager_ == null )
         {
             manager_ = new hive_manager();
-            //System.out.println( "SqlOpen created hive_manager" );
+            //debug.output( "SqlOpen created hive_manager" );
         }
 
         hive_context ctx = new hive_context( stmt );
         key_ = manager_.createContext( ctx );
 
-        //System.out.println( "SqlOpen returning key: " + key_ );
+        //debug.output( "SqlOpen returning key: " + key_ );
 
         return key_;
     }
@@ -1227,7 +1486,7 @@ public class hive implements SQLData
     static public BigDecimal SqlOpen( STRUCT[] sctx, String stmt )
         throws SQLException, hive_exception
     {
-        //System.out.println( "SqlOpen called [STRUCT]: " + sctx );
+        //debug.output( "SqlOpen called [STRUCT]: " + sctx );
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         //
@@ -1250,7 +1509,7 @@ public class hive implements SQLData
     static public BigDecimal SqlOpen( String stmt, BigDecimal[] key )
         throws SQLException, hive_exception
     {
-        //System.out.println( "SqlOpen called" );
+        //debug.output( "SqlOpen called" );
 
         key_ = SqlOpen( stmt );
 
@@ -1265,15 +1524,12 @@ public class hive implements SQLData
     static public BigDecimal SqlFetch( BigDecimal key, BigDecimal num, ARRAY[] out )
         throws SQLException, InvalidKeyException, hive_exception
     {
-        //System.out.println( "SqlFetch called: key_ = " + key );
+        //debug.output( "SqlFetch called: key_ = " + key );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         if ( manager_ == null )
-        {
             manager_ = new hive_manager();
-            //System.out.println( "SqlFetch created hive_manager" );
-        }
 
         hive_context ctx = manager_.getContext( key );
 
@@ -1290,46 +1546,39 @@ public class hive implements SQLData
         //
         StructDescriptor dsc = new StructDescriptor( "DATA", con );
 
-        //
-        //System.out.println( "SqlFetch requesting the next " + num + " record(s)" );
-        for ( int i = 0; i < num.intValue(); ++i )
+        if ( ctx.next() )
         {
-            if ( ctx.next() )
+            int cnt = ctx.columnCount();
+            Object[] cols = new Object[ cnt ];
+
+            for ( int c = 1; c <= cnt; ++c )
             {
-                int cnt = ctx.columnCount();
-                Object[] cols = new Object[ cnt ];
+                Object col = ctx.getObject( c );
+                int typ = DBMS_TYPES.to_dbms_type( ctx.columnType( c ) );
 
-                //System.out.println( "SqlFetch processing " + cnt + " column(s)" );
-
-                for ( int c = 1; c <= cnt; ++c )
+                Object[] atr =
                 {
-                    Object col = ctx.getObject( c );
-                    int typ = DBMS_TYPES.to_dbms_type( ctx.columnType( c ) );
-
-                    Object[] atr =
-                    {
-                        new BigDecimal( typ ),                                  // type code
-                        ( typ == DBMS_TYPES.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
-                        ( typ == DBMS_TYPES.TYPECODE_NUMBER )    ? col : null,  // val_number
-                        ( typ == DBMS_TYPES.TYPECODE_DATE )      ? col : null,  // val_date
-                        ( typ == DBMS_TYPES.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
-                        ( typ == DBMS_TYPES.TYPECODE_CLOB )      ? col : null,  // val_clob
-                        ( typ == DBMS_TYPES.TYPECODE_BLOB )      ? col : null   // val_blob
-                    };
-
-                    //
-                    cols[ c - 1 ] = new STRUCT( dsc, con, atr );
-                }
+                    new BigDecimal( typ ),                                  // type code
+                    ( typ == DBMS_TYPES.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
+                    ( typ == DBMS_TYPES.TYPECODE_NUMBER )    ? col : null,  // val_number
+                    ( typ == DBMS_TYPES.TYPECODE_DATE )      ? col : null,  // val_date
+                    ( typ == DBMS_TYPES.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
+                    ( typ == DBMS_TYPES.TYPECODE_CLOB )      ? col : null,  // val_clob
+                    ( typ == DBMS_TYPES.TYPECODE_BLOB )      ? col : null   // val_blob
+                };
 
                 //
-                ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "RECORDS", con );
-
-                ARRAY arr = new ARRAY( ary, con, cols );
-                out[ 0 ] = arr;
+                cols[ c - 1 ] = new STRUCT( dsc, con, atr );
             }
-            else
-                out[ 0 ] = null;
+
+            //
+            ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "RECORDS", con );
+
+            ARRAY arr = new ARRAY( ary, con, cols );
+            out[ 0 ] = arr;
         }
+        else
+            out[ 0 ] = null;
 
         return SUCCESS;
     }
@@ -1338,12 +1587,12 @@ public class hive implements SQLData
     static public BigDecimal SqlClose( BigDecimal key )
         throws SQLException, InvalidKeyException
     {
-        //System.out.println( "SqlClose called" );
+        //debug.output( "SqlClose called" );
 
         if ( manager_ == null )
         {
             manager_ = new hive_manager();
-            //System.out.println( "SqlClose created hive_manager" );
+            //debug.output( "SqlClose created hive_manager" );
         }
 
         hive_context ctx = manager_.removeContext( key );
@@ -1353,6 +1602,39 @@ public class hive implements SQLData
 
         return SUCCESS;
     }
+
+/*
+    //
+    static public BigDecimal SqlConnection( STRUCT obj )
+        throws SQLException, InvalidKeyException
+    {
+        System.out.println( "SqlConnection called" );
+
+        if ( obj != null )
+        {
+            hive_session con = new hive_session( obj );
+            System.out.println( con.toString() );
+
+        }
+
+        return new BigDecimal( 0 );
+    }
+
+    //
+    static public BigDecimal SqlBinding( oracle.sql.ARRAY obj )
+        throws SQLException, InvalidKeyException
+    {
+        System.out.println( "SqlBinding called" );
+
+        if ( obj != null )
+        {
+            hive_bindings bnd = new hive_bindings( obj );
+            System.out.println( bnd.toString() );
+        }
+
+        return new BigDecimal( 0 );
+    }
+*/
 };
 /
 

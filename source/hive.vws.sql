@@ -29,5 +29,14 @@ select key,
           seq;
 
 --
+create ore replace view dba_hive_log
+as
+select stamp,
+       type,
+       text
+  from log$
+ order by stamp;
+
+--
 -- ... done!
 --

@@ -35,55 +35,56 @@ create or replace package body hive as
     end param_;
 
     -- 
-    procedure connection( usr in varchar2,
-                          pwd in varchar2 ) is
+    procedure session( usr in varchar2,
+                       pwd in varchar2 ) is
     begin
 
-        --
-        impl.connection( usr, pwd );
+        impl.session( usr, pwd );
 
-    end connection;
+    end session;
 
     -- 
-    procedure connection( hst in varchar2,
-                          prt in service,
-                          usr in varchar2,
-                          pwd in varchar2 ) is
+    procedure session( hst in varchar2,
+                       prt in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2 ) is
     begin
 
-        --
-        impl.connection( hst, prt, usr, pwd );
+        impl.session( hst, prt, usr, pwd );
 
-    end connection;
+    end session;
+
+    -- set session connection data
+    procedure session( con in connection ) is
+    begin
+
+        impl.session( con );
+
+    end session;
 
     --
-    procedure connection( con in session ) is
-    begin
+    function session return connection is
 
-        --
-        impl.connection( con );
-
-    end connection;
-
-    --
-    function connection return session is
-
-        con session;
+        con connection;
 
     begin
 
-        --
-        con := impl.connection;
-        con.pass := null;
+        con := impl.session;
 
-        --
+        if ( con is not null ) then
+
+            con.pass := null;
+
+        end if;
+
         return con;
 
-    end connection;
+    end session;
 
     --
     procedure dml( stm in varchar2,
-                   bnd in binds default null ) is
+                   bnd in binds      default null,
+                   con in connection default null ) is
     begin
 
         null;
@@ -91,7 +92,8 @@ create or replace package body hive as
     end dml;
 
     --
-    procedure ddl( stm in varchar2 ) is
+    procedure ddl( stm in varchar2,
+                   con in connection default null ) is
     begin
 
         null;

@@ -26,7 +26,7 @@ create unique index filter$key
 
 --
 create index filter$seq
-    on filter$ ( seq, type )
+    on filter$ ( seq, type, scope )
 /
 
 --

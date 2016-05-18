@@ -12,36 +12,35 @@ alter session set current_schema = hive;
 --
 create or replace package hive as
 
-    -- implementation subtypes
-    subtype service  is impl.service;
-    subtype session  is impl.session;
+    -- 
+    procedure session( usr in varchar2,
+                       pwd in varchar2 );
 
     -- 
-    procedure connection( usr in varchar2,
-                          pwd in varchar2 );
-
-    -- 
-    procedure connection( hst in varchar2,
-                          prt in service,
-                          usr in varchar2,
-                          pwd in varchar2 );
+    procedure session( hst in varchar2,
+                       prt in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2 );
 
     -- set session connection data
-    procedure connection( con in session );
+    procedure session( con in connection );
 
     -- get session connection data (password returned is intentionally null)
-    function connection return session;
+    function session return connection;
 
     --
     function query( stm in varchar2,
-                    bnd in binds default null ) return anydataset pipelined using hive_t;
+                    bnd in binds      default null,
+                    con in connection default null ) return anydataset pipelined using hive_t;
 
     --
     procedure dml( stm in varchar2,
-                   bnd in binds default null );
+                   bnd in binds      default null,
+                   con in connection default null );
 
     --
-    procedure ddl( stm in varchar2 );
+    procedure ddl( stm in varchar2,
+                   con in connection default null );
 
 end hive;
 /

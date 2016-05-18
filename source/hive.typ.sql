@@ -18,16 +18,22 @@ create or replace type hive_t as object
 
     --
     static function ODCITableDescribe( typ out anytype,
-                                       stm in  varchar2 ) return number,
+                                       stm in  varchar2,
+                                       bnd in  binds,
+                                       con in  connection ) return number,
 
     --
     static function ODCITablePrepare( ctx out hive_t,
                                       inf in  sys.ODCITabFuncInfo,
-                                      stm in  varchar2 ) return number,
+                                      stm in  varchar2,
+                                      bnd in  binds,
+                                      con in  connection ) return number,
 
     --
     static function ODCITableStart( ctx in out hive_t,
-                                    stm in     varchar2 ) return number,
+                                    stm in     varchar2,
+                                    bnd in     binds,
+                                    con in     connection ) return number,
 
     --
     member function ODCITableFetch( self in out hive_t,
@@ -46,21 +52,21 @@ create or replace type body hive_t as
 
     --
     static function ODCITableDescribe( typ out anytype,
-                                       stm in  varchar2 ) return number is
+                                       stm in  varchar2,
+                                       bnd in  binds,
+                                       con in  connection ) return number is
     begin 
 
-        -- --
-        -- debug_log( 'ODCITableDescribe', 'called' );
-        -- --
-
         --
-        return impl.sql_describe( stm, typ );
+        return impl.sql_describe( typ, stm, bnd, con );
 
     end;
 
     static function ODCITablePrepare( ctx out hive_t,
                                       inf in  sys.ODCITabFuncInfo,
-                                      stm in  varchar2 ) return number is
+                                      stm in  varchar2,
+                                      bnd in  binds,
+                                      con in  connection ) return number is
 
         key     number;
         typ     anytype;
@@ -76,16 +82,7 @@ create or replace type body hive_t as
 
     begin
 
-        -- --
-        -- debug_log( 'ODCITablePrepare', 'called' );
-        -- --
-
-        -- --
-        -- debug_log( 'ODCITablePrepare: stm',  stm );
-        -- --
-
-        --key := impl.sql_key( stm );
-        ret := impl.sql_open( stm, key );
+        ret := impl.sql_open( key, stm, bnd, con );
 
         if ( ret = odciconst.success ) then
 
@@ -98,30 +95,15 @@ create or replace type body hive_t as
 
         end if;
 
-        -- --
-        -- debug_log( 'ODCITablePrepare: ret',  ret );
-        -- --
-
-        -- --
-        -- debug_info( 'ODCITablePrepare: typ', typ );
-        -- --
-
-        -- --
-        -- debug_log( 'ODCITablePrepare: prec',  to_char( prec ) );
-        -- debug_log( 'ODCITablePrepare: scale', to_char( scale ) );
-        -- debug_log( 'ODCITablePrepare: len',   to_char( len ) );
-        -- debug_log( 'ODCITablePrepare: csid',  to_char( csid ) );
-        -- debug_log( 'ODCITablePrepare: csfrm', to_char( csfrm ) );
-        -- debug_log( 'ODCITablePrepare: name',  name );
-        --
-
         return odciconst.success; 
 
     end;
 
     --
     static function ODCITableStart( ctx in out hive_t,
-                                    stm in     varchar2 ) return number is
+                                    stm in     varchar2,
+                                    bnd in     binds,
+                                    con in     connection ) return number is
 
         ret number := odciconst.success;
 
@@ -130,18 +112,14 @@ create or replace type body hive_t as
 
     begin
 
-        -- --
-        -- debug_log( 'ODCITableStart', 'called' );
-        -- --
-
         --
-        ret := impl.sql_open( stm, key );
+        ret := impl.sql_open( key, stm, bnd, con );
 
         --
         if ( ret = odciconst.success ) then
 
             -- describe statment
-            ret := impl.sql_describe( stm, ref );
+            ret := impl.sql_describe( ref, stm, bnd, con );
 
         end if;
 
@@ -160,20 +138,8 @@ create or replace type body hive_t as
 
     begin
 
-        -- --
-        -- debug_log( 'ODCITableFetch', 'called' );
-        -- --
-
-        -- --
-        -- debug_info( 'ODCITableFetch self.ref', self.ref );
-        -- --
-
         -- retrieve the next "num" records
         ret := impl.sql_fetch( self.key, num, rec );
-
-        -- --
-        -- debug_records( 'ODCITableFetch', self.key, num, rec );
-        -- --
 
         --
         if ( ret = odciconst.success ) then

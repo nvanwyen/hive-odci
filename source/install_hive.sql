@@ -4,54 +4,81 @@
 --
 
 --
+whenever oserror  exit 9;
+whenever sqlerror exit sql.sqlcode;
+
+--
+column logfile new_value logfile noprint;
+
+--
+set termout off;
+select sys_context( 'userenv', 'db_name' ) 
+    || '_install_hive_odci.' 
+    || to_char( sysdate, 'YYYYMMDDHH24MISS' ) 
+    || '.log' logfile
+  from dual;
+set termout on;
+
+--
+spool &&logfile
+
+--
 prompt ... running install_hive.sql
 
--- account
+--
+select current_timestamp "beginning installation"
+  from dual;
+
+-- schema
 @@hive.usr.sql
 
--- permissions
+-- roles
+@@hive.rol.sql
+
+-- schema permissions
 @@hive.prm.sql
 
 -- tables
 @@hive.tbl.sql
 @@hive.idx.sql
 
---
+-- views
 @@hive.vws.sql
 
---
+-- types
+@@attr.typ.sql
+@@bind.typ.sql
+
+-- implemntation
 @@impl.pks.sql
 @@impl.pkb.sql
 
---
-@@bind.typ.sql
-
---
-@@hive.tys.sql
-@@hive.tyb.sql
-
---
-@@hive.pks.sql
-@@hive.pkb.sql
-
---
+-- administrative
 @@dbms_hive.pks.sql
 @@dbms_hive.pkb.sql
 
---
+-- transient
+@@hive.jva.sql
+@@hive.typ.sql
+
+-- interface
+@@hive.pks.sql
+@@hive.pkb.sql
+
+-- grants
+@@hive.gnt.sql
+
+-- synonyms
 @@hive.syn.sql
 
---
-@hive.rol.sql
+-- parameters
+@@hive.par.sql
 
---
+-- obfuscation
 @@wrap.pls.sql
 
 --
-@@hive.gnt.sql
-
---
-prompt ... show post installation errors
+prompt ... show post installation object errors
 
 --
 set linesize 160
@@ -66,6 +93,11 @@ select name,
  where owner = 'HIVE';
 
 --
+select current_timestamp "completed installation"
+  from dual;
+
+--
+spool off
 exit
 
 --

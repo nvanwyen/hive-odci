@@ -13,27 +13,28 @@ alter session set current_schema = hive;
 create or replace package body impl as
 
     --
+    log_     number     := -1;
     session_ connection := connection( null, null, null, null );
 
     --
-    function describe_( stm in varchar2, atr out attributes ) return number as
+    function describe_( atr out attributes, stm in varchar2, bnd in binds, con in connection ) return number as
     language java
-    name 'oracle.mti.hive.SqlDesc( java.lang.String, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
+    name 'oracle.mti.hive.SqlDesc( oracle.sql.ARRAY[], java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT ) return java.math.BigDecimal';
 
     --
-    function describe_( key in number, atr out attributes ) return number as
+    function describe_( atr out attributes, key in number ) return number as
     language java
-    name 'oracle.mti.hive.SqlDesc( java.math.BigDecimal, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
+    name 'oracle.mti.hive.SqlDesc( oracle.sql.ARRAY[], java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
-    function open_( stm in varchar2, key out number ) return number as
+    function open_( key out number, stm in varchar2, bnd in binds, con in connection ) return number as
     language java
-    name 'oracle.mti.hive.SqlOpen( java.lang.String, java.math.BigDecimal[] ) return java.math.BigDecimal';
+    name 'oracle.mti.hive.SqlOpen( java.math.BigDecimal[], java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT ) return java.math.BigDecimal';
 
     --
-    function fetch_( key in number, num in number, rws out records ) return number as
+    function fetch_( rws out records, key in number, num in number ) return number as
     language java
-    name 'oracle.mti.hive.SqlFetch( java.math.BigDecimal, java.math.BigDecimal, oracle.sql.ARRAY[] ) return java.math.BigDecimal';
+    name 'oracle.mti.hive.SqlFetch( oracle.sql.ARRAY[], java.math.BigDecimal, java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
     function close_( key in number ) return number as
@@ -41,17 +42,30 @@ create or replace package body impl as
     name 'oracle.mti.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
-    function con_( con in connection ) return number as
-    language java
-    name 'oracle.mti.hive.SqlConnection( oracle.sql.STRUCT ) return java.math.BigDecimal';
+    function log_level_ return number is
+    begin
 
-    --
-    function bnd_( bnd in binds ) return number as
-    language java
-    name 'oracle.mti.hive.SqlBinding( oracle.sql.ARRAY ) return java.math.BigDecimal';
+        if ( log_ = -1 ) then
 
-    --
-    procedure desc_( att in attributes, typ out anytype ) is
+            begin
+
+                select nvl( to_number( value ), 0 )
+                  into log_
+                  from param$
+                 where name = 'log_level';
+
+                exception 
+                    when others then log_ := 0;
+            end;
+
+        end if;
+
+        return log_;
+
+    end log_level_;
+
+    -- convert from ATTRIBUTES array to ANYTYPE table
+    procedure conv_( att in attributes, typ out anytype ) is
 
         --
         col anytype; 
@@ -60,11 +74,7 @@ create or replace package body impl as
 
         if ( att.count > 0 ) then
 
-            -- --
-            -- debug_attributes( 'desc_: att', att );
-            -- --
-            
-
+            --
             anytype.begincreate( dbms_types.typecode_object, col );
 
             --
@@ -84,22 +94,14 @@ create or replace package body impl as
             --
             col.endcreate;
 
-            -- --
-            -- debug_info( 'desc_: col', col );
-            -- --
-
             --
             anytype.begincreate( dbms_types.typecode_table, typ );
             typ.setinfo( null, null, null, null, null, col, dbms_types.typecode_object, 0 );
             typ.endcreate();
 
-            -- --
-            -- debug_info( 'desc_: typ', typ );
-            -- --
-
         end if;
 
-    end desc_;
+    end conv_;
 
     --
     function param_( n in varchar2 ) return varchar2 is
@@ -173,6 +175,45 @@ create or replace package body impl as
 
     end connection_;
 
+    --
+    procedure log( typ in number, txt in varchar2 ) is
+
+        pragma autonomous_transaction;
+
+    begin
+
+        if ( bitand( typ, log_level_ ) > 0 ) then
+
+            insert into log$ a
+            (
+                a.stamp,
+                a.type,
+                a.text
+            )
+            values
+            (
+                current_timestamp,
+                typ,
+                txt
+            );
+
+            commit write immediate nowait;
+
+        end if;
+
+        exception
+            when others then rollback;
+
+    end log;
+
+    --
+    procedure session_log_level( typ in number ) is
+    begin
+
+        log_ := typ;
+
+    end session_log_level;
+
     -- 
     procedure session( usr in varchar2,
                        pwd in varchar2 ) is
@@ -244,14 +285,14 @@ create or replace package body impl as
     end session;
 
     --
-    function sql_describe( stm in varchar2 ) return anytype is
+    function sql_describe( stm in varchar2, bnd in binds, con in connection ) return anytype is
 
         ret number   := odciconst.error;
         typ anytype;
 
     begin
 
-        ret := sql_describe( stm, typ );
+        ret := sql_describe( typ, stm, bnd, con );
 
         if ( ret = odciconst.success ) then
 
@@ -264,21 +305,23 @@ create or replace package body impl as
     end sql_describe;
 
     --
-    function sql_describe( stm in  varchar2,
-                           typ out anytype ) return number is
+    function sql_describe( typ out anytype,
+                           stm in  varchar2,
+                           bnd in  binds      default null,
+                           con in  connection default null ) return number is
         --
         ret number     := odciconst.error;
         att attributes := attributes();
 
     begin
 
-        ret := describe_( stm, att );
+        ret := describe_( att, stm, bnd, con );
 
         if ( ret = odciconst.success ) then
 
             if ( att.count > 0 ) then
 
-                desc_( att, typ );
+                conv_( att, typ );
 
             else
 
@@ -302,18 +345,13 @@ create or replace package body impl as
 
     begin
 
-        ret := describe_( key, att );
+        ret := describe_( att, key );
 
         if ( ret = odciconst.success ) then
 
             if ( att.count > 0 ) then
 
-                desc_( att, typ );
-
-                -- --
-                -- debug_attributes( 'sql_describe: att', att );
-                -- debug_info( 'sql_describe: typ', typ );
-                -- --
+                conv_( att, typ );
 
             else
 
@@ -328,11 +366,13 @@ create or replace package body impl as
     end sql_describe;
 
     --
-    function sql_open( stm in  varchar2,
-                       key out number ) return number is
+    function sql_open( key out number,
+                       stm in  varchar2,
+                       bnd in  binds      default null,
+                       con in  connection default null ) return number is
     begin
 
-        return open_( stm, key );
+        return open_( key, stm, bnd, con );
 
     end sql_open;
 
@@ -342,7 +382,7 @@ create or replace package body impl as
                         rws out records ) return number is
     begin
 
-        return fetch_( key, num, rws );
+        return fetch_( rws, key, num );
 
     end sql_fetch;
 
@@ -353,54 +393,6 @@ create or replace package body impl as
         return close_( key );
 
     end sql_close;
-
---    /* ************************************** TESTING ************************************** */
---
---    --
---    procedure test_connection is
---
---        r number;
---
---    begin
---
---        session( 'host-x', '1234', 'jdoe', 'password' );
---        r := con_( connection_ );
---
---        /*
---            set serveroutput on
---            exec dbms_java.set_output( 1000000 );
---            exec impl.test_connection;
---        */
---
---    end test_connection;
---
---    --
---    procedure test_binding is
---
---        b binds := binds();
---        r number;
---
---    begin
---
---        b.extend;
---        b( b.count ) := bind( 'A', 1, 1 );
---
---        b.extend;
---        b( b.count ) := bind( 'B', 2, 2 );
---
---        b.extend;
---        b( b.count ) := bind( 'C', 3, 3 );
---
---        --r := bnd_( b );
---        r := bnd_( null );
---
---        /*
---            set serveroutput on
---            exec dbms_java.set_output( 1000000 );
---            exec impl.test_binding;
---        */
---
---    end test_binding;
 
 end impl;
 /

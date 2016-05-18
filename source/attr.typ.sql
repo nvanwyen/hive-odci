@@ -9,10 +9,6 @@ prompt ... running attrs.typ.sql
 --
 alter session set current_schema = hive;
 
---
-drop type attributes;
-drop type attribute;
-
 -- column description, marries up to ANYTYPE.ADDATTR
 create or replace type attribute is object
 (
@@ -29,10 +25,6 @@ create or replace type attribute is object
 -- array of column descriptions
 create or replace type attributes as table of attribute;
 /
-
---
-drop type records;
-drop type data;
 
 -- column data, marries up to ANYDATA
 create or replace type data as object
@@ -58,9 +50,6 @@ create or replace type records as table of data;
 
 --
 show errors
-
---
-drop type connection;
 
 -- 
 create or replace type connection as object

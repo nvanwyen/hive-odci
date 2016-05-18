@@ -92,6 +92,8 @@ select current_timestamp "beginning installation"
 --   from all_errors
 --  where owner = 'HIVE';
 
+!jdbc/load-jdbc.sh "sys"
+
 --
 select current_timestamp "completed installation"
   from dual;

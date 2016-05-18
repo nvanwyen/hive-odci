@@ -1,0 +1,9 @@
+
+This directory ./test/ can for the most part be completely ignored
+
+This is a staging/testing area that is applicable (really) only to me. I 
+wouldn't expect anything in this directory to run or work for you at all
+
+If you want a test script use the source/hive.tst.sql script, modifying it for 
+your own purposes ... but seriously don't try to run anything in here ... I 
+take absolutely no responsibilities for it and you have been warned ;-)

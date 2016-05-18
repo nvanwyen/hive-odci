@@ -60,6 +60,7 @@ select current_timestamp "beginning installation"
 -- transient
 @@hive.jva.sql
 @@hive.typ.sql
+@@hive.fnc.sql
 
 -- interface
 @@hive.pks.sql

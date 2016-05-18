@@ -176,6 +176,23 @@ create or replace package body impl as
     end connection_;
 
     --
+    function current_ return connection is
+    begin
+
+        if ( ( session_.host is null ) and
+             ( session_.port is null ) and
+             ( session_.name is null ) and
+             ( session_.pass is null ) ) then
+
+            connection_( session_ );
+
+        end if;
+
+        return session_;
+
+    end current_;
+
+    --
     procedure log( typ in number, txt in varchar2 ) is
 
         pragma autonomous_transaction;
@@ -280,7 +297,7 @@ create or replace package body impl as
     function session return connection is
     begin
 
-        return connection_;
+        return current_;
 
     end session;
 
@@ -292,7 +309,7 @@ create or replace package body impl as
 
     begin
 
-        ret := sql_describe( typ, stm, bnd, con );
+        ret := sql_describe( typ, stm, bnd, nvl( con, current_ ) );
 
         if ( ret = odciconst.success ) then
 
@@ -315,7 +332,7 @@ create or replace package body impl as
 
     begin
 
-        ret := describe_( att, stm, bnd, con );
+        ret := describe_( att, stm, bnd, nvl( con, current_ ) );
 
         if ( ret = odciconst.success ) then
 
@@ -372,7 +389,7 @@ create or replace package body impl as
                        con in  connection default null ) return number is
     begin
 
-        return open_( key, stm, bnd, con );
+        return open_( key, stm, bnd, nvl( con, current_ ) );
 
     end sql_open;
 

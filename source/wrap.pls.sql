@@ -244,18 +244,7 @@ begin
     -- none
 
     -- type specifications
-    begin
-
-        --
-        wrap_( type_( 'HIVE', 'HIVE_T' ) );
-        dbms_output.put_line( 'HIVE.HIVE_T Type wrapped' );
-
-        --
-        exception
-            when others then
-                dbms_output.put_line( 'Error wrapping type [HIVE.HIVE_T]: ' || sqlerrm );
-
-    end;
+    -- none
 
     -- type bodies
     begin

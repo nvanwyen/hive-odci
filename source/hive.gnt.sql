@@ -12,6 +12,7 @@ alter session set current_schema = hive;
 -- hive_user grants
 --
 grant execute on hive.hive to hive_user;
+grant execute on hive.hive_q to hive_user;
 --
 grant execute on hive.attribute to hive_user;
 grant execute on hive.attributes to hive_user;

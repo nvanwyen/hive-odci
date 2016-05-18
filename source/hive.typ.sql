@@ -16,24 +16,25 @@ create or replace type hive_t as object
     key integer,
     ref anytype,
 
+
     --
     static function ODCITableDescribe( typ out anytype,
                                        stm in  varchar2,
-                                       bnd in  binds,
-                                       con in  connection ) return number,
+                                       bnd in  binds      := null,
+                                       con in  connection := null ) return number,
 
     --
     static function ODCITablePrepare( ctx out hive_t,
                                       inf in  sys.ODCITabFuncInfo,
                                       stm in  varchar2,
-                                      bnd in  binds,
-                                      con in  connection ) return number,
+                                      bnd in  binds      := null,
+                                      con in  connection := null ) return number,
 
     --
     static function ODCITableStart( ctx in out hive_t,
                                     stm in     varchar2,
-                                    bnd in     binds,
-                                    con in     connection ) return number,
+                                    bnd in     binds      := null,
+                                    con in     connection := null ) return number,
 
     --
     member function ODCITableFetch( self in out hive_t,
@@ -53,8 +54,8 @@ create or replace type body hive_t as
     --
     static function ODCITableDescribe( typ out anytype,
                                        stm in  varchar2,
-                                       bnd in  binds,
-                                       con in  connection ) return number is
+                                       bnd in  binds      := null,
+                                       con in  connection := null ) return number is
     begin 
 
         --
@@ -62,11 +63,12 @@ create or replace type body hive_t as
 
     end;
 
+    --
     static function ODCITablePrepare( ctx out hive_t,
                                       inf in  sys.ODCITabFuncInfo,
                                       stm in  varchar2,
-                                      bnd in  binds,
-                                      con in  connection ) return number is
+                                      bnd in  binds      := null,
+                                      con in  connection := null ) return number is
 
         key     number;
         typ     anytype;
@@ -102,8 +104,8 @@ create or replace type body hive_t as
     --
     static function ODCITableStart( ctx in out hive_t,
                                     stm in     varchar2,
-                                    bnd in     binds,
-                                    con in     connection ) return number is
+                                    bnd in     binds      := null,
+                                    con in     connection := null ) return number is
 
         ret number := odciconst.success;
 

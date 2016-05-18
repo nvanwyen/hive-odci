@@ -91,18 +91,25 @@ create or replace package body dbms_hive as
     end purge_log;
 
     --
-    procedure purge_filter( key in varchar2 default null )
+    procedure purge_filter( key in varchar2 default null ) is
 
         pragma autonomous_transaction;
 
     begin
 
-        --
-        delete from filter$ a
-         where 1 = case when key is null 
-                        then 1 
-                        else key = a.key 
-                   end;
+        if ( key is null ) then
+
+            --
+            delete from filter$;
+
+        else
+
+            --
+            delete from filter$ a
+             where key = a.key;
+
+        end if;
+
         commit;
 
         exception

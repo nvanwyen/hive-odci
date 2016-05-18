@@ -29,7 +29,7 @@ select key,
           seq;
 
 --
-create ore replace view dba_hive_log
+create or replace view dba_hive_log
 as
 select stamp,
        type,

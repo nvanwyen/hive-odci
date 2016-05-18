@@ -502,6 +502,23 @@ public class hive_session
 
         return str;
     }
+
+    //
+    public boolean equals( hive_session val )
+    {
+        boolean eq = false;
+
+        if ( val != null )
+        {
+            if ( ( host.equals( val.host )
+              && ( port.equals( val.port )
+              && ( name.equals( val.name )
+              && ( pass.equals( val.pass ) )
+                eq = true;
+        }
+
+        return eq;
+    }
 };
 
 //
@@ -599,6 +616,22 @@ public class hive_bind
 
         return str;
     }
+
+    //
+    public boolean equals( hive_bind val )
+    {
+        boolean eq = false;
+
+        if ( val != null )
+        {
+            if ( ( value.equals( val.value )
+              && ( type == val.type )
+              && ( scope == val.scope )
+                eq = true;
+        }
+
+        return eq;
+    }
 };
 
 //
@@ -645,6 +678,34 @@ public class hive_bindings
             str += bnd.toString();
 
         return str;
+    }
+
+    //
+    public boolean equals( hive_bindings val )
+    {
+        boolean eq = false;
+
+        if ( val != null )
+        {
+            if ( val.binds != null )
+            {
+                if ( binds.size() == val.binds.size() )
+                {
+                    eq = true;
+
+                    for ( int i = 0; i < binds.size(); i++ )
+                    {
+                        if ( ! binds.get( i ).equals( val.binds.get( i ) ) )
+                        {
+                            eq = false;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return eq;
     }
 };
 
@@ -822,6 +883,17 @@ public class hive_connection
         }
 
         return conn_;
+    }
+
+    //
+    public boolean equals( hive_connection val )
+    {
+        boolean eq = false;
+
+        if ( val != null )
+            eq = session.equals( val.session );
+
+        return eq;
     }
 };
 
@@ -1183,6 +1255,39 @@ public class hive_context
 
         return qry;
     }
+
+    //
+    public boolean equals( hive_context val )
+    {
+        boolean eq = false;
+
+        if ( val != null )
+        {
+            if ( ( con_ != null )
+              && ( bnd_ != null )
+              && ( sql_ != null ) )
+            {
+                eq = ( ( con_.equals( val.con_ ) )
+                    && ( bnd_.equals( val.bnd_ ) )
+                    && ( sql_.equals( val.sql_ ) ) );
+            }
+            else
+            {
+                eq = true;
+
+                if ( con_ != null )
+                    eq = ( con_.equals( val.con_ ) && eq );
+
+                if ( bnd_ != null )
+                    eq = ( bnd_.equals( val.bnd_ ) && eq );
+
+                if ( sql_ != null )
+                    eq = ( sql_.equals( val.sql_ ) && eq );
+            }
+        }
+
+        return eq;
+    }
 };
 
 // stored context manager (since the Oracle one is broken)
@@ -1214,7 +1319,7 @@ public class hive_manager
         {
             hive_context itm = ent.getValue();
 
-            if ( itm.getSql().equals( ctx.getSql() ) )
+            if ( itm.equals( ctx ) )
             {
                 key = ent.getKey();
                 break;

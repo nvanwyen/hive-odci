@@ -12,6 +12,9 @@ prompt ... running hive.jva.sql
 alter session set current_schema = hive;
 
 --
+set define off
+
+--
 create or replace and compile java source named "hive" as
 
 package oracle.mti;
@@ -510,10 +513,10 @@ public class hive_session
 
         if ( val != null )
         {
-            if ( ( host.equals( val.host )
-              && ( port.equals( val.port )
-              && ( name.equals( val.name )
-              && ( pass.equals( val.pass ) )
+            if ( host.equals( val.host )
+              && port.equals( val.port )
+              && name.equals( val.name )
+              && pass.equals( val.pass ) )
                 eq = true;
         }
 
@@ -624,9 +627,9 @@ public class hive_bind
 
         if ( val != null )
         {
-            if ( ( value.equals( val.value )
-              && ( type == val.type )
-              && ( scope == val.scope )
+            if ( value.equals( val.value )
+              && type == val.type
+              && scope == val.scope )
                 eq = true;
         }
 
@@ -1816,6 +1819,9 @@ public class hive implements SQLData
     }
 };
 /
+
+--
+set define on
 
 --
 show errors

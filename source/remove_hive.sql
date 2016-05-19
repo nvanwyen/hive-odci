@@ -4,6 +4,11 @@
 --
 
 --
+set linesize 160
+set pagesize 50000
+set trimspool on
+
+--
 column logfile new_value logfile noprint;
 
 --

@@ -20,7 +20,7 @@ col cust_id    for 9999990
 col last_name  for a30
 col first_name for a30
 
-select * from table( hive_q( 'select cust_id, last_name, first_name from cust' ) ) ;
+select * from table( hive_q( 'select cust_id, last_name, first_name from cust', null, null ) );
 
 
 ------------ create or replace view hive.cust ( cust_id, last_name, first_name ) as

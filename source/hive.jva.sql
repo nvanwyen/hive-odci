@@ -21,9 +21,11 @@ package oracle.mti;
 
 //
 import java.io.*;
+import java.net.*;
 import java.sql.*;
 import java.math.*;
 import java.util.*;
+import java.text.*;
 import java.util.regex.*;
 
 import oracle.sql.*;
@@ -528,29 +530,29 @@ public class hive_session
 public class hive_bind
 {
     //
-    public static final long UNKNOWN        =  0;
+    public static final int UNKNOWN        =  0;
     //
-    public static final long SCOPE_IN       =  1;
-    public static final long SCOPE_OUT      =  2;
-    public static final long SCOPE_INOUT    =  3;
+    public static final int SCOPE_IN       =  1;
+    public static final int SCOPE_OUT      =  2;
+    public static final int SCOPE_INOUT    =  3;
     //
-    public static final long TYPE_BOOL      =  1;
-    public static final long TYPE_DATE      =  2;
-    public static final long TYPE_FLOAT     =  3;
-    public static final long TYPE_INT       =  4;
-    public static final long TYPE_LONG      =  5;
-    public static final long TYPE_NULL      =  6;
-    public static final long TYPE_ROWID     =  7;
-    public static final long TYPE_SHORT     =  8;
-    public static final long TYPE_STRING    =  9;
-    public static final long TYPE_TIME      = 10;
-    public static final long TYPE_TIMESTAMP = 11;
-    public static final long TYPE_URL       = 12;
+    public static final int TYPE_BOOL      =  1;
+    public static final int TYPE_DATE      =  2;
+    public static final int TYPE_FLOAT     =  3;
+    public static final int TYPE_INT       =  4;
+    public static final int TYPE_LONG      =  5;
+    public static final int TYPE_NULL      =  6;
+    public static final int TYPE_ROWID     =  7;
+    public static final int TYPE_SHORT     =  8;
+    public static final int TYPE_STRING    =  9;
+    public static final int TYPE_TIME      = 10;
+    public static final int TYPE_TIMESTAMP = 11;
+    public static final int TYPE_URL       = 12;
 
     //
     public String value;
-    public long   type;
-    public long   scope;
+    public int   type;
+    public int   scope;
 
     //
     public hive_bind()
@@ -561,7 +563,7 @@ public class hive_bind
     }
 
     //
-    public hive_bind( String v, long t, long s )
+    public hive_bind( String v, int t, int s )
     {
         value = v;
         type  = t;
@@ -589,7 +591,7 @@ public class hive_bind
             if ( atr.length > 1 )
             {
                 if ( atr[ 1 ] != null )
-                    type = atr[ 1 ].longValue();
+                    type = atr[ 1 ].intValue();
                 else
                     type = UNKNOWN;
             }
@@ -599,7 +601,7 @@ public class hive_bind
             if ( atr.length > 2 )
             {
                 if ( atr[ 2 ] != null )
-                    scope = atr[ 2 ].longValue();
+                    scope = atr[ 2 ].intValue();
                 else
                     scope = UNKNOWN;
             }
@@ -634,6 +636,170 @@ public class hive_bind
         }
 
         return eq;
+    }
+
+    //
+    public boolean toBool()
+    {
+        boolean val = false;
+
+        if ( value != null )
+        {
+            if ( value.equalsIgnoreCase( "Y" )
+              || value.equalsIgnoreCase( "T" )
+              || value.equalsIgnoreCase( "YES" )
+              || value.equalsIgnoreCase( "TRUE" ) )
+                val = true;
+        }
+
+        return val;
+    }
+
+    //
+    public Date toDate()
+    {
+        Date val = null;
+
+        if ( value != null )
+        {
+            try
+            {
+                String par = hive_parameter.value( "default_date_format" );
+
+                if ( par == null )
+                    par = new String( "YYYY-MM-DD" );
+
+                DateFormat fmt = new SimpleDateFormat( par, Locale.ENGLISH );
+                val = (java.sql.Date) fmt.parse( value );
+            }
+            catch ( Exception /*ParseException*/ ex ) {}
+        }
+
+        return val;
+    }
+
+    //
+    public float toFloat()
+    {
+        float val = 0;
+
+        if ( value != null )
+        {
+            val = Float.valueOf( value );
+        }
+
+        return val;
+    }
+
+    //
+    public int toInt()
+    {
+        int val = 0;
+
+        if ( value != null )
+        {
+            val = Integer.valueOf( value );
+        }
+
+        return val;
+    }
+
+    //
+    public long toLong()
+    {
+        long val = 0;
+
+        if ( value != null )
+        {
+            val = Long.valueOf( value );
+        }
+
+        return val;
+    }
+
+    //
+    public String toRowid()
+    {
+        return toVarchar();
+    }
+
+    //
+    public short toShort()
+    {
+        short val = 0;
+
+        if ( value != null )
+        {
+            val = Short.valueOf( value );
+        }
+
+        return val;
+    }
+
+    //
+    public String toVarchar()
+    {
+        return value;
+    }
+
+    //
+    public Time toTime()
+    {
+        Time val = null;
+
+        if ( value != null )
+        {
+            try
+            {
+                String par = hive_parameter.value( "default_time_format" );
+
+                if ( par == null )
+                    par = new String( "hh:mm a" );
+
+                DateFormat fmt = new SimpleDateFormat( par, Locale.ENGLISH );
+                val = new Time( ( (Date) fmt.parse( value ) ).getTime() );
+            }
+            catch ( ParseException ex ) {}
+        }
+
+        return val;
+    }
+
+    //
+    public Timestamp toTimestamp()
+    {
+        Timestamp val = null;
+
+        if ( value != null )
+        {
+            try
+            {
+                String par = hive_parameter.value( "default_timestamp_format" );
+
+                if ( par == null )
+                    par = new String( "yyyy-MM-dd hh:mm:ss.SSS" );
+
+                DateFormat fmt = new SimpleDateFormat( par, Locale.ENGLISH );
+                val = new Timestamp( ( (Date) fmt.parse( value ) ).getTime() );
+            }
+            catch ( ParseException ex ) {}
+        }
+
+        return val;
+    }
+
+    //
+    public URL toUrl()
+    {
+        URL val = null;
+
+        try
+        {
+            val = new URL( value );
+        }
+        catch ( MalformedURLException ex ) {}
+
+        return val;
     }
 };
 
@@ -670,6 +836,12 @@ public class hive_bindings
                     binds.add( new hive_bind( (STRUCT)dat[ i ] ) );
             }
         }
+    }
+
+    //
+    public long size()
+    {
+        return binds.size();
     }
 
     //
@@ -968,6 +1140,200 @@ public class hive_context
     }
 
     //
+    public PreparedStatement applyBindings( PreparedStatement stmt )
+        throws SQLException, hive_exception
+    {
+        if ( bnd_ != null )
+        {
+            if ( bnd_.size() > 0 )
+            {
+                int idx = 0;
+
+                for ( hive_bind bnd : bnd_.binds )
+                {
+                    idx += 1;
+
+                    switch ( bnd.type )
+                    {
+                        //
+                        case hive_bind.TYPE_BOOL:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setBoolean( idx, bnd.toBool() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_DATE:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setDate( idx, bnd.toDate() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.DATE );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_FLOAT:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setFloat( idx, bnd.toFloat() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_INT:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setInt( idx, bnd.toInt() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_LONG:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setLong( idx, bnd.toLong() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_NULL:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setNull( idx, Types.VARCHAR );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Encountered OUT or INOUT scope for TYPE_NULL" );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_ROWID:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setString( idx, bnd.toRowid() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.VARCHAR );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_SHORT:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setShort( idx, bnd.toShort() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_STRING:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setString( idx, bnd.toVarchar() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.VARCHAR );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_TIME:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setTime( idx, bnd.toTime() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.DATE );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_TIMESTAMP:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setTimestamp( idx, bnd.toTimestamp() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.TIMESTAMP );
+
+                            break;
+
+                        //
+                        case hive_bind.TYPE_URL:
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                stmt.setURL( idx, bnd.toUrl() );
+
+                            if ( ( bnd.scope == hive_bind.SCOPE_OUT )
+                              || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+                                throw new hive_exception( "Out parameter are not currently supported" );
+                                //stmt.registerOutParameter( idx, java.sql.Types.VARCHAR );
+
+                            break;
+
+                        //
+                        default:
+                            throw new hive_exception( "Unknown binding type [" + bnd.type + "] encountered" );
+                    }
+                }
+            }
+        }
+
+        return stmt;
+    }
+
+    //
     public PreparedStatement getPreparedStatement() throws SQLException, hive_exception
     {
         setPreparedStatement(); return stm_;
@@ -1167,7 +1533,7 @@ public class hive_context
 
         if ( rst_ == null )
         {
-            PreparedStatement stm = con_.getConnection().prepareStatement( limitSql( sql_ ) );
+            PreparedStatement stm = applyBindings( con_.getConnection().prepareStatement( limitSql( sql_ ) ) );
             ResultSet rst = stm.executeQuery();
             rmd = rst.getMetaData();
         }
@@ -1189,7 +1555,7 @@ public class hive_context
             throw new hive_exception( "No SQL defined for hive context" );
 
         if ( stm_ == null )
-            stm_ = con_.getConnection().prepareStatement( sql_ );
+            stm_ = applyBindings( con_.getConnection().prepareStatement( sql_ ) );
 
         log.trace( "hive_context setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
         return ( ! ( stm_ == null ) );

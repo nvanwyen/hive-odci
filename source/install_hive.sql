@@ -51,6 +51,7 @@ select current_timestamp "beginning installation"
 @@hive.vws.sql
 
 -- types
+@@hive.ctx.sql
 @@attr.typ.sql
 @@bind.typ.sql
 

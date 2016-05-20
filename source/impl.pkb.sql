@@ -13,6 +13,9 @@ alter session set current_schema = hive;
 create or replace package body impl as
 
     --
+    ctx constant varchar2( 7 ) := 'hivectx';
+
+    --
     log_     number     := -1;
     session_ connection := connection( null, null, null, null );
 
@@ -42,21 +45,46 @@ create or replace package body impl as
     name 'oracle.mti.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
+    function param_( n in varchar2 ) return varchar2 is
+
+        v varchar2( 4000 );
+
+    begin
+
+        v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
+
+        if ( v is null ) then
+
+            --
+            select a.value into v
+              from param$ a
+             where a.name = n;
+
+        end if;
+
+        --
+        return v;
+
+        --
+        exception
+            when no_data_found then
+                return null;
+
+    end param_;
+
+    --
     function log_level_ return number is
     begin
 
         if ( log_ = -1 ) then
 
-            begin
+            log_ := to_number( param_( 'log_level' ) );
 
-                select nvl( to_number( value ), 0 )
-                  into log_
-                  from param$
-                 where name = 'log_level';
+            if ( log_ is null ) then
 
-                exception 
-                    when others then log_ := 0;
-            end;
+                log_ := none;
+
+            end if;
 
         end if;
 
@@ -102,28 +130,6 @@ create or replace package body impl as
         end if;
 
     end conv_;
-
-    --
-    function param_( n in varchar2 ) return varchar2 is
-
-        v varchar2( 4000 );
-
-    begin
-
-        --
-        select a.value into v
-          from param$ a
-         where a.name = n;
-
-        --
-        return v;
-
-        --
-        exception
-            when no_data_found then
-                return null;
-
-    end param_;
 
     --
     function connection_ return connection is

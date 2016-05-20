@@ -369,9 +369,8 @@ public class hive_parameter
 
         try
         {
-            String sql = "select value " +
-                           "from param$ " +
-                          "where name = ?";
+            String sql = "select sys_context( 'hivectx', substr( ?, 1, 30 ), 4000 ) value " +
+                           "from dual";
 
             //
             con = DriverManager.getConnection( "jdbc:default:connection:" );
@@ -389,6 +388,27 @@ public class hive_parameter
             //
             rst.close();
             stm.close();
+
+            if ( val == null )
+            {
+                sql = "select value " +
+                        "from param$ " +
+                       "where name = ?";
+
+                //
+                stm = con.prepareStatement( sql );
+                stm.setString( 1, name );
+
+                //
+                rst = stm.executeQuery();
+
+                if ( rst.next() )
+                    val = rst.getString( "value" );
+
+                //
+                rst.close();
+                stm.close();
+            }
         }
         catch ( SQLException ex )
         {

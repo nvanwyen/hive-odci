@@ -13,16 +13,25 @@ alter session set current_schema = hive;
 create or replace package body hive as
 
     --
+    ctx constant varchar2( 7 ) := 'hivectx';
+
+    --
     function param_( n in varchar2 ) return varchar2 is
 
         v varchar2( 4000 );
 
     begin
 
-        --
-        select a.value into v
-          from param$ a
-         where a.name = n;
+        v := session_param( n );
+
+        if ( v is null ) then
+
+            --
+            select a.value into v
+              from param$ a
+             where a.name = n;
+
+        end if;
 
         --
         return v;
@@ -33,6 +42,23 @@ create or replace package body hive as
                 return null;
 
     end param_;
+
+    --
+    function session_param( name  in varchar2 ) return varchar2 is
+    begin
+
+        return sys_context( ctx, substr( name, 1, 30 ), 4000 );
+
+    end session_param;
+
+    --
+    procedure session_param( name  in varchar2,
+                             value in varchar2 ) is
+    begin
+
+        dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
+
+    end session_param;
 
     -- 
     procedure session( usr in varchar2,

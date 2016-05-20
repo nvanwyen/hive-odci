@@ -12,6 +12,13 @@ alter session set current_schema = hive;
 --
 create or replace package hive as
 
+    --
+    function session_param( name  in varchar2 ) return varchar2;
+
+    --
+    procedure session_param( name  in varchar2,
+                             value in varchar2 );
+
     -- 
     procedure session( usr in varchar2,
                        pwd in varchar2 );

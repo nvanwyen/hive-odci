@@ -13,7 +13,8 @@ alter session set current_schema = hive;
 create or replace view dba_hive_params
 as
 select name,
-       value
+       nvl( sys_context( 'hivectx', substr( name, 1, 30 ), 4000 ), value ) session_value,
+       value system_value
   from param$
  order by name;
 

@@ -97,10 +97,10 @@ begin
     param_( 'log_level', 'error, warn, info, debug' );
 
     --
-    param_( 'encrypted_values', 'default_hive_pass' );
+    param_( 'encrypted_values', 'hive_pass' );
 
     --
-    param_( 'hive_user', 'hive_user, hive_admin' );
+    param_( 'hive_users', 'hive_user, hive_admin' );
     param_( 'hive_admin', 'hive_admin' );
 
     --
@@ -108,13 +108,13 @@ begin
     param_( 'hive_jdbc_url', 'jdbc:datadirect:hive://%host%:%port%;User=%user%;Password=%pass%' );
 
     --
-    param_( 'default_bind_priv', 'public' );
+    param_( 'bind_priv', 'public' );
 
     --
-    param_( 'default_hive_host', 'orabdc.local' );
-    param_( 'default_hive_port', '10000' );
-    param_( 'default_hive_user', 'oracle' );
-    param_( 'default_hive_pass', 'welcome1' );
+    param_( 'hive_host', 'orabdc.local' );
+    param_( 'hive_port', '10000' );
+    param_( 'hive_user', 'oracle' );
+    param_( 'hive_pass', 'welcome1' );
 
 end;
 /

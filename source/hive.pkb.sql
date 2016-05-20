@@ -56,7 +56,19 @@ create or replace package body hive as
                              value in varchar2 ) is
     begin
 
-        dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
+        if ( name in ( 'hive_host',
+                       'hive_port',
+                       'hive_user',
+                       'hive_pass',
+                       'log_level' ) ) then
+
+            dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
+
+        else
+
+            raise_application_error( -20001, 'Paramter [' || name || '] is not eligible for change at the session level' );
+
+        end if;
 
     end session_param;
 

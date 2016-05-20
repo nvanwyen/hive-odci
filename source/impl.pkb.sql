@@ -146,7 +146,7 @@ create or replace package body impl as
         --
         session_.host := case when ( con.host is null )
                               then case when ( session_.host is null )
-                                        then param_( 'default_hive_host' )
+                                        then param_( 'hive_host' )
                                         else session_.host
                                    end
                               else con.host
@@ -155,7 +155,7 @@ create or replace package body impl as
         --
         session_.port := case when ( con.port is null )
                               then case when ( session_.port is null )
-                                        then param_( 'default_hive_port' )
+                                        then param_( 'hive_port' )
                                         else session_.port
                                    end
                               else con.port
@@ -164,7 +164,7 @@ create or replace package body impl as
         --
         session_.name := case when ( con.name is null )
                               then case when ( session_.name is null )
-                                        then param_( 'default_hive_user' )
+                                        then param_( 'hive_user' )
                                         else session_.name
                                    end
                               else con.name
@@ -173,7 +173,7 @@ create or replace package body impl as
         --
         session_.pass := case when ( con.pass is null )
                               then case when ( session_.pass is null )
-                                        then param_( 'default_hive_pass' )
+                                        then param_( 'hive_pass' )
                                         else session_.pass
                                    end
                               else con.pass
@@ -264,25 +264,25 @@ create or replace package body impl as
 
         --
         con.host := case when ( hst is null )
-                         then param_( 'default_hive_host' )
+                         then param_( 'hive_host' )
                          else hst
                     end;
 
         --
         con.port := case when ( prt is null )
-                         then param_( 'default_hive_port' )
+                         then param_( 'hive_port' )
                          else prt
                     end;
 
         --
         con.name := case when ( usr is null )
-                         then param_( 'default_hive_user' )
+                         then param_( 'hive_user' )
                          else usr
                     end;
 
         --
         con.pass := case when ( pwd is null )
-                         then param_( 'default_hive_pass' )
+                         then param_( 'hive_pass' )
                          else pwd
                     end;
 

@@ -684,7 +684,7 @@ public class hive_bind
         {
             try
             {
-                String par = hive_parameter.value( "default_date_format" );
+                String par = hive_parameter.value( "date_format" );
 
                 if ( par == null )
                     par = new String( "YYYY-MM-DD" );
@@ -771,7 +771,7 @@ public class hive_bind
         {
             try
             {
-                String par = hive_parameter.value( "default_time_format" );
+                String par = hive_parameter.value( "time_format" );
 
                 if ( par == null )
                     par = new String( "hh:mm a" );
@@ -794,7 +794,7 @@ public class hive_bind
         {
             try
             {
-                String par = hive_parameter.value( "default_timestamp_format" );
+                String par = hive_parameter.value( "timestamp_format" );
 
                 if ( par == null )
                     par = new String( "yyyy-MM-dd hh:mm:ss.SSS" );
@@ -908,12 +908,8 @@ public class hive_bindings
 public class hive_connection
 {
     //
-    private static hive_parameter param_;
-    // private static String driver_ = param_.value( "hive_jdbc_driver" );
-    // String url_ = param_.value( "hive_jdbc_url" );
-
-    private static String driver_ = "com.ddtek.jdbc.hive.HiveDriver";
-    String url_ = "jdbc:datadirect:hive://%host%:%port%;User=%user%;Password=%pass%";
+    private static String driver_;
+    String url_;
 
     //
     public hive_session session;
@@ -965,17 +961,26 @@ public class hive_connection
     {
         try
         {
-            Class.forName( driver_ );
+            Class.forName( getDriverName() );
         }
         catch ( ClassNotFoundException e )
         {
-            throw new hive_exception( "Driver class not foound: " + driver_ );
+            throw new hive_exception( "Driver class not foound: " + getDriverName() );
         }
     }
 
     //
     static public String getDriverName()
+        throws hive_exception
     {
+        if ( driver_ == null )
+        {
+            driver_ = hive_parameter.value( "hive_jdbc_driver" );
+
+            if ( driver_ == null )
+                throw new hive_exception( "Could not find parameter value for JDBC driver" );
+        }
+
         return driver_;
     }
 
@@ -998,6 +1003,11 @@ public class hive_connection
     //
     public String getUrl() throws hive_exception
     {
+        url_ = hive_parameter.value( "hive_jdbc_url" );
+
+        if ( url_ == null )
+            throw new hive_exception( "Could not find parameter for Hive URL" );
+
         if ( ( session.host.length() > 0 )
           && ( session.port.length() > 0 )
           && ( session.name.length() > 0 )
@@ -1026,9 +1036,6 @@ public class hive_connection
                 throw new hive_exception( "Missing password in connection data" );
         }
 
-        //
-        url_ = "jdbc:datadirect:hive://orabdc.local:10000;User=oracle;Password=welcome1";
-
         log.info( url_ );
         return url_;
     }
@@ -1037,16 +1044,16 @@ public class hive_connection
     public boolean loadConnection()
     {
         if ( session.host.length() == 0 )
-            session.host = "orabdc.local"; // param_.value( "default_hive_host" );
+            session.host = hive_parameter.value( "hive_host" );
 
         if ( session.port.length() == 0 )
-            session.port = "10000"; // param_.value( "default_hive_port" );
+            session.port = hive_parameter.value( "hive_port" );
 
         if ( session.name.length() == 0 )
-            session.name = "oracle"; // param_.value( "default_hive_user" );
+            session.name = hive_parameter.value( "hive_user" );
 
         if ( session.pass.length() == 0 )
-            session.pass = "welcome1"; // param_.value( "default_hive_pass" );
+            session.pass = hive_parameter.value( "hive_pass" );
 
         return ( ( session.host.length() > 0 )
               && ( session.port.length() > 0 )

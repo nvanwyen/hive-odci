@@ -9,6 +9,7 @@
 
 #
 push.sh
+dist.sh
 
 #
 archive

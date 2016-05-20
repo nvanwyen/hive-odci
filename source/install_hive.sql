@@ -82,7 +82,7 @@ select current_timestamp "beginning installation"
 @@hive.par.sql
 
 -- -- obfuscation
--- @@wrap.pls.sql
+@@wrap.pls.sql
 
 --
 prompt ... show post installation object errors

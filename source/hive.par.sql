@@ -105,16 +105,36 @@ begin
 
     --
     param_( 'hive_jdbc_driver', 'com.ddtek.jdbc.hive.HiveDriver' );
-    param_( 'hive_jdbc_url', 'jdbc:datadirect:hive://%host%:%port%;User=%user%;Password=%pass%' );
+    param_( 'hive_jdbc_url', 'jdbc:datadirect:hive://' );
 
     --
-    param_( 'bind_priv', 'public' );
-
-    --
-    param_( 'hive_host', 'orabdc.local' );
+    param_( 'hive_host', 'hive.mtihq.com' );
     param_( 'hive_port', '10000' );
+
+    -- auth method should be "kerberos" or "userIdPassword"
+    param_( 'hive_auth', 'kerberos' );
+
+    -- applicable for hive_auth = userIdPassword
     param_( 'hive_user', 'oracle' );
     param_( 'hive_pass', 'welcome1' );
+
+    -- applicable for hive_auth = kerberos
+    param_( 'hive_principal', 'hive/hive.mtihq.com@MTI.COM' );
+
+    -- applicable for hive_auth = kerberos
+    param_( 'java.security.krb5.realm',        'MTI.COM' );
+    param_( 'java.security.krb5.kdc',          'kdc.mti.com' );
+    param_( 'java.security.krb5.conf',         '?/krb/krb5.conf' );
+    param_( 'java.security.auth.login.config', '?/krb/jdbc.conf' );
+
+    -- bind privilege should be "public", "owner" or "role"
+    param_( 'bind_priv',  'public' );
+    --
+    param_( 'bind_owner', '%user%' );
+    param_( 'bind_role',  '%role%' );
+
+    --
+    param_( 'bind_roles', 'HIVE_USER, HIVE_ADMIN' );
 
 end;
 /

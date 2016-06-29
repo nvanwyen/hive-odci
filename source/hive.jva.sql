@@ -435,6 +435,84 @@ public class hive_parameter
         //
         return val;
     }
+
+    //
+    static public String env( String name )
+    {
+        //
+        String val = null;
+
+        //
+        Connection con = null;
+        OracleCallableStatement stm = null;
+
+        try
+        {
+            String sql = "begin sys.dbms_system.get_env( ?, ? ); end;";
+
+            //
+            con = DriverManager.getConnection( "jdbc:default:connection:" );
+
+            //
+            stm = (OracleCallableStatement)con.prepareCall( sql );
+            stm.setString( 1, name );
+            stm.registerOutParameter( 2, OracleTypes.VARCHAR );
+
+            //
+            stm.execute();
+            val = stm.getString( 2 );
+        }
+        catch ( SQLException ex )
+        {
+            //
+        }
+        catch ( Exception ex )
+        {
+            //
+        }
+        finally
+        {
+            try
+            {
+                //
+                if ( stm != null )
+                    stm.close();
+            }
+            catch ( SQLException ex ) {}
+            catch ( Exception ex ) {}
+
+            // *** do not close the "default" connection ***
+        }
+
+        //
+        return val;
+    }
+};
+
+// define an empty callback handler, which sets both the
+// username and password data to an empty string (as there
+// is no ability to provide a prompted response from a user)
+public class callback_handler implements CallbackHandler
+{
+    public void handle( Callback[] cb )
+        throws IOException, UnsupportedCallbackException
+    {
+        for ( int i = 0; i < cb.length; i++ )
+        {
+            if ( cb[ i ] instanceof NameCallback )
+            {
+                NameCallback nc = (NameCallback)cb[ i ];
+                nc.setName( "" );
+            }
+            else if ( cb[ i ] instanceof PasswordCallback )
+            {
+                PasswordCallback pc = (PasswordCallback)cb[ i ];
+                pc.setPassword( ( new String( "" ) ).toCharArray() );
+            }
+            else
+                throw new UnsupportedCallbackException( cb[ i ], "Unrecognised callback" );
+        }
+    }
 };
 
 //
@@ -444,25 +522,78 @@ public class hive_session
 
     public String host;
     public String port;
+
+    // auth type (kerberos or userIdPassword)
+    public String auth;
+
+    // when auth = userIdPassword
     public String name;
     public String pass;
+
+    // when auth = kerberos
+    public String kerb; // see also system paraemters: java.security.krb5.realm
+                        //                             java.security.krb5.kdc
+                        //                             java.security.krb5.conf
+                        //                             java.security.auth.login.config
 
     //
     public hive_session()
     {
+        auth = hive_parameter.value( "hive_auth" );
+
+        if ( auth == null )
+            auth = "userIdPassword";
+
         host = "";
         port = "";
         name = "";
         pass = "";
+        kerb = "";
+    }
+
+    //
+    public hive_session( String h, String p )
+    {
+        auth = hive_parameter.value( "hive_auth" );
+
+        if ( auth == null )
+            auth = "userIdPassword";
+
+        host = h;
+        port = p;
+        name = "";
+        pass = "";
+        kerb = "";
     }
 
     //
     public hive_session( String h, String p, String n, String w )
     {
+        auth = hive_parameter.value( "hive_auth" );
+
+        if ( auth == null )
+            auth = "userIdPassword";
+
         host = h;
         port = p;
         name = n;
         pass = w;
+        kerb = "";
+    }
+
+    //
+    public hive_session( String h, String p, String k )
+    {
+        auth = hive_parameter.value( "hive_auth" );
+
+        if ( auth == null )
+            auth = "userIdPassword";
+
+        host = h;
+        port = p;
+        kerb = k;
+        name = "";
+        pass = "";
     }
 
     //
@@ -472,6 +603,11 @@ public class hive_session
         if ( obj != null )
         {
             oracle.sql.Datum[] atr = obj.getOracleAttributes();
+
+            auth = hive_parameter.value( "hive_auth" );
+
+            if ( auth == null )
+                auth = "userIdPassword";
 
             if ( atr.length > 0 )
             {
@@ -493,25 +629,36 @@ public class hive_session
             else
                 port = "";
 
-            if ( atr.length > 2 )
+            if ( atr.length == 4 )
             {
                 if ( atr[ 2 ] != null )
                     name = atr[ 2 ].toString();
                 else
                     name = "";
-            }
-            else
-                name = "";
 
-            if ( atr.length > 3 )
-            {
                 if ( atr[ 3 ] != null )
                     pass = atr[ 3 ].toString();
                 else
                     pass = "";
+
+                kerb = "";
+            }
+            else if ( atr.length == 3 )
+            {
+                if ( atr[ 2 ] != null )
+                    kerb = atr[ 2 ].toString();
+                else
+                    kerb = "";
+
+                name = "";
+                pass = "";
             }
             else
+            {
+                name = "";
                 pass = "";
+                kerb = "";
+            }
         }
     }
 
@@ -522,8 +669,22 @@ public class hive_session
 
         str += "host: " + host + "\n";
         str += "port: " + port + "\n";
-        str += "name: " + name + "\n";
-        str += "pass: " + pass + "\n";
+
+        str += "auth: " + auth + "\n";
+
+        if ( auth == "userIdPassword" )
+        {
+            str += "name: " + name + "\n";
+            str += "pass: " + pass + "\n";
+        }
+        else if ( auth == "kerberos" )
+        {
+            str += "kerb: " + kerb + "\n";
+        }
+        else
+        {
+            // nothing to do ?
+        }
 
         return str;
     }
@@ -535,10 +696,12 @@ public class hive_session
 
         if ( val != null )
         {
-            if ( host.equals( val.host )
+            if ( auth.equals( val.auth )
+              && host.equals( val.host )
               && port.equals( val.port )
               && name.equals( val.name )
-              && pass.equals( val.pass ) )
+              && pass.equals( val.pass )
+              && kerb.equals( val.kerb ) )
                 eq = true;
         }
 
@@ -939,21 +1102,19 @@ public class hive_connection
     //
     public hive_connection( String host, String port )
     {
-        session = new hive_session();
-
-        session.host = host;
-        session.port = port;
+        session = new hive_session( host, port );
     }
 
     //
     public hive_connection( String host, String port, String name, String pass )
     {
-        session = new hive_session();
+        session = new hive_session( host, port, name, pass );
+    }
 
-        session.host = host;
-        session.port = port;
-        session.name = name;
-        session.pass = pass;
+    //
+    public hive_connection( String host, String port, String kerb )
+    {
+        session = new hive_session( host, name, kerb );
     }
 
     //
@@ -993,12 +1154,14 @@ public class hive_connection
     public void setPort( String val ) { session.port = val; }
     public void setUser( String val ) { session.name = val; }
     public void setPass( String val ) { session.pass = val; }
+    public void setKerb( String val ) { session.kerb = val; }
 
     //
     public String getHost() { return session.host; }
     public String getPort() { return session.port; }
     public String getUser() { return session.name; }
     public String getPass() { return session.pass; }
+    public String getKerb() { return session.kerb; }
 
     //
     public String getUrl() throws hive_exception
@@ -1009,16 +1172,55 @@ public class hive_connection
             throw new hive_exception( "Could not find parameter for Hive URL" );
 
         if ( ( session.host.length() > 0 )
-          && ( session.port.length() > 0 )
-          && ( session.name.length() > 0 )
-          && ( session.pass.length() > 0 ) )
+          && ( session.port.length() > 0 ) )
         {
-            if ( url_.indexOf( '%' ) >= 0 )
+            url_ += session.host + ":" + session.port;
+
+            if ( session.auth != null )
             {
-                url_.replace( "%h%", session.host );
-                url_.replace( "%p%", session.port );
-                url_.replace( "%u%", session.name );
-                url_.replace( "%w%", session.pass );
+                url_ += ";AuthenticationMethod=" + session.auth;
+
+                if ( session.auth == "userIdPassword" )
+                {
+                    if ( session.name != null )
+                    {
+                        if ( session.name.length() > 0 )
+                            url_ += ";User=" + session.name;
+                        else
+                            throw new hive_exception( "Missing user in connection data" );
+                    }
+                    else
+                        throw new hive_exception( "Encountered NULL user in connection data" );
+
+                    if ( session.pass != null )
+                    {
+                        if ( session.pass.length() > 0 )
+                            url_ +=";Password=" + session.pass;
+                        else
+                            throw new hive_exception( "Missing password in connection data" );
+                    }
+                    else
+                        throw new hive_exception( "Encountered NULL password in connection data" );
+                }
+                else if ( session.auth == "kerberos" )
+                {
+                    if ( session.kerb != null )
+                    {
+                        if ( session.kerb.length() > 0 )
+                            url_ +=";ServicePrincipalName=" + session.kerb;
+                        else
+                            throw new hive_exception( "Missing Kerberos principal in connection data" );
+                    }
+                    else
+                        throw new hive_exception( "Encountered NULL Kerberos principal in connection data" );
+                }
+                else
+                {
+                    throw new hive_exception( "Unknown authentication method [" + session.auth + "] encountered" );
+                }
+            else
+            {
+                throw new hive_exception( "Encountered NULL session authentication method" );
             }
         }
         else
@@ -1028,14 +1230,8 @@ public class hive_connection
 
             if ( session.port.length() == 0 )
                 throw new hive_exception( "Missing port in connection data" );
-
-            if ( session.name.length() == 0 )
-                throw new hive_exception( "Missing user in connection data" );
-
-            if ( session.pass.length() == 0 )
-                throw new hive_exception( "Missing password in connection data" );
         }
-
+        
         log.info( url_ );
         return url_;
     }
@@ -1049,16 +1245,36 @@ public class hive_connection
         if ( session.port.length() == 0 )
             session.port = hive_parameter.value( "hive_port" );
 
-        if ( session.name.length() == 0 )
-            session.name = hive_parameter.value( "hive_user" );
+        if ( session.auth == 'userIdPassword' )
+        {
+            if ( session.name.length() == 0 )
+                session.name = hive_parameter.value( "hive_user" );
 
-        if ( session.pass.length() == 0 )
-            session.pass = hive_parameter.value( "hive_pass" );
+            if ( session.pass.length() == 0 )
+                session.pass = hive_parameter.value( "hive_pass" );
+
+            session.kerb = "";
+        }
+        else if ( session.auth == 'kerberos' )
+        {
+            if ( session.kerb.length() == 0 )
+                session.kerb = hive_parameter.value( "hive_principal" );
+
+            session.name = "";
+            session.pass = "";
+        }
+        else
+        {
+            session.name = "";
+            session.pass = "";
+            session.kerb = "";
+        }
 
         return ( ( session.host.length() > 0 )
               && ( session.port.length() > 0 )
-              && ( session.name.length() > 0 )
-              && ( session.pass.length() > 0 ) );
+              && ( ( session.kerb.length() > 0 )
+                || ( ( session.name.length() > 0 )
+                  && ( session.pass.length() > 0 ) ) ) );
     }
 
     //
@@ -1078,13 +1294,78 @@ public class hive_connection
                 String url = getUrl();
 
                 if ( url.length() > 0 )
+                {
+                    if ( session.auth == "kerberos" )
+                        login();
+
                     conn_ = DriverManager.getConnection( url );
+                }
             }
             else
                 throw new hive_exception( "Could not load connection data" );
         }
 
         return conn_;
+    }
+
+    //
+    public boolean login() throws SQLException, hive_exception
+    {
+        boolean ok = false;
+
+        //
+        String rlm = hive_parameter.value( "java.security.krb5.realm" );
+        String kdc = hive_parameter.value( "java.security.krb5.kdc" );
+        String cnf = hive_parameter.value( "java.security.krb5.conf" );
+        String jdb = hive_parameter.value( "java.security.auth.login.config" );
+
+        if ( rlm != null )
+            System.setProperty( "java.security.krb5.realm", rlm );
+
+        if ( kdc != null )
+            System.setProperty( "java.security.krb5.kdc" );
+
+        if ( cnf != null )
+        {
+            if ( cnf.indexOf( "?" ) >= 0 )
+            {
+                String oh = hive_parameter.env( "ORACLE_HOME" );
+
+                if ( oh != null )
+                    cnf = cnf.replace( "?", oh );
+            }
+
+            System.setProperty( "java.security.krb5.conf", cnf );
+        }
+
+        if ( jdb != null )
+        {
+            if ( jdb.indexOf( "?" ) >= 0 )
+            {
+                String oh = hive_parameter.env( "ORACLE_HOME" );
+
+                if ( oh != null )
+                    jdb = jdb.replace( "?", oh );
+            }
+
+            System.setProperty( "java.security.auth.login.config", jdb );
+        }
+
+        try
+        {
+            Subject sub = new Subject();
+            LoginContext lc = new LoginContext( "JDBC_DRIVER_01", sub, new callback_handler() );
+
+            lc.login();
+            ok = true;
+        }
+        catch ( LoginException ex )
+        {
+            ok = false;
+            throw new hive_exception( "Kerberos exception: " + ex.getMessage() );
+        }
+
+        return ok;
     }
 
     //

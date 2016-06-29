@@ -1,0 +1,27 @@
+#
+# hiveodic test harness properties file
+#
+
+# set the driver and url
+driver = com.ddtek.jdbc.hive.HiveDriver
+url = jdbc:datadirect:hive://%host%:%port%
+
+# set the target
+host = hive.mtihq.com
+port = 10000
+
+# authn method (should be kerberos or userIdPassword)
+authmethod = kerberos
+
+# set the credentials (only used if authmethod=userIdPassword)
+user = oracle
+password = welcome1
+
+# set the kerberos principal name (only used when authmethod=kerberos)
+principal = hive/hive.mtihq.com@MTIHQ.COM
+
+# set the query to run (select statement only)
+sql = select usr_id_nbr, qry_data_id_nbr from usr_qry limit 10
+
+# set the action (describe, query or both)
+action = both

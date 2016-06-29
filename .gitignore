@@ -7,6 +7,9 @@
 # Compiled Pre-Linked Libraries
 *.plx
 
+# java classes
+*.class
+
 #
 push.sh
 dist.sh

@@ -8,21 +8,142 @@ import java.sql.Statement;
 import java.sql.Types;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Properties;
 
 import java.lang.IllegalArgumentException;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+
+import javax.security.auth.*;
+import javax.security.auth.login.*;
+import javax.security.auth.callback.*;
+import javax.security.auth.kerberos.*; 
+
+//
+class DefaultCallbackHandler implements CallbackHandler
+{
+    public void handle(Callback[] callbacks)
+        throws IOException, UnsupportedCallbackException
+    {
+        System.out.println( "*** DefaultCallbackHandler::handle called" );
+
+        for (int i = 0; i < callbacks.length; i++)
+        {
+            if ( callbacks[i] instanceof NameCallback )
+            {
+                System.out.println( "*** DefaultCallbackHandler::handle callbacks[" + i + "] instanceof NameCallback" );
+                NameCallback nc = (NameCallback)callbacks[i];
+                // nc.setName(username);
+                nc.setName( "" );
+            }
+            else if ( callbacks[i] instanceof PasswordCallback )
+            {
+                System.out.println( "*** DefaultCallbackHandler::handle callbacks[" + i + "] instanceof PasswordCallback" );
+
+                PasswordCallback pc = (PasswordCallback)callbacks[i];
+                // pc.setPassword(password.toCharArray());
+                pc.setPassword( ( new String( "" ) ).toCharArray() );
+            }
+            else
+                throw new UnsupportedCallbackException( callbacks[i], "Unrecognised callback" );
+        }
+    }
+}
 
 public class hiveodic {
     //
     private static String driverName = "com.ddtek.jdbc.hive.HiveDriver";
 
+    //
+    private static String getProperty( String key )
+    {
+        String val = "";
+
+        try
+        {
+            String cnf = "hiveodic.prop";
+            Properties prop = new Properties();
+            InputStream in;
+
+            in = hiveodic.class.getClassLoader().getResourceAsStream( cnf );
+ 
+            if ( in != null )
+            {
+                prop.load( in );
+            }
+            else
+            {
+                throw new FileNotFoundException( "property file '" + cnf + "' not found in the classpath" );
+            }
+
+            val = prop.getProperty( key );
+        }
+        catch ( FileNotFoundException ex )
+        {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+        catch ( IOException ex )
+        {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+
+        if ( val == null )
+        {
+            try
+            {
+                throw new IllegalArgumentException( "Missing property \"" + key + "\"" );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                ex.printStackTrace();
+                System.exit(1);
+            }
+        }
+
+        return val;
+    }
 
     //
-    private static Connection connect( String usr, String pwd ) throws SQLException
+    private static Connection connect() throws SQLException
     {
-        String url = "jdbc:datadirect:hive://orabdc.local:10000;User=%u%;Password=%p%";
+        String url = getProperty( "url" );
 
-        url.replace( "%u%", usr );
-        url.replace( "%p%", pwd );
+        url = url.replace( "%host%", getProperty( "host" ) );
+        url = url.replace( "%port%", getProperty( "port" ) );
+
+        url += ";AuthenticationMethod=" + getProperty( "authmethod" );
+
+        if ( getProperty( "authmethod" ).equals( "userIdPassword" ) )
+            url += ";User=" + getProperty( "user" )  + ";Password=" + getProperty( "password" );
+        else
+        {
+            LoginContext lc = null;
+
+            try
+            {
+                System.out.println( "*** Creating connect LoginContext" );
+
+                Subject sub = new Subject();
+                lc = new LoginContext( "JDBC_DRIVER_01", sub, new DefaultCallbackHandler() );
+
+                // attempt authentication
+                System.out.println( "*** Calling lc.login()" );
+                lc.login();
+
+                System.out.println( "*** LoginContext: " + lc.toString() );
+            }
+            catch ( LoginException ex )
+            {
+                ex.printStackTrace();
+                System.exit(1);
+            }
+
+            url += ";ServicePrincipalName=" + getProperty( "principal" );
+        }
 
         return DriverManager.getConnection( url );
     }
@@ -101,6 +222,8 @@ public class hiveodic {
 
         rst.close();
         stm.close();
+
+        System.out.println();
     }
 
     //
@@ -145,6 +268,7 @@ public class hiveodic {
 
         System.out.println();
         System.out.println( rows + " returned" );
+        System.out.println();
     }
 
     //
@@ -152,26 +276,19 @@ public class hiveodic {
     {
         int opt = 0;
 
-        for ( int i = 0; i < args.length; ++i )
-        {
-            if ( args[i].equalsIgnoreCase( "describe" ) )
-                opt |= 1;
-            else if ( args[i].equalsIgnoreCase( "desc" ) )
-                opt |= 1;
-            else if ( args[i].equalsIgnoreCase( "-d" ) )
-                opt |= 1;
-            else if ( args[i].equalsIgnoreCase( "query" ) )
-                opt |= 2;
-            else if ( args[i].equalsIgnoreCase( "-q" ) )
-                opt |= 2;
-            else if ( args[i].equalsIgnoreCase( "both" ) )
-                opt |= 3;
-            else if ( args[i].equalsIgnoreCase( "-b" ) )
-                opt |= 3;
-            else 
-                throw new IllegalArgumentException( "Unknown argument [" + args[i] + "]: " +
-                                                    "use describe|desc|-d|query|-q|both|-b" );
-        }
+        String act = getProperty( "action" );
+
+        if ( act.equalsIgnoreCase( "describe" ) )
+            opt |= 1;
+        else if ( act.equalsIgnoreCase( "desc" ) )
+            opt |= 1;
+        else if ( act.equalsIgnoreCase( "query" ) )
+            opt |= 2;
+        else if ( act.equalsIgnoreCase( "both" ) )
+            opt |= 3;
+        else 
+            throw new IllegalArgumentException( "Unknown argument [" + act + "]: " +
+                                                "use describe|desc|query|both" );
 
         if ( opt == 0 )
             opt = 1;        // default "describe"
@@ -181,28 +298,21 @@ public class hiveodic {
 
     //
     public static void main(String[] args) throws SQLException {
+
         //
         int run = parse_args( args );
 
         try {
-            Class.forName(driverName);
+            Class.forName( getProperty( "driver" ) );
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         }
 
         System.out.println("Using driver: " + driverName );
-        Connection con = connect( "oracle", "welcome1" );
 
-        //String sql = "select * from movie where movie_id > 36000 and lower( title ) like '%here%' limit 10";
-        //String sql = "select * from movie where movie_id > 0";
-        //String sql = "select * from cust";
-        ////String sql = "select * from movie_view limit 10";
-        //String sql = "select a.movie_id, a.title, b.avg_rating from movie a, movie_rating b where a.movie_id = b.movie_id and a.movie_id > 36000 and lower( a.title ) like '%here%' limit 10";
-        //String sql = "select * from movie_view";
-        //String sql = "select count(*) count_of from movie_view";
-        //String sql = "select * from movieapp_log_odistage";
-        String sql = "select cust_id, last_name, first_name from cust";
+        Connection con = connect();
+        String sql = getProperty( "sql" );
 
         if ( ( run & 1 ) == 1 )
             descSql( con, limitSql( sql ) );

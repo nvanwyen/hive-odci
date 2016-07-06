@@ -107,6 +107,14 @@ create or replace package binding as
     procedure clear( lst in out binds );
 
     --
+    procedure allow( key in varchar2,
+                     act in varchar2 );
+
+    --
+    procedure deny( key in varchar2,
+                    act in varchar2 );
+
+    --
     procedure save( key in varchar2, lst in binds );
 
 end binding;
@@ -116,6 +124,14 @@ show errors
 
 --
 create or replace package body binding as
+
+    --
+    function allowed_( k in varchar2, a in varchar2 ) return boolean is
+    begin
+
+        return false;
+
+    end allowed_;
 
     --
     function get( key in varchar2 ) return binds is
@@ -378,6 +394,24 @@ create or replace package body binding as
         lst.delete;
 
     end clear;
+
+    --
+    procedure allow( key in varchar2,
+                     act in varchar2 ) is
+    begin
+
+        null;
+
+    end allow;
+
+    --
+    procedure deny( key in varchar2,
+                    act in varchar2 ) is
+    begin
+
+        null;
+
+    end deny;
 
     --
     procedure save( key in varchar2, lst in binds ) is

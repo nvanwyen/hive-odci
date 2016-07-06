@@ -20,7 +20,7 @@ select * from table( hive_q( 'select cust_id, last_name, first_name from cust',
                              null ) );
 
 --
-select * from table( hive_q( 'select last_name, count(0) total from cust group by last_name order by total desc',
+select * from table( hive_q( 'select last_name, count(0) total from cust group by last_name order by total desc limit 10',
                              null,
                              null ) );
 

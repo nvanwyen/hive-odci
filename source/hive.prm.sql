@@ -10,9 +10,6 @@ prompt ... running hive.prm.sql
 grant resource to hive;
 
 --
-alter user hive quota unlimited on users;
-
---
 grant create any operator to hive;
 grant execute any operator to hive;
 grant unlimited tablespace to hive;
@@ -31,6 +28,26 @@ exec dbms_java.grant_permission( 'HIVE', 'SYS:java.net.SocketPermission', '*', '
 --
 exec dbms_java.grant_policy_permission( 'HIVE', 'SYS', 'java.io.FilePermission', '*' );
 exec dbms_java.grant_policy_permission( 'HIVE', 'SYS', 'java.lang.RuntimePermission', '*' );
+
+-- runtime, system and security properties
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', '*', null );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', '*', null );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.lang.RuntimePermission', '*', null );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.io.FilePermission', '*', null );
+
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', '*', '*' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', '*', '*' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.lang.RuntimePermission', '*', '*' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.io.FilePermission', '*', '*' );
+
+-- specific
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.realm', 'write' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.kdc', 'write' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.conf', 'write' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.auth.login.config', 'write' );
+
+-- kerberos login
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'getSubject', '' );
 
 --
 grant execute on dbms_sql      to hive;

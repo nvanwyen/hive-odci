@@ -27,8 +27,10 @@ import java.lang.*;
 import java.math.*;
 import java.util.*;
 import java.text.*;
+import java.security.*;
 import java.util.regex.*;
 
+import javax.security.*;
 import javax.security.auth.*;
 import javax.security.auth.login.*;
 import javax.security.auth.callback.*;
@@ -555,6 +557,8 @@ public class hive_session
         name = "";
         pass = "";
         kerb = "";
+
+        log.trace( "hive_session default ctor" );
     }
 
     //
@@ -570,6 +574,8 @@ public class hive_session
         name = "";
         pass = "";
         kerb = "";
+
+        log.trace( "hive_session ctor - host: " + h + ", port: " + p );
     }
 
     //
@@ -585,6 +591,8 @@ public class hive_session
         name = n;
         pass = w;
         kerb = "";
+
+        log.trace( "hive_session ctor - host: " + h + ", port: " + p + " , name: " + n + ", pass: " + p );
     }
 
     //
@@ -600,6 +608,8 @@ public class hive_session
         kerb = k;
         name = "";
         pass = "";
+
+        log.trace( "hive_session ctor - host: " + h + ", port: " + p + ", kerb: " + k );
     }
 
     //
@@ -665,7 +675,11 @@ public class hive_session
                 pass = "";
                 kerb = "";
             }
+
+            log.trace( "hive_session ctor - oracle.sql.STRUCT: " + obj.toString() );
         }
+        else
+            log.info( "hive_session ctor - oracle.sql.STRUCT: NULL" );
     }
 
     //
@@ -692,6 +706,7 @@ public class hive_session
             // nothing to do ?
         }
 
+        log.trace( "hive_session toString: " + str );
         return str;
     }
 
@@ -711,6 +726,7 @@ public class hive_session
                 eq = true;
         }
 
+        log.trace( "hive_session equals: " + ( ( eq ) ? "TRUE" : "FALSE" ) );
         return eq;
     }
 };
@@ -1142,8 +1158,9 @@ public class hive_connection
         {
             Class.forName( getDriverName() );
         }
-        catch ( ClassNotFoundException e )
+        catch ( ClassNotFoundException ex )
         {
+            log.error( "loadDriver error: " + ex.getMessage() );
             throw new hive_exception( "Driver class not found: " + getDriverName() );
         }
     }
@@ -1363,10 +1380,16 @@ public class hive_connection
         String jdb = hive_parameter.value( "java.security.auth.login.config" );
 
         if ( rlm != null )
+        {
+            log.trace( "login setting java.security.krb5.realm: " + rlm );
             System.setProperty( "java.security.krb5.realm", rlm );
+        }
 
         if ( kdc != null )
+        {
+            log.trace( "login setting java.security.krb5.kdc: " + kdc );
             System.setProperty( "java.security.krb5.kdc", kdc );
+        }
 
         if ( cnf != null )
         {
@@ -1378,6 +1401,7 @@ public class hive_connection
                     cnf = cnf.replace( "?", oh );
             }
 
+            log.trace( "login setting java.security.krb5.conf: " + cnf );
             System.setProperty( "java.security.krb5.conf", cnf );
         }
 
@@ -1391,6 +1415,7 @@ public class hive_connection
                     jdb = jdb.replace( "?", oh );
             }
 
+            log.trace( "login setting java.security.auth.login.config: " + jdb );
             System.setProperty( "java.security.auth.login.config", jdb );
         }
 
@@ -1401,10 +1426,13 @@ public class hive_connection
 
             lc.login();
             ok = true;
+
+            log.trace( "kerberos login successful" );
         }
         catch ( LoginException ex )
         {
             ok = false;
+            log.error( "kerberos login failed: " + ex.getMessage() );
             throw new hive_exception( "Kerberos exception: " + ex.getMessage() );
         }
 

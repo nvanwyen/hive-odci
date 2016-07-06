@@ -7,9 +7,10 @@
 set linesize 160
 set pagesize 50000
 set trimspool on
+set serveroutput on
 
 --
-!( ver )
+!( ./ver )
 
 --
 whenever oserror  exit 9;
@@ -123,6 +124,10 @@ begin
     if ( c > 0 ) then
 
         raise_application_error( -20001, to_char( c ) || ' installation error(s) encountered, please review' );
+
+    else
+
+        dbms_output.put_line( 'Installation successful' );
 
     end if;
 

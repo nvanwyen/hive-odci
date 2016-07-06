@@ -10,7 +10,7 @@ prompt ... running hive.pkb.sql
 alter session set current_schema = hive;
 
 --
-create or replace package body hive as
+create or replace package body remote as
 
     --
     ctx constant varchar2( 7 ) := 'hivectx';
@@ -138,7 +138,7 @@ create or replace package body hive as
 
     end ddl;
 
-end hive;
+end remote;
 /
 
 show errors

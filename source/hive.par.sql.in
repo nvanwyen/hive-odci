@@ -91,10 +91,10 @@ begin
 
     --
     param_( 'application', 'Hive ODCI' );
-    param_( 'version', 'v0.0.0.2' );
+    param_( 'version', '%version%' );
 
     --
-    param_( 'log_level', 'error, warn, info, debug' );
+    param_( 'log_level', '3' );
 
     --
     param_( 'encrypted_values', 'hive_pass' );
@@ -112,7 +112,7 @@ begin
     param_( 'hive_port', '10000' );
 
     -- auth method should be "kerberos" or "userIdPassword"
-    param_( 'hive_auth', 'kerberos' );
+    param_( 'hive_auth', 'userIdPassword' );
 
     -- applicable for hive_auth = userIdPassword
     param_( 'hive_user', 'oracle' );
@@ -135,6 +135,9 @@ begin
 
     --
     param_( 'bind_roles', 'HIVE_USER, HIVE_ADMIN' );
+
+    --
+    param_( 'query_limit', 5000 );
 
 end;
 /

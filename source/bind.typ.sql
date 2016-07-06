@@ -383,8 +383,12 @@ create or replace package body binding as
     procedure save( key in varchar2, lst in binds ) is
 
         pragma autonomous_transaction;
+        own varchar2( 4000 );
 
     begin
+
+        -- TBD: set owner and permissions
+        own := dbms_standard.login_user;
 
         --
         delete from filter$ a
@@ -399,7 +403,8 @@ create or replace package body binding as
                 a.seq,
                 a.value,
                 a.type,
-                a.scope
+                a.scope,
+                a.owner
             )
             values
             (
@@ -407,7 +412,8 @@ create or replace package body binding as
                 i,
                 lst( i ).value,
                 nvl( lst( i ).type, unknown ),
-                nvl( lst( i ).scope, unknown )
+                nvl( lst( i ).scope, unknown ),
+                own
             );
 
         end loop;

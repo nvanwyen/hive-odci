@@ -24,6 +24,7 @@ create table filter$
     seq   number           not null,
     type  number           not null,
     scope number           not null,
+    owner varchar2( 128 )  not null,
     value varchar2( 4000 )     null
 )
 /

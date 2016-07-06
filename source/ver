@@ -1,0 +1,124 @@
+#!/bin/bash
+
+cat=`which cat`
+sed=`which sed`
+head=`which head`
+date=`which date`
+
+if [[ -z ${cat} ]] ; then
+
+    echo "cat utility not found!"
+    exit 2
+
+else
+
+    if [ ! -f ${cat} ] ; then
+
+        echo "cat [${cat}] invalid"
+        exit 2
+
+    fi
+
+fi
+
+if [[ -z ${sed} ]] ; then
+
+    echo "sed utility not found!"
+    exit 2
+
+else
+
+    if [ ! -f ${sed} ] ; then
+
+        echo "sed [${sed}] invalid"
+        exit 2
+
+    fi
+
+fi
+
+if [[ -z ${head} ]] ; then
+
+    echo "head utility not found!"
+    exit 2
+
+else
+
+    if [ ! -f ${head} ] ; then
+
+        echo "head [${head}] invalid"
+        exit 2
+
+    fi
+
+fi
+
+if [[ -z ${date} ]] ; then
+
+    echo "date utility not found!"
+    exit 2
+
+else
+
+    if [ ! -f ${date} ] ; then
+
+        echo "date [${date}] invalid"
+        exit 2
+
+    fi
+
+fi
+
+if [ -f hive.par.sql.in ] ; then
+
+    if [ -f ../VERSION ] ; then
+
+        ver=`${cat} ../VERSION | ${head} -n 1`
+
+        if [[ ! -z {ver} ]] ; then
+
+            if [ -f hive.par.sql ] ; then
+
+                dts=`${date} +%Y%m%d%H%M%S`
+                echo -n "Found previous hive.par.sql, backing up to hive.par.sql.${dts} ... "
+                cp hive.par.sql hive.par.sql.${dts}
+                echo
+
+            fi
+
+            echo -n "Setting version data ${ver} ... "
+            ${sed} s/%version%/${ver}/g hive.par.sql.in > hive.par.sql
+
+            if [ "$?" -eq 0 ] ; then
+
+                echo "ok"
+
+            else
+
+                echo "failed"
+                exit 1
+
+            fi
+
+        else
+
+            echo "No version data avaiable!"
+            exit 2
+
+        fi
+
+    else
+
+        echo "Hive ODCI VERSION file not found!"
+        exit 2
+
+    fi
+
+else
+
+    echo "Hive ODCI Parameter IN file not found!"
+    exit 2
+
+fi
+
+exit 0

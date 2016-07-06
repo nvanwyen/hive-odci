@@ -184,7 +184,7 @@ create or replace package body impl as
                                   else con.pass
                              end;
 
-            session_.kerb = null;
+            session_.kerb := null;
 
         else -- auth = 'kerberos'
 
@@ -197,8 +197,8 @@ create or replace package body impl as
                                   else con.kerb
                              end;
 
-            session_.name = null;
-            session_.pass = null;
+            session_.name := null;
+            session_.pass := null;
 
 
         end if;
@@ -318,8 +318,8 @@ create or replace package body impl as
                     end;
 
         --
-        con.name = null;
-        con.pass = null;
+        con.name := null;
+        con.pass := null;
 
         --
         session( con );
@@ -361,7 +361,7 @@ create or replace package body impl as
                     end;
 
         --
-        con.kerb = null;
+        con.kerb := null;
 
         --
         session( con );

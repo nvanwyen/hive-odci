@@ -21,12 +21,12 @@ create index param$value
 
 --
 create unique index filter$key
-    on filter$ ( key, seq )
+    on filter$ ( key, seq, owner )
 /
 
 --
 create index filter$seq
-    on filter$ ( seq, type, scope )
+    on filter$ ( seq, type, owner, scope )
 /
 
 --

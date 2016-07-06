@@ -199,13 +199,13 @@ begin
     begin
 
         --
-        wrap_( body_( 'HIVE', 'HIVE' ) );
-        dbms_output.put_line( 'HIVE.HIVE Body wrapped' );
+        wrap_( body_( 'HIVE', 'REMOTE' ) );
+        dbms_output.put_line( 'HIVE.REMOTE Body wrapped' );
 
         --
         exception
             when others then
-                dbms_output.put_line( 'Error wrapping body [HIVE.HIVE]: ' || sqlerrm );
+                dbms_output.put_line( 'Error wrapping body [HIVE.REMOTE]: ' || sqlerrm );
 
     end;
 

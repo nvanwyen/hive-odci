@@ -34,7 +34,8 @@ select current_timestamp "beginning removal"
 drop user hive cascade;
 
 --
-drop public synonym hive;
+drop public synonym hive_t;
+drop public synonym hive_q;
 drop public synonym hive_bind;
 drop public synonym hive_binds;
 drop public synonym hive_binding;

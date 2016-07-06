@@ -7,7 +7,6 @@
 prompt ... running hive.syn.sql
 
 --
-create or replace public synonym hive for hive.hive;
 create or replace public synonym hive_q for hive.hive_q;
 create or replace public synonym hive_t for hive.hive_t;
 

@@ -9,6 +9,9 @@ set pagesize 50000
 set trimspool on
 
 --
+!( ver )
+
+--
 whenever oserror  exit 9;
 whenever sqlerror exit sql.sqlcode;
 
@@ -25,7 +28,7 @@ select sys_context( 'userenv', 'db_name' )
 set termout on;
 
 --
-spool &&logfile
+spool &&logfile append
 
 --
 prompt ... running install_hive.sql
@@ -85,26 +88,51 @@ select current_timestamp "beginning installation"
 @@wrap.pls.sql
 
 --
+select current_timestamp "completed installation"
+  from dual;
+
+--
 prompt ... show post installation object errors
 
 --
 set linesize 160
 set pagesize 50000
 
+--
 col name for a30 head "name"
 col text for a80 head "text" word_wrap
 
+--
 select name,
        text
   from all_errors
  where owner = 'HIVE';
 
 --
-select current_timestamp "completed installation"
-  from dual;
+declare
 
+    c number := 0;
+
+begin
+
+    select count(0) into c
+      from all_errors
+     where owner = 'HIVE'
+       and text not like 'Note: %';
+
+    if ( c > 0 ) then
+
+        raise_application_error( -20001, to_char( c ) || ' installation error(s) encountered, please review' );
+
+    end if;
+
+end;
+/
+
+--
 prompt
 prompt Run: jdbc/load-jdbc.sh "sys"
+prompt .... policy/load-policy.sh "sys"
 prompt
 
 --

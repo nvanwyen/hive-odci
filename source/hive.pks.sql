@@ -10,7 +10,7 @@ prompt ... running hive.pks.sql
 alter session set current_schema = hive;
 
 --
-create or replace package hive as
+create or replace package remote as
 
     --
     function session_param( name  in varchar2 ) return varchar2;
@@ -49,7 +49,7 @@ create or replace package hive as
     procedure ddl( stm in varchar2,
                    con in connection default null );
 
-end hive;
+end remote;
 /
 
 show errors

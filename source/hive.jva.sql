@@ -23,10 +23,16 @@ package oracle.mti;
 import java.io.*;
 import java.net.*;
 import java.sql.*;
+import java.lang.*;
 import java.math.*;
 import java.util.*;
 import java.text.*;
 import java.util.regex.*;
+
+import javax.security.auth.*;
+import javax.security.auth.login.*;
+import javax.security.auth.callback.*;
+import javax.security.auth.kerberos.*;
 
 import oracle.sql.*;
 import oracle.jdbc.*;
@@ -531,7 +537,7 @@ public class hive_session
     public String pass;
 
     // when auth = kerberos
-    public String kerb; // see also system paraemters: java.security.krb5.realm
+    public String kerb; // see also system parameters: java.security.krb5.realm
                         //                             java.security.krb5.kdc
                         //                             java.security.krb5.conf
                         //                             java.security.auth.login.config
@@ -672,12 +678,12 @@ public class hive_session
 
         str += "auth: " + auth + "\n";
 
-        if ( auth == "userIdPassword" )
+        if ( auth.equals( "userIdPassword" ) )
         {
             str += "name: " + name + "\n";
             str += "pass: " + pass + "\n";
         }
-        else if ( auth == "kerberos" )
+        else if ( auth.equals( "kerberos" ) )
         {
             str += "kerb: " + kerb + "\n";
         }
@@ -835,6 +841,8 @@ public class hive_bind
                 val = true;
         }
 
+
+        log.trace( "hive_bind::toBool: " + toString() );
         return val;
     }
 
@@ -858,6 +866,7 @@ public class hive_bind
             catch ( Exception /*ParseException*/ ex ) {}
         }
 
+        log.trace( "hive_bind::toDate: " + toString() );
         return val;
     }
 
@@ -871,6 +880,7 @@ public class hive_bind
             val = Float.valueOf( value );
         }
 
+        log.trace( "hive_bind::toFloat: " + toString() );
         return val;
     }
 
@@ -884,6 +894,7 @@ public class hive_bind
             val = Integer.valueOf( value );
         }
 
+        log.trace( "hive_bind::toInt: " + toString() );
         return val;
     }
 
@@ -897,12 +908,14 @@ public class hive_bind
             val = Long.valueOf( value );
         }
 
+        log.trace( "hive_bind::toLong: " + toString() );
         return val;
     }
 
     //
     public String toRowid()
     {
+        log.trace( "hive_bind::toRowid: " + toString() );
         return toVarchar();
     }
 
@@ -916,12 +929,14 @@ public class hive_bind
             val = Short.valueOf( value );
         }
 
+        log.trace( "hive_bind::toShort: " + toString() );
         return val;
     }
 
     //
     public String toVarchar()
     {
+        log.trace( "hive_bind::tovarchar: " + toString() );
         return value;
     }
 
@@ -945,6 +960,7 @@ public class hive_bind
             catch ( ParseException ex ) {}
         }
 
+        log.trace( "hive_bind::toTime: " + toString() );
         return val;
     }
 
@@ -968,6 +984,7 @@ public class hive_bind
             catch ( ParseException ex ) {}
         }
 
+        log.trace( "hive_bind::toTimestamp: " + toString() );
         return val;
     }
 
@@ -982,6 +999,7 @@ public class hive_bind
         }
         catch ( MalformedURLException ex ) {}
 
+        log.trace( "hive_bind::toUrl: " + toString() );
         return val;
     }
 };
@@ -1114,7 +1132,7 @@ public class hive_connection
     //
     public hive_connection( String host, String port, String kerb )
     {
-        session = new hive_session( host, name, kerb );
+        session = new hive_session( host, port, kerb );
     }
 
     //
@@ -1126,7 +1144,7 @@ public class hive_connection
         }
         catch ( ClassNotFoundException e )
         {
-            throw new hive_exception( "Driver class not foound: " + getDriverName() );
+            throw new hive_exception( "Driver class not found: " + getDriverName() );
         }
     }
 
@@ -1180,7 +1198,7 @@ public class hive_connection
             {
                 url_ += ";AuthenticationMethod=" + session.auth;
 
-                if ( session.auth == "userIdPassword" )
+                if ( session.auth.equals( "userIdPassword" ) )
                 {
                     if ( session.name != null )
                     {
@@ -1195,19 +1213,19 @@ public class hive_connection
                     if ( session.pass != null )
                     {
                         if ( session.pass.length() > 0 )
-                            url_ +=";Password=" + session.pass;
+                            url_ += ";Password=" + session.pass;
                         else
                             throw new hive_exception( "Missing password in connection data" );
                     }
                     else
                         throw new hive_exception( "Encountered NULL password in connection data" );
                 }
-                else if ( session.auth == "kerberos" )
+                else if ( session.auth.equals( "kerberos" ) )
                 {
                     if ( session.kerb != null )
                     {
                         if ( session.kerb.length() > 0 )
-                            url_ +=";ServicePrincipalName=" + session.kerb;
+                            url_ += ";ServicePrincipalName=" + session.kerb;
                         else
                             throw new hive_exception( "Missing Kerberos principal in connection data" );
                     }
@@ -1218,6 +1236,7 @@ public class hive_connection
                 {
                     throw new hive_exception( "Unknown authentication method [" + session.auth + "] encountered" );
                 }
+            }
             else
             {
                 throw new hive_exception( "Encountered NULL session authentication method" );
@@ -1237,7 +1256,7 @@ public class hive_connection
     }
 
     //
-    public boolean loadConnection()
+    public boolean loadConnection() throws hive_exception
     {
         if ( session.host.length() == 0 )
             session.host = hive_parameter.value( "hive_host" );
@@ -1245,7 +1264,7 @@ public class hive_connection
         if ( session.port.length() == 0 )
             session.port = hive_parameter.value( "hive_port" );
 
-        if ( session.auth == 'userIdPassword' )
+        if ( session.auth.equals( "userIdPassword" ) )
         {
             if ( session.name.length() == 0 )
                 session.name = hive_parameter.value( "hive_user" );
@@ -1255,7 +1274,7 @@ public class hive_connection
 
             session.kerb = "";
         }
-        else if ( session.auth == 'kerberos' )
+        else if ( session.auth.equals( "kerberos" ) )
         {
             if ( session.kerb.length() == 0 )
                 session.kerb = hive_parameter.value( "hive_principal" );
@@ -1270,11 +1289,35 @@ public class hive_connection
             session.kerb = "";
         }
 
-        return ( ( session.host.length() > 0 )
-              && ( session.port.length() > 0 )
-              && ( ( session.kerb.length() > 0 )
-                || ( ( session.name.length() > 0 )
-                  && ( session.pass.length() > 0 ) ) ) );
+        //
+        if ( session.host.length() == 0 )
+            throw new hive_exception( "Undefined hive_host parameter!" );
+
+        if ( session.port.length() == 0 )
+            throw new hive_exception( "Undefined hive_port parameter!" );
+
+        if ( session.auth.length() > 0 )
+        {
+            if ( session.auth.equals( "userIdPassword" ) )
+            {
+                if ( session.name.length() == 0 )
+                    throw new hive_exception( "Undefined hive_user parameter!" );
+
+                if ( session.pass.length() == 0 )
+                    throw new hive_exception( "Undefined hive_pass parameter!" );
+            }
+            else if ( session.auth.equals( "kerberos" ) )
+            {
+                if ( session.kerb.length() == 0 )
+                    throw new hive_exception( "Undefined hive_principal parameter!" );
+            }
+            else
+                throw new hive_exception( "Invalid hive_auth parameter!" );
+        }
+        else
+            throw new hive_exception( "Undefined hive_auth parameter!" );
+
+        return true;
     }
 
     //
@@ -1295,7 +1338,7 @@ public class hive_connection
 
                 if ( url.length() > 0 )
                 {
-                    if ( session.auth == "kerberos" )
+                    if ( session.auth.equals( "kerberos" ) )
                         login();
 
                     conn_ = DriverManager.getConnection( url );
@@ -1323,7 +1366,7 @@ public class hive_connection
             System.setProperty( "java.security.krb5.realm", rlm );
 
         if ( kdc != null )
-            System.setProperty( "java.security.krb5.kdc" );
+            System.setProperty( "java.security.krb5.kdc", kdc );
 
         if ( cnf != null )
         {
@@ -1466,6 +1509,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_BOOL:
 
+                            log.trace( "applyBindings: TYPE_BOOL" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setBoolean( idx, bnd.toBool() );
@@ -1479,6 +1524,8 @@ public class hive_context
 
                         //
                         case hive_bind.TYPE_DATE:
+
+                            log.trace( "applyBindings: TYPE_DATE" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -1494,6 +1541,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_FLOAT:
 
+                            log.trace( "applyBindings: TYPE_FLOAT" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setFloat( idx, bnd.toFloat() );
@@ -1507,6 +1556,8 @@ public class hive_context
 
                         //
                         case hive_bind.TYPE_INT:
+
+                            log.trace( "applyBindings: TYPE_INT" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -1522,6 +1573,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_LONG:
 
+                            log.trace( "applyBindings: TYPE_LONG" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setLong( idx, bnd.toLong() );
@@ -1536,6 +1589,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_NULL:
 
+                            log.trace( "applyBindings: TYPE_NULL" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setNull( idx, Types.VARCHAR );
@@ -1548,6 +1603,8 @@ public class hive_context
 
                         //
                         case hive_bind.TYPE_ROWID:
+
+                            log.trace( "applyBindings: TYPE_ROWID" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -1563,6 +1620,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_SHORT:
 
+                            log.trace( "applyBindings: TYPE_SHORT" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setShort( idx, bnd.toShort() );
@@ -1576,6 +1635,8 @@ public class hive_context
 
                         //
                         case hive_bind.TYPE_STRING:
+
+                            log.trace( "applyBindings: TYPE_STRING" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -1591,6 +1652,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_TIME:
 
+                            log.trace( "applyBindings: TYPE_TIME" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setTime( idx, bnd.toTime() );
@@ -1605,6 +1668,8 @@ public class hive_context
                         //
                         case hive_bind.TYPE_TIMESTAMP:
 
+                            log.trace( "applyBindings: TYPE_TIMESTAMP" );
+
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 stmt.setTimestamp( idx, bnd.toTimestamp() );
@@ -1618,6 +1683,8 @@ public class hive_context
 
                         //
                         case hive_bind.TYPE_URL:
+
+                            log.trace( "applyBindings: TYPE_URL" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -1823,10 +1890,27 @@ public class hive_context
     //
     public boolean execute() throws SQLException, hive_exception
     {
+        String limit = hive_parameter.value( "query_limit" );
+
         log.trace( "hive_context execute" );
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
+
+        if ( limit != null )
+        {
+            log.trace( "execute query_limit: " + limit );
+
+            try
+            {
+                sql_ = limitSql( sql_, Integer.parseInt( limit.trim() ) );
+            }
+            catch ( NumberFormatException ex )
+            {
+                log.error( "execute NumberFormatException: " + ex.getMessage() );
+                // ... do nothing
+            }
+        }
 
         return setResultSet();
     }
@@ -1841,6 +1925,7 @@ public class hive_context
 
         if ( rst_ == null )
         {
+            log.trace( "describing sql: " + sql_ );
             PreparedStatement stm = applyBindings( con_.getConnection().prepareStatement( limitSql( sql_ ) ) );
             ResultSet rst = stm.executeQuery();
             rmd = rst.getMetaData();
@@ -1924,12 +2009,64 @@ public class hive_context
             if ( reg.find() )
                 qry = qry.substring( 0, reg.start() );
 
-            if ( qry.substring( qry.length() ) == " " )
+            if ( qry.substring( qry.length() ).equals( " " ) )
                 qry += "limit 0";
             else
                 qry += " limit 0";
         }
 
+        log.trace( "limitSql (zero): " + qry );
+        return qry;
+    }
+
+    //
+    private static String limitSql( String sql, int rsz )
+    {
+        String qry = sql.trim();
+        
+        if ( qry.toLowerCase().indexOf( "select" ) == 0 )
+        {
+            Pattern ptn = Pattern.compile( "limit [0-9]" );
+
+            if ( rsz < 0 )
+                rsz = 0;
+
+            if ( rsz > 0 )
+            {
+                while ( qry.indexOf( "  " ) >= 0 )
+                    qry = qry.replace( "  ", " " );
+
+                while ( qry.indexOf( "\n" ) >= 0 )
+                    qry = qry.replace( "\n", " " );
+
+                while ( qry.indexOf( "\r" ) >= 0 )
+                    qry = qry.replace( "\r", " " );
+
+                Matcher reg = ptn.matcher( qry.toLowerCase() );
+
+                if ( reg.find() )
+                {
+                    int lim = 0;
+
+                    lim = Integer.parseInt( qry.substring( reg.start() + 5 ).trim() );
+                    log.trace( "limitSql extsing limit: " + Integer.toString( lim ) );
+
+                    if ( lim > rsz )
+                    {
+                        qry = qry.substring( 0, reg.start() );
+
+                        if ( qry.substring( qry.length() ).equals( " " ) )
+                            qry += "limit " + Integer.toString( rsz );
+                        else
+                            qry += " limit " + Integer.toString( rsz );
+                    }
+                }
+                else
+                    qry += " limit " + Integer.toString( rsz );
+            }
+        }
+
+        log.trace( "limitSql (" + Integer.toString( rsz ) + "): " + qry );
         return qry;
     }
 

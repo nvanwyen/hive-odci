@@ -13,6 +13,8 @@
 #
 push.sh
 dist.sh
+pull.sh
+get.sh
 
 #
 archive

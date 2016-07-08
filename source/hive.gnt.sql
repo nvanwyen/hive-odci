@@ -11,7 +11,7 @@ alter session set current_schema = hive;
 
 -- hive_user grants
 --
-grant execute on hive.remote to hive_user;
+grant execute on hive.remote to hive_admin;
 grant execute on hive.hive_q to hive_user;
 --
 grant execute on hive.attribute to hive_user;
@@ -24,9 +24,14 @@ grant execute on hive.binds to hive_user;
 grant execute on hive.binding to hive_user;
 
 --
-grant select on hive.dba_hive_params to hive_user;
-grant select on hive.dba_hive_filters to hive_user;
-grant select on hive.dba_hive_log to hive_user;
+grant select on hive.dba_hive_params to hive_admin;
+grant select on hive.dba_hive_filters to hive_admin;
+grant select on hive.dba_hive_filter_privs to hive_admin;
+grant select on hive.dba_hive_log to hive_admin;
+
+grant select on hive.user_hive_params to hive_user;
+grant select on hive.user_hive_filters to hive_user;
+grant select on hive.user_hive_filter_privs to hive_user;
 
 -- hive_admin grants
 --

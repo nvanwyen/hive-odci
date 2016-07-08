@@ -2656,6 +2656,20 @@ public class hive implements SQLData
 
         return SUCCESS;
     }
+
+    //
+    static public void SqlDml( String stmt, oracle.sql.ARRAY bnds, oracle.sql.STRUCT conn )
+        throws SQLException
+    {
+        // todo
+    }
+
+    //
+    static public void SqlDdl( String stmt, oracle.sql.STRUCT conn )
+        throws SQLException
+    {
+        // todo
+    }
 };
 /
 

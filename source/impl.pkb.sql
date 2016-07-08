@@ -45,6 +45,16 @@ create or replace package body impl as
     name 'oracle.mti.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
+    procedure dml_( stm in varchar2, bnd in binds, con in connection ) as
+    language java
+    name 'oracle.mti.hive.SqlDml( java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT )';
+
+    --
+    procedure ddl_( stm in varchar2, con in connection ) as
+    language java
+    name 'oracle.mti.hive.SqlDdl( java.lang.String, oracle.sql.STRUCT )';
+
+    --
     function param_( n in varchar2 ) return varchar2 is
 
         v varchar2( 4000 );
@@ -493,6 +503,25 @@ create or replace package body impl as
         return close_( key );
 
     end sql_close;
+
+    --
+    procedure sql_dml( stm in  varchar2,
+                       bnd in  binds      default null,
+                       con in  connection default null ) is
+    begin
+
+        dml_( stm, bnd, con );
+
+    end sql_dml;
+
+    --
+    procedure sql_ddl( stm in  varchar2,
+                       con in  connection default null ) is
+    begin
+
+        ddl_( stm, con );
+
+    end sql_ddl;
 
 end impl;
 /

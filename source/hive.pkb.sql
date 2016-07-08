@@ -125,7 +125,7 @@ create or replace package body remote as
                    con in connection default null ) is
     begin
 
-        null;
+        impl.sql_dml( stm, bnd, con );
 
     end dml;
 
@@ -134,7 +134,7 @@ create or replace package body remote as
                    con in connection default null ) is
     begin
 
-        null;
+        impl.sql_ddl( stm, con );
 
     end ddl;
 

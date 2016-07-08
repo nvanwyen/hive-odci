@@ -78,6 +78,15 @@ create or replace package impl as
     --
     function sql_close( key in number ) return number;
 
+    --
+    procedure sql_dml( stm in  varchar2,
+                       bnd in  binds      default null,
+                       con in  connection default null );
+
+    --
+    procedure sql_ddl( stm in  varchar2,
+                       con in  connection default null );
+
 end impl;
 /
 

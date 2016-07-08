@@ -34,6 +34,7 @@ create or replace public synonym dba_hive_params for hive.dba_hive_params;
 
 --
 create or replace public synonym dba_hive_filters for hive.dba_hive_filters;
+create or replace public synonym dba_hive_filter_privs for hive.dba_hive_filter_privs;
 
 --
 create or replace public synonym dba_hive_log for hive.dba_hive_log;

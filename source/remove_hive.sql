@@ -47,6 +47,7 @@ drop public synonym hive_connection;
 drop public synonym dbms_hive;
 drop public synonym dba_hive_params;
 drop public synonym dba_hive_filters;
+drop public synonym dba_hive_filter_privs;
 drop public synonym dba_hive_log;
 
 --

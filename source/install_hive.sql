@@ -54,6 +54,9 @@ select current_timestamp "beginning installation"
 -- views
 @@hive.vws.sql
 
+-- utilities
+@@hive.utl.sql
+
 -- types
 @@hive.ctx.sql
 @@attr.typ.sql
@@ -107,7 +110,8 @@ col text for a80 head "text" word_wrap
 select name,
        text
   from all_errors
- where owner = 'HIVE';
+ where owner = 'HIVE'
+   and text not like 'Note: %';
 
 --
 declare
@@ -137,7 +141,6 @@ end;
 --
 prompt
 prompt Run: jdbc/load-jdbc.sh "sys"
-prompt .... policy/load-policy.sh "sys"
 prompt
 
 --

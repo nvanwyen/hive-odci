@@ -15,12 +15,18 @@ grant execute any operator to hive;
 grant unlimited tablespace to hive;
 
 --
+grant select on sys.user$                   to hive;
+grant select on sys.resource_group_mapping$ to hive;
+grant select on sys.user_astatus_map        to hive;
+
+--
 grant select on dba_tab_columns       to hive;
 grant select on dba_views             to hive;
 grant select on dba_constraints       to hive;
 grant select on dba_tab_partitions    to hive;
 grant select on dba_tab_subpartitions to hive;
 grant select on dba_triggers          to hive;
+grant select on dba_role_privs        to hive;
 
 --
 exec dbms_java.grant_permission( 'HIVE', 'SYS:java.net.SocketPermission', '*', 'connect, resolve' );

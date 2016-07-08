@@ -46,13 +46,22 @@ select key,
           seq;
 
 --
-create or replace view dba_hive_filter_grants
+create or replace view dba_hive_filter_privs
 as
-select key,
-       grantee
-  from priv$
- order by key,
-          grantee;
+select p.key,
+       u.name grantee
+  from priv$ p,
+       sys.user$ u left outer join
+       sys.resource_group_mapping$ r
+       on ( r.attribute = 'ORACLE_USER'
+        and r.status = 'ACTIVE'
+        and r.value = u.name ),
+       sys.user_astatus_map m
+ where ( ( u.astatus = m.status# )
+      or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
+   and u.type# in ( 0, 1 )
+   and u.user# = p.id#
+ order by 1, 2;
 
 --
 create or replace view dba_hive_log

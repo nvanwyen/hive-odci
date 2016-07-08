@@ -126,12 +126,12 @@ create or replace package binding as
 
     --
     ex_unknown  exception;
-    es_unknown  varchar2( 256 ) := 'Unknown error encountered';
+    es_unknown  constant varchar2( 256 ) := 'Unknown error encountered';
     ec_unknown  constant number := -20001;
     pragma      exception_init( ex_unknown, -20001 );
 
-    ex_denied   unknown  exception;
-    es_denied   varchar2( 256 ) := 'Request denied, insufficient privileges';
+    ex_denied   exception;
+    es_denied   constant varchar2( 256 ) := 'Request denied, insufficient privileges';
     ec_denied   constant number := -20002;
     pragma      exception_init( ex_denied, -20002 );
 
@@ -171,23 +171,21 @@ create or replace package body binding as
 
             for rec in ( select a.lvl
                            from priv$ a,
-                               ( 
-                                   select distinct
-                                          oid( role ) rid,
-                                          oid( grantee ) gid
-                                     from dba_role_privs
-                                  connect by grantee = prior role
-                                    start with 1 = case when ( instr( a, '"' ) > 0 )
-                                                        then case when grantee = replace( a, '"', '' )
-                                                                  then 1
-                                                                  else 0
-                                                             end
-                                                        else case when grantee = upper( a )
-                                                                  then 1
-                                                                  else 0
-                                                             end
-                                  end
-                               ) b
+                                ( select distinct
+                                         oid( b.granted_role ) rid,
+                                         oid( b.grantee ) gid
+                                    from dba_role_privs b
+                                 connect by b.grantee = prior b.granted_role
+                                   start with 1 = case when ( instr( a, '"' ) > 0 )
+                                                       then case when b.grantee = replace( a, '"', '' )
+                                                                 then 1
+                                                                 else 0
+                                                            end
+                                                       else case when b.grantee = upper( a )
+                                                                 then 1
+                                                                 else 0
+                                                            end
+                                                  end ) b
                            where a.id# = b.rid or a.id# = b.gid ) loop
 
                 g := bitor( g, rec.lvl );

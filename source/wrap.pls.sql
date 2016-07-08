@@ -309,6 +309,19 @@ begin
 
     end;
 
+    --
+    begin
+
+        wrap_( func_( 'HIVE', 'ONAME' ) );
+        dbms_output.put_line( 'HIVE.ONAME Function wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping function [HIVE.ONAME]: ' || sqlerrm );
+
+    end;
+
     -- type specifications
     -- none
 

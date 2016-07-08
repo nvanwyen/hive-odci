@@ -40,11 +40,19 @@ select key,
                       2, 'scope_out',
                       3, 'scope_inout',
                          'unknown' ) scope,
-       owner,
        value
   from filter$
  order by key,
           seq;
+
+--
+create or replace view dba_hive_filter_grants
+as
+select key,
+       grantee
+  from priv$
+ order by key,
+          grantee;
 
 --
 create or replace view dba_hive_log

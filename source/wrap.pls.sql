@@ -103,6 +103,23 @@ declare
     end body_;
 
     --  
+    function func_( o in varchar2, 
+                    n in varchar2 ) return varchar2 is
+
+        t varchar2( 32767 );
+
+    begin
+
+        t := replace( 'create or replace ' || text_( o, n, 'FUNCTION' ),  
+                      'create or replace function ' || lower( n ),  
+                      'create or replace function ' || lower( o ) || '.' || lower( n ) );
+
+        --
+        return t;
+
+    end func_;
+
+    --  
     function proc_( o in varchar2, 
                     n in varchar2 ) return varchar2 is
 
@@ -241,7 +258,56 @@ begin
     -- none
 
     -- functions
-    -- none
+    begin
+
+        wrap_( func_( 'HIVE', 'BITOR' ) );
+        dbms_output.put_line( 'HIVE.BITOR Function wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping function [HIVE.BITOR]: ' || sqlerrm );
+
+    end;
+
+    --
+    begin
+
+        wrap_( func_( 'HIVE', 'BITXOR' ) );
+        dbms_output.put_line( 'HIVE.BITXOR Function wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping function [HIVE.BITXOR]: ' || sqlerrm );
+
+    end;
+
+    --
+    begin
+
+        wrap_( func_( 'HIVE', 'BITNOT' ) );
+        dbms_output.put_line( 'HIVE.BITNOT Function wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping function [HIVE.BITNOT]: ' || sqlerrm );
+
+    end;
+
+    --
+    begin
+
+        wrap_( func_( 'HIVE', 'OID' ) );
+        dbms_output.put_line( 'HIVE.OID Function wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping function [HIVE.OID]: ' || sqlerrm );
+
+    end;
 
     -- type specifications
     -- none

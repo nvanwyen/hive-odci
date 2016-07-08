@@ -32,14 +32,20 @@ create or replace package binding as
     --
     subtype reference is number;
     subtype typeof    is number;
+    subtype guard     is number;
 
     --
-    unknown         constant number    := 0;
+    none            constant number    :=  0;
 
     --
-    scope_in        constant reference := 1;
-    scope_out       constant reference := 2;
-    scope_inout     constant reference := 3;
+    priv_read       constant guard     :=  1;
+    priv_write      constant guard     :=  2;
+    priv_readwrite  constant guard     :=  3; -- priv_read + priv_write
+
+    --
+    scope_in        constant reference :=  1;
+    scope_out       constant reference :=  2;
+    scope_inout     constant reference :=  3;
 
     --
     type_bool       constant typeof    :=  1;
@@ -108,7 +114,8 @@ create or replace package binding as
 
     --
     procedure allow( key in varchar2,
-                     act in varchar2 );
+                     act in varchar2,
+                     lvl in guard default priv_readwrite );
 
     --
     procedure deny( key in varchar2,
@@ -116,6 +123,17 @@ create or replace package binding as
 
     --
     procedure save( key in varchar2, lst in binds );
+
+    --
+    ex_unknown  exception;
+    es_unknown  varchar2( 256 ) := 'Unknown error encountered';
+    ec_unknown  constant number := -20001;
+    pragma      exception_init( ex_unknown, -20001 );
+
+    ex_denied   unknown  exception;
+    es_denied   varchar2( 256 ) := 'Request denied, insufficient privileges';
+    ec_denied   constant number := -20002;
+    pragma      exception_init( ex_denied, -20002 );
 
 end binding;
 /
@@ -126,10 +144,59 @@ show errors
 create or replace package body binding as
 
     --
-    function allowed_( k in varchar2, a in varchar2 ) return boolean is
+    function priv_( k in varchar2, a in varchar2 ) return boolean is
+
+        c number := none;
+
     begin
 
-        return false;
+        select count(0) into c
+          from priv$ a
+         where a.key = k
+           and a.id# = oid( a );
+
+        return ( c > none );
+
+    end priv_;
+
+    --
+    function allowed_( k in varchar2, a in varchar2, l in guard ) return boolean is
+
+        g number := none;
+        i number := oid( a );
+
+    begin
+
+        if ( ( priv_( k, a ) ) and ( i is not null ) ) then
+
+            for rec in ( select a.lvl
+                           from priv$ a,
+                               ( 
+                                   select distinct
+                                          oid( role ) rid,
+                                          oid( grantee ) gid
+                                     from dba_role_privs
+                                  connect by grantee = prior role
+                                    start with 1 = case when ( instr( a, '"' ) > 0 )
+                                                        then case when grantee = replace( a, '"', '' )
+                                                                  then 1
+                                                                  else 0
+                                                             end
+                                                        else case when grantee = upper( a )
+                                                                  then 1
+                                                                  else 0
+                                                             end
+                                  end
+                               ) b
+                           where a.id# = b.rid or a.id# = b.gid ) loop
+
+                g := bitor( g, rec.lvl );
+
+            end loop;
+
+        end if;
+
+        return ( bitand( g, l ) > 0 );
 
     end allowed_;
 
@@ -140,15 +207,23 @@ create or replace package body binding as
 
     begin
 
-        for rec in ( select a.value,
-                            a.type,
-                            a.scope
-                       from filter$ a
-                      where a.key = key ) loop
+        if ( allowed_( key, dbms_standard.login_user, priv_read ) ) then
 
-            append( rec.value, rec.type, rec.scope, lst );
+            for rec in ( select a.value,
+                                a.type,
+                                a.scope
+                           from filter$ a
+                          where a.key = key ) loop
 
-        end loop;
+                append( rec.value, rec.type, rec.scope, lst );
+
+            end loop;
+
+        else
+
+            raise_application_error( ec_denied, es_denied );
+
+        end if;
 
         return lst;
 
@@ -174,13 +249,21 @@ create or replace package body binding as
     --
     function count( key in varchar2 ) return number is
 
-        c number := 0;
+        c number := none;
 
     begin
 
-        select count(0) into c
-          from filter$ a
-         where a.key = key;
+        if ( allowed_( key, dbms_standard.login_user, priv_read ) ) then
+
+            select count(0) into c
+              from filter$ a
+             where a.key = key;
+
+        else
+
+            raise_application_error( ec_denied, es_denied );
+
+        end if;
 
         return c;
 
@@ -374,11 +457,23 @@ create or replace package body binding as
 
     begin
 
-        --
-        delete from filter$ a
-         where a.key = key;
+        if ( allowed_( key, dbms_standard.login_user, priv_write ) ) then
 
-        commit;
+            --
+            delete from filter$ a
+             where a.key = key;
+
+            --
+            delete from priv$ a
+             where a.key = key;
+
+            commit;
+
+        else
+
+            raise_application_error( ec_denied, es_denied );
+
+        end if;
 
         exception
             when others then
@@ -397,19 +492,104 @@ create or replace package body binding as
 
     --
     procedure allow( key in varchar2,
-                     act in varchar2 ) is
+                     act in varchar2,
+                     lvl in guard default priv_readwrite ) is
+
+        pragma autonomous_transaction;
+        id number := none;
+
     begin
 
-        null;
+        if ( allowed_( key, dbms_standard.login_user, priv_write ) ) then
+
+            if ( lvl > none ) then
+
+                id := oid( act );
+
+                if ( id is not null ) then
+
+                    if ( not priv_( key, act ) ) then
+
+                        insert into priv$ a
+                        (
+                            a.key,
+                            a.id#,
+                            a.lvl
+                        )
+                        values
+                        (
+                            key,
+                            id,
+                            lvl
+                        );
+
+                    else
+
+                        update priv$ a
+                           set a.lvl = lvl
+                         where a.key = key
+                           and a.id# = id;
+
+                    end if;
+
+                    commit;
+
+                end if;
+
+            else
+
+                deny( key, act );
+
+            end if;
+
+        else
+
+            raise_application_error( ec_denied, es_denied );
+
+        end if;
+
+        exception
+            when others then
+                rollback; raise;
 
     end allow;
 
     --
     procedure deny( key in varchar2,
                     act in varchar2 ) is
+
+        pragma autonomous_transaction;
+        id number := none;
+
     begin
 
-        null;
+        if ( allowed_( key, dbms_standard.login_user, priv_write ) ) then
+
+            if ( not priv_( key, act ) ) then
+
+                id := oid( act );
+
+                if ( id is not null ) then
+
+                    delete from priv$ a
+                     where a.key = key
+                       and a.id# = id;
+
+                    commit;
+
+                end if;
+
+            end if;
+
+        else
+
+            raise_application_error( ec_denied, es_denied );
+
+        end if;
+
+        exception
+            when others then
+                rollback; raise;
 
     end deny;
 
@@ -417,12 +597,24 @@ create or replace package body binding as
     procedure save( key in varchar2, lst in binds ) is
 
         pragma autonomous_transaction;
-        own varchar2( 4000 );
+        c number := 0;
 
     begin
 
-        -- TBD: set owner and permissions
-        own := dbms_standard.login_user;
+        --
+        select count(0) into c
+          from filter$ a
+         where a.key = key;
+
+        if ( c > 0 ) then
+
+            if ( not allowed_( key, dbms_standard.login_user, priv_write ) ) then
+
+                raise_application_error( ec_denied, es_denied );
+
+            end if;
+
+        end if;
 
         --
         delete from filter$ a
@@ -437,18 +629,51 @@ create or replace package body binding as
                 a.seq,
                 a.value,
                 a.type,
-                a.scope,
-                a.owner
+                a.scope
             )
             values
             (
                 key,
                 i,
                 lst( i ).value,
-                nvl( lst( i ).type, unknown ),
-                nvl( lst( i ).scope, unknown ),
-                own
+                nvl( lst( i ).type, none ),
+                nvl( lst( i ).scope, none )
             );
+
+            if ( i = 1 ) then
+
+                declare
+
+                    id number := none;
+
+                begin
+
+                    if ( not priv_( key, dbms_standard.login_user ) ) then
+
+                        id := oid( null );
+
+                        if ( id is not null ) then
+
+                            insert into priv$ a
+                            (
+                                a.key,
+                                a.id#,
+                                a.lvl
+                            )
+                            values
+                            (
+                                key,
+                                id,
+                                priv_readwrite
+                            );
+
+                        end if;
+
+                    end if;
+
+                end;
+
+            end if;
 
         end loop;
 

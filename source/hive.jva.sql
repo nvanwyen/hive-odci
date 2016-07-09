@@ -1944,6 +1944,73 @@ public class hive_context
     }
 
     //
+    public boolean executeDML() throws SQLException, hive_exception
+    {
+        boolean ok = false;
+
+        log.trace( "hive_context executeDML" );
+
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw new hive_exception( "No DML defined for hive context" );
+
+        try
+        {
+            PreparedStatement stm = applyBindings( con_.getConnection().prepareStatement( sql_ ) );
+            stm.executeUpdate();
+            con_.getConnection().commit();
+            ok = true;
+
+            log.info( "DML commited: " + sql_ + "\nBinding\n--------" + bnd_.toString() );
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "executeDML exception: " + ex.getMessage() );
+
+            try
+            {
+                con_.getConnection().rollback();
+            }
+            catch ( SQLException x ) 
+            {
+                log.error( "executeDML rollbac failed: " + x.getMessage() );
+            }
+
+            ok = false;
+
+            log.info( "DML rollback: " + sql_ + "\nBinding\n--------" + bnd_.toString() );
+        }
+
+        return ok;
+    }
+
+    //
+    public boolean executeDDL() throws SQLException, hive_exception
+    {
+        boolean ok = false;
+
+        log.trace( "hive_context executeDDL" );
+
+        if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+            throw new hive_exception( "No DDL defined for hive context" );
+
+        try
+        {
+            PreparedStatement stm = con_.getConnection().prepareStatement( sql_ );
+            stm.executeUpdate();
+            ok = true;
+
+            log.info( "DDL executed: " + sql_ );
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "executeDML exception: " + ex.getMessage() );
+            ok = false;
+        }
+
+        return ok;
+    }
+
+    //
     public ResultSetMetaData descSql() throws SQLException, hive_exception
     {
         ResultSetMetaData rmd = null;
@@ -2659,16 +2726,26 @@ public class hive implements SQLData
 
     //
     static public void SqlDml( String stmt, oracle.sql.ARRAY bnds, oracle.sql.STRUCT conn )
-        throws SQLException
+        throws SQLException, hive_exception
     {
-        // todo
+        hive_context ctx = new hive_context( stmt, bnds, conn );
+
+        if ( ctx == null )
+            throw new hive_exception( "Context not created for SqlDml" );
+
+        ctx.executeDML();
     }
 
     //
     static public void SqlDdl( String stmt, oracle.sql.STRUCT conn )
-        throws SQLException
+        throws SQLException, hive_exception
     {
-        // todo
+        hive_context ctx = new hive_context( stmt, null, conn );
+
+        if ( ctx == null )
+            throw new hive_exception( "Context not created for SqlDml" );
+
+        ctx.executeDDL();
     }
 };
 /

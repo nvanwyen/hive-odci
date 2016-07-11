@@ -1358,6 +1358,7 @@ public class hive_connection
                     if ( session.auth.equals( "kerberos" ) )
                         login();
 
+                    log.trace( "createConnection URL: " + url );
                     conn_ = DriverManager.getConnection( url );
                 }
             }

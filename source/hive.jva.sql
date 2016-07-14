@@ -1344,6 +1344,29 @@ public class hive_connection
     }
 
     //
+    public String getExtra()
+    {
+        String xp = "";
+
+        try
+        {
+            xp = hive_parameter.value( "url_extra" );
+
+            if ( xp != null )
+                xp = ";" + xp;
+            else
+                xp = "";
+        }
+        catch ( Exception ex )
+        {
+           // ... do nothing
+        }
+
+        log.trace( "getExtra URL: " + xp );
+        return xp;
+    }
+
+    //
     public Connection createConnection() throws SQLException, hive_exception
     {
         if ( getConnection() == null )
@@ -1357,6 +1380,8 @@ public class hive_connection
                 {
                     if ( session.auth.equals( "kerberos" ) )
                         login();
+
+                    url += getExtra();
 
                     log.trace( "createConnection URL: " + url );
                     conn_ = DriverManager.getConnection( url );
@@ -1379,6 +1404,7 @@ public class hive_connection
         String kdc = hive_parameter.value( "java.security.krb5.kdc" );
         String cnf = hive_parameter.value( "java.security.krb5.conf" );
         String jdb = hive_parameter.value( "java.security.auth.login.config" );
+        String dbg = hive_parameter.value( "sun.security.krb5.debug" );
 
         if ( rlm != null )
         {
@@ -1418,6 +1444,12 @@ public class hive_connection
 
             log.trace( "login setting java.security.auth.login.config: " + jdb );
             System.setProperty( "java.security.auth.login.config", jdb );
+        }
+
+        if ( dbg != null )
+        {
+            log.trace( "login setting sun.security.krb5.debug: " + dbg );
+            System.setProperty( "sun.security.krb5.debug", dbg );
         }
 
         try

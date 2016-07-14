@@ -79,11 +79,11 @@ select current_timestamp "beginning installation"
 @@hive.pks.sql
 @@hive.pkb.sql
 
--- grants
-@@hive.gnt.sql
-
 -- synonyms
 @@hive.syn.sql
+
+-- grants
+@@hive.gnt.sql
 
 -- parameters
 @@hive.par.sql

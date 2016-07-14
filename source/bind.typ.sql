@@ -135,6 +135,11 @@ create or replace package binding as
     ec_denied   constant number := -20002;
     pragma      exception_init( ex_denied, -20002 );
 
+    ex_no_grant exception;
+    es_no_grant constant varchar2( 256 ) := 'Privileges not granted';
+    ec_no_grant constant number := -20003;
+    pragma      exception_init( ex_no_grant, -20003 );
+
 end binding;
 /
 
@@ -142,6 +147,95 @@ show errors
 
 --
 create or replace package body binding as
+
+    --
+    ctx constant varchar2( 7 ) := 'hivectx';
+
+    --
+    function token_( l varchar2, i number, d varchar2 := ',' ) return varchar2 is
+
+       s number;
+       e number;
+
+    begin
+
+       if ( i = 1 ) then
+
+           s := 1;
+
+       else
+
+           -- positive number
+           s := instr( l, d, 1, i - 1 );
+
+           if ( s = 0 ) then
+
+               return null;
+
+           else
+
+               s := s + length( d );
+
+           end if;
+
+       end if;
+
+       e := instr( l, d, s, 1 );
+
+       if ( e = 0 ) then
+
+           return substr( l, s );
+
+       else
+
+           return substr( l, s, e - s );
+
+       end if;
+
+    end token_;
+
+    --
+    function param_( n in varchar2 ) return varchar2 is
+
+        v varchar2( 4000 );
+
+    begin
+
+        v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
+
+        if ( v is null ) then
+
+            --
+            select a.value into v
+              from param$ a
+             where a.name = n;
+
+        end if;
+
+        --
+        return v;
+
+        --
+        exception
+            when no_data_found then
+                return null;
+
+    end param_;
+
+    --
+    function exist_( k in varchar2 ) return boolean is
+
+        c number := none;
+
+    begin
+
+        select count(0) into c
+          from filter$ a
+         where a.key = k;
+
+        return ( c > none );
+
+    end exist_;
 
     --
     function priv_( k in varchar2, a in varchar2 ) return boolean is
@@ -160,6 +254,27 @@ create or replace package body binding as
     end priv_;
 
     --
+    function public_( k in varchar2, l in guard ) return boolean is
+
+        g number := none;
+        i number := oid( 'PUBLIC' );
+
+    begin
+
+        select a.lvl into g
+          from priv$ a
+         where a.key = k
+           and id# = i;
+
+        return ( bitand( g, l ) > 0 );
+
+        exception
+            when no_data_found then
+                return false;
+
+    end public_;
+
+    --
     function allowed_( k in varchar2, a in varchar2, l in guard ) return boolean is
 
         g number := none;
@@ -167,30 +282,46 @@ create or replace package body binding as
 
     begin
 
-        if ( ( priv_( k, a ) ) and ( i is not null ) ) then
+        if ( exist_( k ) ) then
 
-            for rec in ( select a.lvl
-                           from priv$ a,
-                                ( select distinct
-                                         oid( b.granted_role ) rid,
-                                         oid( b.grantee ) gid
-                                    from dba_role_privs b
-                                 connect by b.grantee = prior b.granted_role
-                                   start with 1 = case when ( instr( a, '"' ) > 0 )
-                                                       then case when b.grantee = replace( a, '"', '' )
-                                                                 then 1
-                                                                 else 0
-                                                            end
-                                                       else case when b.grantee = upper( a )
-                                                                 then 1
-                                                                 else 0
-                                                            end
-                                                  end ) b
-                           where a.id# = b.rid or a.id# = b.gid ) loop
+            if ( public_( k, l ) ) then
 
-                g := bitor( g, rec.lvl );
+                return true; -- public priv granted
 
-            end loop;
+            else
+
+                if ( ( priv_( k, a ) ) and ( i is not null ) ) then
+
+                    for rec in ( select a.lvl
+                                   from priv$ a,
+                                        ( select distinct
+                                                 oid( b.granted_role ) rid,
+                                                 oid( b.grantee ) gid
+                                            from dba_role_privs b
+                                         connect by b.grantee = prior b.granted_role
+                                           start with 1 = case when ( instr( a, '"' ) > 0 )
+                                                               then case when b.grantee = replace( a, '"', '' )
+                                                                         then 1
+                                                                         else 0
+                                                                    end
+                                                               else case when b.grantee = upper( a )
+                                                                         then 1
+                                                                         else 0
+                                                                    end
+                                                          end ) b
+                                   where a.key = k and ( a.id# = b.rid or a.id# = b.gid ) ) loop
+
+                        g := bitor( g, rec.lvl );
+
+                    end loop;
+
+                end if;
+
+            end if;
+
+        else
+
+            g := priv_readwrite;    -- new filters always have read/write
 
         end if;
 
@@ -202,16 +333,17 @@ create or replace package body binding as
     function get( key in varchar2 ) return binds is
 
         lst binds;
+        k varchar2( 4000 ) := key;
 
     begin
 
-        if ( allowed_( key, dbms_standard.login_user, priv_read ) ) then
+        if ( allowed_( k, dbms_standard.login_user, priv_read ) ) then
 
             for rec in ( select a.value,
                                 a.type,
                                 a.scope
                            from filter$ a
-                          where a.key = key ) loop
+                          where a.key = k ) loop
 
                 append( rec.value, rec.type, rec.scope, lst );
 
@@ -248,6 +380,7 @@ create or replace package body binding as
     function count( key in varchar2 ) return number is
 
         c number := none;
+        k varchar2( 4000 ) := key;
 
     begin
 
@@ -255,7 +388,7 @@ create or replace package body binding as
 
             select count(0) into c
               from filter$ a
-             where a.key = key;
+             where a.key = k;
 
         else
 
@@ -452,6 +585,7 @@ create or replace package body binding as
     procedure clear( key in varchar2 ) is
 
         pragma autonomous_transaction;
+        k varchar2( 4000 ) := key;
 
     begin
 
@@ -459,11 +593,11 @@ create or replace package body binding as
 
             --
             delete from filter$ a
-             where a.key = key;
+             where a.key = k;
 
             --
             delete from priv$ a
-             where a.key = key;
+             where a.key = k;
 
             commit;
 
@@ -494,19 +628,23 @@ create or replace package body binding as
                      lvl in guard default priv_readwrite ) is
 
         pragma autonomous_transaction;
-        id number := none;
+
+        i number := none;
+        k varchar2( 4000 ) := key;
+        a varchar2( 4000 ) := act;
+        l number           := lvl;
 
     begin
 
-        if ( allowed_( key, dbms_standard.login_user, priv_write ) ) then
+        if ( allowed_( k, dbms_standard.login_user, priv_write ) ) then
 
-            if ( lvl > none ) then
+            if ( l > none ) then
 
-                id := oid( act );
+                i := oid( a );
 
-                if ( id is not null ) then
+                if ( i is not null ) then
 
-                    if ( not priv_( key, act ) ) then
+                    if ( not priv_( k, a ) ) then
 
                         insert into priv$ a
                         (
@@ -516,17 +654,17 @@ create or replace package body binding as
                         )
                         values
                         (
-                            key,
-                            id,
-                            lvl
+                            k,
+                            i,
+                            l
                         );
 
                     else
 
                         update priv$ a
-                           set a.lvl = lvl
-                         where a.key = key
-                           and a.id# = id;
+                           set a.lvl = l
+                         where a.key = k
+                           and a.id# = i;
 
                     end if;
 
@@ -536,7 +674,7 @@ create or replace package body binding as
 
             else
 
-                deny( key, act );
+                deny( k, a );
 
             end if;
 
@@ -557,25 +695,31 @@ create or replace package body binding as
                     act in varchar2 ) is
 
         pragma autonomous_transaction;
-        id number := none;
+        i number := none;
+        k varchar2( 4000 ) := key;
+        a varchar2( 4000 ) := act;
 
     begin
 
-        if ( allowed_( key, dbms_standard.login_user, priv_write ) ) then
+        if ( allowed_( k, dbms_standard.login_user, priv_write ) ) then
 
-            if ( not priv_( key, act ) ) then
+            if ( priv_( k, act ) ) then
 
-                id := oid( act );
+                i := oid( a );
 
-                if ( id is not null ) then
+                if ( i is not null ) then
 
                     delete from priv$ a
-                     where a.key = key
-                       and a.id# = id;
+                     where a.key = k
+                       and a.id# = i;
 
                     commit;
 
                 end if;
+
+            else
+
+                raise_application_error( ec_no_grant, es_no_grant );
 
             end if;
 
@@ -596,17 +740,18 @@ create or replace package body binding as
 
         pragma autonomous_transaction;
         c number := 0;
+        k varchar2( 4000 ) := key;
 
     begin
 
         --
         select count(0) into c
           from filter$ a
-         where a.key = key;
+         where a.key = k;
 
         if ( c > 0 ) then
 
-            if ( not allowed_( key, dbms_standard.login_user, priv_write ) ) then
+            if ( not allowed_( k, dbms_standard.login_user, priv_write ) ) then
 
                 raise_application_error( ec_denied, es_denied );
 
@@ -616,7 +761,7 @@ create or replace package body binding as
 
         --
         delete from filter$ a
-         where a.key = key;
+         where a.key = k;
 
         --
         for i in 1 .. lst.count loop
@@ -631,7 +776,7 @@ create or replace package body binding as
             )
             values
             (
-                key,
+                k,
                 i,
                 lst( i ).value,
                 nvl( lst( i ).type, none ),
@@ -642,28 +787,95 @@ create or replace package body binding as
 
                 declare
 
-                    id number := none;
+                    n number := none;
+                    b varchar2( 4000 );
+
+                    t number := 0;
+                    o varchar2( 4000 ) := null;
+
+                    a varchar2( 4000 );
+                    p number := 0;
 
                 begin
 
-                    if ( not priv_( key, dbms_standard.login_user ) ) then
+                    b := param_( 'default_bind_access' );
 
-                        id := oid( null );
+                    if ( b is not null ) then
 
-                        if ( id is not null ) then
+                        --
+                        while true loop
 
-                            insert into priv$ a
-                            (
-                                a.key,
-                                a.id#,
-                                a.lvl
-                            )
-                            values
-                            (
-                                key,
-                                id,
-                                priv_readwrite
-                            );
+                            --
+                            t := t + 1;
+                            o := token_( b, t );
+
+                            --
+                            exit when o is null;
+
+                            a := token_( o, 1, ':' );
+                            p := nvl( to_number( token_( o, 2, ':' ) ), priv_read );
+
+                            --
+                            select oid( replace( a, '%user%', dbms_standard.login_user ) ) into n
+                              from dual;
+
+                            --
+                            if ( n is not null ) then
+
+                                begin
+
+                                    insert into priv$ a
+                                    (
+                                        a.key,
+                                        a.id#,
+                                        a.lvl
+                                    )
+                                    values
+                                    (
+                                        k,
+                                        n,
+                                        p
+                                    );
+
+                                    exception
+                                        when dup_val_on_index then
+                                            null;
+
+                                end;
+
+                            end if;
+
+                        end loop;
+
+                    end if;
+
+                    -- assign ownership to creator, if not already privliged
+                    if ( not priv_( k, dbms_standard.login_user ) ) then
+
+                        n := oid( null );
+
+                        if ( n is not null ) then
+
+                            begin
+
+                                insert into priv$ a
+                                (
+                                    a.key,
+                                    a.id#,
+                                    a.lvl
+                                )
+                                values
+                                (
+                                    k,
+                                    n,
+                                    priv_readwrite
+                                );
+
+                                exception
+                                    when dup_val_on_index then
+                                        null;
+
+                            end;
 
                         end if;
 

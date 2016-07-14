@@ -9,6 +9,25 @@ prompt ... running hive.vws.sql
 --
 alter session set current_schema = hive;
 
+-- private views
+create or replace view sys_user$
+as
+select * 
+  from sys.user$
+/
+
+create or replace view sys_resource_group_mapping$
+as
+select *
+  from sys.resource_group_mapping$
+/
+
+create or replace view sys_user_astatus_map$
+as
+select *
+  from sys.user_astatus_map
+/
+
 --
 create or replace view dba_hive_params
 as
@@ -52,12 +71,12 @@ select p.key,
        decode( bitand( p.lvl, 1 ), 0, 'NO', 'YES' ) read,
        decode( bitand( p.lvl, 2 ), 0, 'NO', 'YES' ) write
   from priv$ p,
-       sys.user$ u left outer join
-       sys.resource_group_mapping$ r
+       sys_user$ u left outer join
+       sys_resource_group_mapping$ r
        on ( r.attribute = 'ORACLE_USER'
         and r.status = 'ACTIVE'
         and r.value = u.name ),
-       sys.user_astatus_map m
+       sys_user_astatus_map$ m
  where ( ( u.astatus = m.status# )
       or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
    and u.type# in ( 0, 1 )
@@ -84,63 +103,75 @@ select name,
 --
 create or replace view user_hive_filters
 as
-select distinct
-       f.key,
-       f.seq,
-       decode( f.type,  1, 'type_bool',
-                        2, 'type_date',
-                        3, 'type_float',
-                        4, 'type_int',
-                        5, 'type_long',
-                        6, 'type_null',
-                        7, 'type_rowid',
-                        8, 'type_short',
-                        9, 'type_string',
-                       10, 'type_time',
-                       11, 'type_timestamp',
-                       12, 'type_url',
-                           'unknown' ) type,
-       decode( f.scope, 1, 'scope_in',
-                        2, 'scope_out',
-                        3, 'scope_inout',
-                           'unknown' ) scope,
-       f.value
-  from filter$ f,
-       priv$ p,
-       sys.user$ u left outer join
-       sys.resource_group_mapping$ r
-       on ( r.attribute = 'ORACLE_USER'
-        and r.status = 'ACTIVE'
-        and r.value = u.name ),
-       sys.user_astatus_map m
- where ( ( u.astatus = m.status# )
-      or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
-   and u.type# in ( 0, 1 )
-   and u.user# = sys_context( 'userenv', 'session_userid' )
-   and f.key = p.key
- order by f.key,
-          f.seq;
+select a.*
+  from dba_hive_filters a,
+       dba_hive_filter_privs b
+ where a.key = b.key
+   and ( b.grantee = user
+      or b.grantee = 'PUBLIC' );
 
+-- select distinct
+--        f.key,
+--        f.seq,
+--        decode( f.type,  1, 'type_bool',
+--                         2, 'type_date',
+--                         3, 'type_float',
+--                         4, 'type_int',
+--                         5, 'type_long',
+--                         6, 'type_null',
+--                         7, 'type_rowid',
+--                         8, 'type_short',
+--                         9, 'type_string',
+--                        10, 'type_time',
+--                        11, 'type_timestamp',
+--                        12, 'type_url',
+--                            'unknown' ) type,
+--        decode( f.scope, 1, 'scope_in',
+--                         2, 'scope_out',
+--                         3, 'scope_inout',
+--                            'unknown' ) scope,
+--        f.value
+--   from filter$ f,
+--        priv$ p,
+--        sys_user$ u left outer join
+--        sys_resource_group_mapping$ r
+--        on ( r.attribute = 'ORACLE_USER'
+--         and r.status = 'ACTIVE'
+--         and r.value = u.name ),
+--        sys_user_astatus_map$ m
+--  where ( ( u.astatus = m.status# )
+--       or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
+--    and u.type# in ( 0, 1 )
+--    and u.user# = sys_context( 'userenv', 'session_userid' )
+--    and f.key = p.key
+--  order by f.key,
+--           f.seq;
+-- 
 --
 create or replace view user_hive_filter_privs
 as
-select distinct
-       p.key,
-       u.name grantee,
-       decode( bitand( p.lvl, 1 ), 0, 'NO', 'YES' ) read,
-       decode( bitand( p.lvl, 2 ), 0, 'NO', 'YES' ) write
-  from priv$ p,
-       sys.user$ u left outer join
-       sys.resource_group_mapping$ r
-       on ( r.attribute = 'ORACLE_USER'
-        and r.status = 'ACTIVE'
-        and r.value = u.name ),
-       sys.user_astatus_map m
- where ( ( u.astatus = m.status# )
-      or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
-   and u.type# in ( 0, 1 )
-   and u.user# = sys_context( 'userenv', 'session_userid' )
- order by 1, 2;
+select *
+  from dba_hive_filter_privs
+ where grantee = user 
+    or grantee = 'PUBLIC';
+
+-- select distinct
+--        p.key,
+--        u.name grantee,
+--        decode( bitand( p.lvl, 1 ), 0, 'NO', 'YES' ) read,
+--        decode( bitand( p.lvl, 2 ), 0, 'NO', 'YES' ) write
+--   from priv$ p,
+--        sys_user$ u left outer join
+--        sys_resource_group_mapping$ r
+--        on ( r.attribute = 'ORACLE_USER'
+--         and r.status = 'ACTIVE'
+--         and r.value = u.name ),
+--        sys_user_astatus_map$ m
+--  where ( ( u.astatus = m.status# )
+--       or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
+--    and u.type# in ( 0, 1 )
+--    and u.user# = sys_context( 'userenv', 'session_userid' )
+--  order by 1, 2;
 
 --
 -- ... done!

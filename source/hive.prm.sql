@@ -15,9 +15,9 @@ grant execute any operator to hive;
 grant unlimited tablespace to hive;
 
 --
-grant select on sys.user$                   to hive;
-grant select on sys.resource_group_mapping$ to hive;
-grant select on sys.user_astatus_map        to hive;
+grant select on sys.user$                   to hive with grant option;
+grant select on sys.resource_group_mapping$ to hive with grant option;
+grant select on sys.user_astatus_map        to hive with grant option;
 
 --
 grant select on dba_tab_columns       to hive;
@@ -51,9 +51,13 @@ exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'ja
 exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.kdc', 'write' );
 exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.conf', 'write' );
 exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.auth.login.config', 'write' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'sun.security.krb5.debug', 'write' );
 
 -- kerberos login
 exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'getSubject', '' );
+
+--
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.JDBC_DRIVER_01', '' );
 
 --
 grant execute on dbms_sql      to hive;

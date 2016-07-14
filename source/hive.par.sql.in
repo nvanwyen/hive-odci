@@ -125,19 +125,22 @@ begin
     param_( 'java.security.krb5.realm',        'MTI.COM' );
     param_( 'java.security.krb5.kdc',          'kdc.mti.com' );
     param_( 'java.security.krb5.conf',         '?/krb/krb5.conf' );
+    param_( 'java.security.auth.login.index',  'JDBC_DRIVER_01' );
     param_( 'java.security.auth.login.config', '?/krb/jdbc.conf' );
 
-    -- bind privilege should be "public", "owner" or "role"
-    param_( 'bind_priv',  'public' );
-    --
-    param_( 'bind_owner', '%user%' );
-    param_( 'bind_role',  '%role%' );
+    -- when 'true" enable java output ... SQL> exec dbms_java.set_output( 1000000 );
+    param_( 'sun.security.krb5.debug', 'false' );
 
-    --
-    param_( 'bind_roles', 'HIVE_USER, HIVE_ADMIN' );
+    -- default bind access (upon creation) can be "public", schema, role or "%user%", ...
+    -- each comma delineated item is access seperated as by a colon e.g. <account>:<access>
+    -- if no access is provided (e.g. no colon) then priv_read is given
+    param_( 'default_bind_access', 'public:1, %user%:3' );
 
     --
     param_( 'query_limit', 5000 );
+
+    -- extra, debugging (ddtek)
+    -- param_( 'url_extra', 'SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
 
 end;
 /

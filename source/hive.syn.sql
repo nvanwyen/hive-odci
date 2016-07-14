@@ -11,6 +11,9 @@ create or replace public synonym hive_q for hive.hive_q;
 create or replace public synonym hive_t for hive.hive_t;
 
 --
+create or replace public synonym hive_remote  for hive.remote;
+
+--
 create or replace public synonym hive_bind    for hive.bind;
 create or replace public synonym hive_binds   for hive.binds;
 create or replace public synonym hive_binding for hive.binding;

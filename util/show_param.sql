@@ -9,16 +9,15 @@ set linesize 160
 set pagesize 50000
 
 --
-col name          for a40 word_wrap
-col session_value for a40 word_wrap
-col system_value  for a40 word_wrap
+col name          for a32 word_wrap
+col session_value for a45 word_wrap
+col system_value  for a45 word_wrap
 
 --
 select name,
        session_value,
        system_value
   from dba_hive_params
- order by name
 /
 
 --

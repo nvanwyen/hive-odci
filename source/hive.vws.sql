@@ -32,7 +32,25 @@ select *
 create or replace view dba_hive_params
 as
 select name,
-       nvl( sys_context( 'hivectx', substr( name, 1, 30 ), 4000 ), value ) session_value,
+       case when name in ( 'log_level',
+                           'hive_jdbc_driver',
+                           'hive_jdbc_url',
+                           'hive_host',
+                           'hive_port',
+                           'hive_auth',
+                           'hive_user',
+                           'hive_pass',
+                           'hive_principal',
+                           'java.security.krb5.realm',
+                           'java.security.krb5.kdc',
+                           'java.security.krb5.conf',
+                           'java.security.auth.login.index',
+                           'java.security.auth.login.config',
+                           'sun.security.krb5.debug',
+                           'default_bind_access' )
+            then nvl( sys_context( 'hivectx', substr( name, 1, 30 ), 4000 ), value ) 
+            else null
+       end session_value,
        value system_value
   from param$;
 
@@ -97,8 +115,7 @@ create or replace view user_hive_params
 as
 select name,
        decode( name, 'hive_pass', null, nvl( sys_context( 'hivectx', substr( name, 1, 30 ), 4000 ), value ) ) value
-  from param$
- where name not in ( 'encrypted_values' );
+  from param$;
 
 --
 create or replace view user_hive_filters
@@ -110,43 +127,6 @@ select a.*
    and ( b.grantee = user
       or b.grantee = 'PUBLIC' );
 
--- select distinct
---        f.key,
---        f.seq,
---        decode( f.type,  1, 'type_bool',
---                         2, 'type_date',
---                         3, 'type_float',
---                         4, 'type_int',
---                         5, 'type_long',
---                         6, 'type_null',
---                         7, 'type_rowid',
---                         8, 'type_short',
---                         9, 'type_string',
---                        10, 'type_time',
---                        11, 'type_timestamp',
---                        12, 'type_url',
---                            'unknown' ) type,
---        decode( f.scope, 1, 'scope_in',
---                         2, 'scope_out',
---                         3, 'scope_inout',
---                            'unknown' ) scope,
---        f.value
---   from filter$ f,
---        priv$ p,
---        sys_user$ u left outer join
---        sys_resource_group_mapping$ r
---        on ( r.attribute = 'ORACLE_USER'
---         and r.status = 'ACTIVE'
---         and r.value = u.name ),
---        sys_user_astatus_map$ m
---  where ( ( u.astatus = m.status# )
---       or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
---    and u.type# in ( 0, 1 )
---    and u.user# = sys_context( 'userenv', 'session_userid' )
---    and f.key = p.key
---  order by f.key,
---           f.seq;
--- 
 --
 create or replace view user_hive_filter_privs
 as
@@ -154,24 +134,6 @@ select *
   from dba_hive_filter_privs
  where grantee = user 
     or grantee = 'PUBLIC';
-
--- select distinct
---        p.key,
---        u.name grantee,
---        decode( bitand( p.lvl, 1 ), 0, 'NO', 'YES' ) read,
---        decode( bitand( p.lvl, 2 ), 0, 'NO', 'YES' ) write
---   from priv$ p,
---        sys_user$ u left outer join
---        sys_resource_group_mapping$ r
---        on ( r.attribute = 'ORACLE_USER'
---         and r.status = 'ACTIVE'
---         and r.value = u.name ),
---        sys_user_astatus_map$ m
---  where ( ( u.astatus = m.status# )
---       or ( u.astatus = ( m.status# + 16 - bitand( m.status#, 16 ) ) ) )
---    and u.type# in ( 0, 1 )
---    and u.user# = sys_context( 'userenv', 'session_userid' )
---  order by 1, 2;
 
 --
 -- ... done!

@@ -56,11 +56,22 @@ create or replace package body remote as
                              value in varchar2 ) is
     begin
 
-        if ( name in ( 'hive_host',
+        if ( name in ( 'log_level',
+                       'hive_jdbc_driver',
+                       'hive_jdbc_url',
+                       'hive_host',
                        'hive_port',
+                       'hive_auth',
                        'hive_user',
                        'hive_pass',
-                       'log_level' ) ) then
+                       'hive_principal',
+                       'java.security.krb5.realm',
+                       'java.security.krb5.kdc',
+                       'java.security.krb5.conf',
+                       'java.security.auth.login.index',
+                       'java.security.auth.login.config',
+                       'sun.security.krb5.debug',
+                       'default_bind_access' ) ) then
 
             dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
 

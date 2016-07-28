@@ -46,18 +46,22 @@ if [[ ! -z $ORACLE_HOME ]] ; then
             cp "${src}/krb5.conf" "${dir}/krb5.conf"
             chkrc $? 1
 
+            echo
             echo "Copied example, make sure to update paraemters"
-            echo "update hive.param$ set value = '${dir}/krb/krb5.conf' where name = 'java.security.krb5.conf';"
+            echo "update hive.param$ set value = '${dir}/krb5.conf' where name = 'java.security.krb5.conf';"
+            echo
 
         else
 
             echo "Warning: example [${src}/krb5.conf] not found!"
+            echo
 
         fi
 
     else
 
         echo "${dir}/krb5.conf already exists!"
+        echo
 
     fi
 
@@ -66,21 +70,25 @@ if [[ ! -z $ORACLE_HOME ]] ; then
 
         if [ -f ${src}/jdbc.conf ] ; then
 
-            cp "${src}/jdbc.conf" "${dir}/krb5.conf"
+            cp "${src}/jdbc.conf" "${dir}/jdbc.conf"
             chkrc $? 1
 
+            echo
             echo "Copied example, make sure to update paraemters"
-            echo "update hive.param$ set value = '${dir}/krb/jdbc.conf' where name = 'java.security.auth.login.config';"
+            echo "update hive.param$ set value = '${dir}/jdbc.conf' where name = 'java.security.auth.login.config';"
+            echo
 
         else
 
             echo "Warning: example [${src}/jdbc.conf] not found!"
+            echo
 
         fi
 
     else
 
         echo "${dir}/jdbc.conf already exists!"
+        echo
 
     fi
 

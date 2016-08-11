@@ -13,7 +13,48 @@ alter session set current_schema = hive;
 create or replace package body remote as
 
     --
-    ctx constant varchar2( 7 ) := 'hivectx';
+    procedure log_err_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_error( :p0 ); end;'
+          using 'remote:' || txt;
+
+        exception when others then null;
+
+    end log_err_;
+
+    --
+    procedure log_wrn_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_warn( :p0 ); end;'
+          using 'remote:' || txt;
+
+        exception when others then null;
+
+    end log_wrn_;
+
+    --
+    procedure log_inf_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_info( :p0 ); end;'
+          using 'remote:' || txt;
+
+        exception when others then null;
+
+    end log_inf_;
+
+    --
+    procedure log_trc_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_trace( :p0 ); end;'
+          using 'remote:' || txt;
+
+        exception when others then null;
+
+    end log_trc_;
 
     --
     function param_( n in varchar2 ) return varchar2 is
@@ -22,32 +63,52 @@ create or replace package body remote as
 
     begin
 
+        log_trc_( 'param_( ' || n || ' ) called' );
+
         v := session_param( n );
 
         if ( v is null ) then
+
+            log_trc_( 'param_ ' || n || ': not found at session level' );
 
             --
             select a.value into v
               from param$ a
              where a.name = n;
 
+        else
+
+            log_trc_( 'param_ ' || n || ': found at session level' );
+
         end if;
 
         --
+        log_trc_( 'param_( ' || n || ' ) returns: ' || v );
         return v;
 
         --
         exception
             when no_data_found then
+                log_err_( 'param_( ' || n || ' ) no data found' );
                 return null;
+
+            when others then
+                log_err_( 'param_, error: ' || sqlerrm );
+                raise;
 
     end param_;
 
     --
-    function session_param( name  in varchar2 ) return varchar2 is
+    function session_param( name in varchar2 ) return varchar2 is
     begin
 
-        return sys_context( ctx, substr( name, 1, 30 ), 4000 );
+        log_trc_( 'session_param( ' || name || ' ) called' );
+        return impl.session_param( name );
+
+        exception
+            when others then
+                log_err_( 'session_param( ' || name || ' ) error: ' || sqlerrm );
+                raise;
 
     end session_param;
 
@@ -56,49 +117,98 @@ create or replace package body remote as
                              value in varchar2 ) is
     begin
 
-        if ( name in ( 'application',
-                       'version',
-                       'encrypted_values',
-                       'hive_users',
-                       'hive_admin',
-                       'hive_jdbc_driver',
-                       'query_limit' ) ) then
+        log_trc_( 'session_param( ' || name || ', ' || value || ' ) called' );
+        impl.session_param( name, value );
 
-            raise_application_error( ec_not_eligible, es_not_eligible );
-
-        else
-
-            dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
-
-        end if;
+        exception
+            when others then
+                log_err_( 'session_param( ' || name || ', ' || value || ' ) error: ' || sqlerrm );
+                raise;
 
     end session_param;
 
-    -- 
+    --
+    procedure session_log_level( typ in number ) is
+    begin
+
+        log_trc_( 'session_log_level( ' || to_char( typ ) || ' ) called' );
+        impl.session_log_level( typ );
+
+    end session_log_level;
+
+    --
+    procedure session( url in varchar2 ) is
+    begin
+
+        log_trc_( 'session set: ' || url );
+        impl.session( url );
+
+        exception
+            when others then
+                log_err_( 'session( ' || url || ' ) error: ' || sqlerrm );
+                raise;
+
+    end session;
+
+    --
     procedure session( usr in varchar2,
                        pwd in varchar2 ) is
     begin
 
+        log_trc_( 'session set: ' || usr || ', ' || pwd );
         impl.session( usr, pwd );
+
+        exception
+            when others then
+                log_err_( 'session( ' || usr || ', ' || pwd || ' ) error: ' || sqlerrm );
+                raise;
 
     end session;
 
     -- 
-    procedure session( hst in varchar2,
-                       prt in varchar2,
+    procedure session( url in varchar2,
                        usr in varchar2,
                        pwd in varchar2 ) is
     begin
-
-        impl.session( hst, prt, usr, pwd );
-
+    
+        log_trc_( 'session set: ' || url || ', ' || usr || ', ' || pwd );
+        impl.session( url, usr, pwd );
+     
+        exception
+            when others then
+                log_err_( 'session( ' || url || ', ' || usr || ', ' || pwd || ' ) error: ' || sqlerrm );
+                raise;
+     
     end session;
 
-    -- set session connection data
+    --
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2,
+                       ath in varchar2 ) is
+    begin       
+     
+        log_trc_( 'session set: ' || url || ', ' || usr || ', ' || pwd || ', ' || ath );
+        impl.session( url, usr, pwd, ath );
+     
+        exception
+            when others then
+                log_err_( 'session( ' || url || ', ' || usr || ', ' || pwd || ', ' || ath || ' ) error: ' || sqlerrm );
+                raise;
+        
+    end session;
+
+    --
     procedure session( con in connection ) is
     begin
 
+        log_trc_( 'session set: <connection>' );
         impl.session( con );
+
+        exception
+            when others then
+                log_err_( 'session( <connection> ) error: ' || sqlerrm );
+                raise;
 
     end session;
 
@@ -117,7 +227,13 @@ create or replace package body remote as
 
         end if;
 
+        log_trc_( 'connection returns: <con>' );
         return con;
+
+        exception
+            when others then
+                log_err_( 'connection error: ' || sqlerrm );
+                raise;
 
     end session;
 
@@ -127,7 +243,13 @@ create or replace package body remote as
                    con in connection default null ) is
     begin
 
+        log_trc_( 'dml( ' || stm || ', <bnd>, <con> ) called' );
         impl.sql_dml( stm, bnd, con );
+
+        exception
+            when others then
+                log_err_( 'dml: ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end dml;
 
@@ -136,7 +258,13 @@ create or replace package body remote as
                    con in connection default null ) is
     begin
 
+        log_trc_( 'ddl( ' || stm || ', <con> ) called' );
         impl.sql_ddl( stm, con );
+
+        exception
+            when others then
+                log_err_( 'ddl: ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end ddl;
 

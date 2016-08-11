@@ -21,6 +21,18 @@ create or replace package impl as
 
     --
     procedure log( typ in number, txt in varchar2 );
+    --
+    procedure log_error( txt in varchar2 );
+    procedure log_warn( txt in varchar2 );
+    procedure log_info( txt in varchar2 );
+    procedure log_trace( txt in varchar2 );
+
+    --
+    function session_param( name in varchar2 ) return varchar2;
+
+    --
+    procedure session_param( name  in varchar2,
+                             value in varchar2 );
 
     --
     procedure session_log_level( typ in number );
@@ -86,6 +98,11 @@ create or replace package impl as
     --
     procedure sql_ddl( stm in  varchar2,
                        con in  connection default null );
+
+    --
+    ex_not_eligible exception;
+    es_not_eligible constant varchar2( 256 ) := 'Parameter is not eligible for change at the session level';
+    ec_not_eligible constant number          := -20103;
 
 end impl;
 /

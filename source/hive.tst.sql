@@ -1,6 +1,8 @@
 set linesize 160
 set pagesize 50000
 
+prompt ... running hive.tst.sql
+
 --
 alter session set current_schema = hive;
 

@@ -10,7 +10,7 @@ prompt ... running hive.ctx.sql
 alter session set current_schema = hive;
 
 --
-create or replace context hivectx using remote;
+create or replace context hivectx using impl;
 
 --
 -- ... done!

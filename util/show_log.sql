@@ -10,11 +10,13 @@ set pagesize 50000
 
 --
 col stamp for a28
+col name  for a16 trunc
 col type  for a12
 col text  for a60 word_wrap
 
 --
 select stamp,
+       name,
        decode( type, 0, 'none',
                      1, 'error',
                      2, 'warn',

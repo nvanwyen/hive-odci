@@ -36,7 +36,7 @@ begin
     param_( 'version', '%version%' );
 
     --
-    param_( 'log_level', '31' );
+    param_( 'log_level', '3' );
 
     --
     param_( 'encrypted_values', 'hive_pass' );

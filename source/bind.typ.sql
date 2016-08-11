@@ -152,6 +152,50 @@ create or replace package body binding as
     ctx constant varchar2( 7 ) := 'hivectx';
 
     --
+    procedure log_err_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_error( :p0 ); end;'
+          using 'binding:' || txt;
+
+        exception when others then null;
+
+    end log_err_;
+
+    --
+    procedure log_wrn_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_warn( :p0 ); end;'
+          using 'binding:' || txt;
+
+        exception when others then null;
+
+    end log_wrn_;
+
+    --
+    procedure log_inf_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_info( :p0 ); end;'
+          using 'binding:' || txt;
+
+        exception when others then null;
+
+    end log_inf_;
+
+    --
+    procedure log_trc_( txt varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.log_trace( :p0 ); end;'
+          using 'binding:' || txt;
+
+        exception when others then null;
+
+    end log_trc_;
+
+    --
     function token_( l varchar2, i number, d varchar2 := ',' ) return varchar2 is
 
        s number;
@@ -206,19 +250,33 @@ create or replace package body binding as
         if ( v is null ) then
 
             --
+            log_trc_( 'param_ did not find session level: ' || n );
+
+            --
             select a.value into v
               from param$ a
              where a.name = n;
 
+        else
+
+            --
+            log_trc_( 'param_ found session level: ' || n );
+
         end if;
 
         --
+        log_trc_( 'param_( ' || n || ' ) returns: ' || nvl( v, '{null}' ) );
         return v;
 
         --
         exception
             when no_data_found then
+                log_trc_( 'param_ did not find: ' || n || ' returning NULL' );
                 return null;
+
+            when others then
+                log_err_( 'param_ error: ' || sqlerrm ); 
+                raise;
 
     end param_;
 
@@ -232,6 +290,9 @@ create or replace package body binding as
         select count(0) into c
           from filter$ a
          where a.key = k;
+
+        log_trc_( 'exist_( ' || k || ' ) returns: ' 
+               || case when ( c > none ) then 'true' else 'false' end );
 
         return ( c > none );
 
@@ -248,6 +309,9 @@ create or replace package body binding as
           from priv$ a
          where a.key = k
            and a.id# = oid( a );
+
+        log_trc_( 'priv_( ' || k || ', ' || a || ' ) returns: ' 
+               || case when ( c > none ) then 'true' else 'false' end );
 
         return ( c > none );
 
@@ -266,11 +330,21 @@ create or replace package body binding as
          where a.key = k
            and id# = i;
 
+        log_trc_( 'public_ determined grant: ' || to_char( g ) );
+
+        log_trc_( 'public_( ' || k || ', ' || to_char( i ) || ' ) returns: ' 
+               || case when ( bitand( g, l ) > 0 ) then 'true' else 'false' end );
+
         return ( bitand( g, l ) > 0 );
 
         exception
             when no_data_found then
+                log_inf_( 'public_ did not find: ' || k || ', ' || to_char( i ) );
                 return false;
+
+            when others then
+                log_err_( 'public_ error: ' || sqlerrm ); 
+                raise;
 
     end public_;
 
@@ -325,6 +399,11 @@ create or replace package body binding as
 
         end if;
 
+        log_trc_( 'allowed_ determined grant: ' || to_char( g ) );
+
+        log_trc_( 'allowed_( ' || k || ', ' || a || ', ' || to_char( i ) || ' ) returns: ' 
+               || case when ( bitand( g, l ) > 0 ) then 'true' else 'false' end );
+
         return ( bitand( g, l ) > 0 );
 
     end allowed_;
@@ -355,7 +434,14 @@ create or replace package body binding as
 
         end if;
 
+        log_trc_( 'get returns ' || lst.count || ' bind(s) for key: ' || key );
+
         return lst;
+
+        exception 
+            when others then 
+                log_err_( 'get ' || key || ', error: ' || sqlerrm );
+                raise;
 
     end get;
 
@@ -372,7 +458,22 @@ create or replace package body binding as
 
         end if;
 
+        if ( val is not null ) then
+
+            log_trc_( 'get found index ' || to_char( idx ) || ' in binds list' );
+
+        else
+
+            log_trc_( 'get did not find index ' || to_char( idx ) || ' in binds list' );
+
+        end if;
+
         return val;
+
+        exception 
+            when others then 
+                log_err_( 'get index: ' || to_char( idx ) || ', error: ' || sqlerrm );
+                raise;
 
     end get;
 
@@ -396,7 +497,14 @@ create or replace package body binding as
 
         end if;
 
+        log_trc_( 'count( ' || key || ' ) returns ' || to_char( c ) );
+
         return c;
+
+        exception 
+            when others then 
+                log_err_( 'count: ' || key || ', error: ' || sqlerrm );
+                raise;
 
     end count;
 
@@ -404,7 +512,13 @@ create or replace package body binding as
     function count( lst in binds ) return number is
     begin
 
+        log_trc_( 'count( <lst> ) returns ' || to_char( lst.count ) );
         return lst.count;
+
+        exception 
+            when others then 
+                log_err_( 'count error: ' || sqlerrm );
+                raise;
 
     end count;
 
@@ -414,7 +528,13 @@ create or replace package body binding as
                   scope in reference default scope_in ) return bind is
     begin
 
+        log_trc_( 'new( ' || value || ', ' || to_char( type ) || ', ' || to_char( scope ) || ' ) called' );
         return bind( value, type, scope );
+
+        exception 
+            when others then 
+                log_err_( 'new value: ' || value || ', error: ' || sqlerrm );
+                raise;
 
     end new;
 
@@ -428,10 +548,16 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'append( ' || key || ', ' || value || ', ' || to_char( type ) || ', ' || to_char( scope ) || ' ) called' );
         lst := get( key );
 
         append( value, type, scope, lst );
         save( key, lst );
+
+        exception 
+            when others then 
+                log_err_( 'append key: ' || key || ', error: ' || sqlerrm );
+                raise;
 
     end append;
 
@@ -442,7 +568,13 @@ create or replace package body binding as
                       lst   in out binds ) is
     begin
 
+        log_trc_( 'append( ' || value || ', ' || to_char( type ) || ', ' || to_char( scope ) || ', <lst> ) called' );
         append( bind( value, type, scope ), lst );
+
+        exception 
+            when others then 
+                log_err_( 'append value: ' || value || ', error: ' || sqlerrm );
+                raise;
 
     end append;
 
@@ -453,10 +585,16 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'append( ' || key || ', <val> ) called' );
         lst := get( key );
 
         append( val, lst );
         save( key, lst );
+
+        exception 
+            when others then 
+                log_err_( 'append key: ' || key || ', error: ' || sqlerrm );
+                raise;
 
     end append;
 
@@ -464,6 +602,7 @@ create or replace package body binding as
     procedure append( val in bind, lst in out binds ) is
     begin
 
+        log_trc_( 'append( <val>, <lst> ) called' );
         if ( lst is null ) then
 
             lst := binds();
@@ -472,6 +611,11 @@ create or replace package body binding as
 
         lst.extend;
         lst( lst.count ) := val;
+
+        exception 
+            when others then 
+                log_err_( 'append <val>, error: ' || sqlerrm );
+                raise;
 
     end append;
 
@@ -482,10 +626,16 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'append( ' || key || ', <val> ) called' );
         lst := get( key );
 
         append( val, lst );
         save( key, lst );
+
+        exception 
+            when others then 
+                log_err_( 'append key: ' || key || ', error: ' || sqlerrm );
+                raise;
 
     end append;
 
@@ -493,11 +643,18 @@ create or replace package body binding as
     procedure append( val in binds, lst in out binds ) is
     begin
 
+        log_trc_( 'append( <val>, <lst> ) called' );
+
         for i in 1 .. val.count loop
 
             append( val( i ), lst );
 
         end loop;
+
+        exception 
+            when others then 
+                log_err_( 'append <val>, error: ' || sqlerrm );
+                raise;
 
     end append;
 
@@ -511,6 +668,12 @@ create or replace package body binding as
         lst binds;
 
     begin
+
+        log_trc_( 'change( ' || key || ', ' 
+                             || to_char( idx ) || ', ' 
+                             || value || ', ' 
+                             || to_char( type ) || ', ' 
+                             || to_char( scope ) || ' ) called' );
 
         lst := get( key );
 
@@ -528,6 +691,15 @@ create or replace package body binding as
 
         save( key, lst );
 
+        exception 
+            when others then 
+                log_err_( 'change ' || key || ', ' 
+                                    || to_char( idx ) || ', ' 
+                                    || value || ', ' 
+                                    || to_char( type ) || ', ' 
+                                    || to_char( scope ) || ', error: ' || sqlerrm );
+                raise;
+
     end change;
 
     --
@@ -538,6 +710,9 @@ create or replace package body binding as
         val binds := binds();
 
     begin
+
+        log_trc_( 'remove( ' || key || ', ' 
+                             || to_char( idx ) || ' ) called' );
 
         lst := get( key );
 
@@ -562,6 +737,13 @@ create or replace package body binding as
 
         save( key, val );
 
+        exception 
+            when others then 
+                log_err_( 'remove ' || key || ', ' 
+                                    || to_char( idx ) 
+                                    || ', error: ' || sqlerrm );
+                raise;
+
     end remove;
 
     --
@@ -571,6 +753,8 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'replace( <val>, <lst> )' );
+
         for i in 1 .. val.count loop
 
             append( val( i ), rpl );
@@ -578,6 +762,11 @@ create or replace package body binding as
         end loop;
 
         lst := rpl;
+
+        exception 
+            when others then 
+                log_err_( 'replace, error: ' || sqlerrm );
+                raise;
 
     end replace;
 
@@ -588,6 +777,8 @@ create or replace package body binding as
         k varchar2( 4000 ) := key;
 
     begin
+
+        log_trc_( 'clear( ' || key || ' ) called' );
 
         if ( allowed_( key, dbms_standard.login_user, priv_write ) ) then
 
@@ -610,6 +801,7 @@ create or replace package body binding as
         exception
             when others then
                 rollback;
+                log_err_( 'clear key: ' || key || ', error: ' || sqlerrm );
                 raise;
 
     end clear;
@@ -618,7 +810,13 @@ create or replace package body binding as
     procedure clear( lst in out binds ) is
     begin
 
+        log_trc_( 'clear( <lst> ) called' );
         lst.delete;
+
+        exception 
+            when others then 
+                log_err_( 'clear, error: ' || sqlerrm );
+                raise;
 
     end clear;
 
@@ -636,6 +834,10 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'allow( ' || key || ', '
+                            || act || ', '
+                            || to_char( lvl ) || ' ) called' );
+
         if ( allowed_( k, dbms_standard.login_user, priv_write ) ) then
 
             if ( l > none ) then
@@ -645,6 +847,10 @@ create or replace package body binding as
                 if ( i is not null ) then
 
                     if ( not priv_( k, a ) ) then
+
+                        log_trc_( 'allow inserted new item: ' || key || ', '
+                                                              || act || ', '
+                                                              || to_char( lvl ) );
 
                         insert into priv$ a
                         (
@@ -660,6 +866,10 @@ create or replace package body binding as
                         );
 
                     else
+
+                        log_trc_( 'allow updated existing item: ' || key || ', '
+                                                                  || act || ', '
+                                                                  || to_char( lvl ) );
 
                         update priv$ a
                            set a.lvl = l
@@ -680,13 +890,18 @@ create or replace package body binding as
 
         else
 
+            log_wrn_( 'allow denied access: ' || key || ', '
+                                              || act );
+
             raise_application_error( ec_denied, es_denied );
 
         end if;
 
         exception
             when others then
-                rollback; raise;
+                rollback;
+                log_err_( 'allow key: ' || key || ', ' || act || ', error: ' || sqlerrm );
+                raise;
 
     end allow;
 
@@ -701,6 +916,9 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'deny( ' || key || ', '
+                           || act || ' ) called' );
+
         if ( allowed_( k, dbms_standard.login_user, priv_write ) ) then
 
             if ( priv_( k, act ) ) then
@@ -708,6 +926,9 @@ create or replace package body binding as
                 i := oid( a );
 
                 if ( i is not null ) then
+
+                    log_trc_( 'deny removed existing item:  ' || key || ', '
+                                                              || act );
 
                     delete from priv$ a
                      where a.key = k
@@ -719,11 +940,17 @@ create or replace package body binding as
 
             else
 
+                log_inf_( 'deny found not grant for: ' || key || ', '
+                                                       || act );
+
                 raise_application_error( ec_no_grant, es_no_grant );
 
             end if;
 
         else
+
+            log_wrn_( 'deny denied access: ' || key || ', '
+                                             || act );
 
             raise_application_error( ec_denied, es_denied );
 
@@ -731,7 +958,9 @@ create or replace package body binding as
 
         exception
             when others then
-                rollback; raise;
+                rollback; 
+                log_err_( 'deny key: ' || key || ', ' || act || ', error: ' || sqlerrm );
+                raise;
 
     end deny;
 
@@ -744,6 +973,8 @@ create or replace package body binding as
 
     begin
 
+        log_trc_( 'save( ' || key || ', <lst> ) called' );
+
         --
         select count(0) into c
           from filter$ a
@@ -752,6 +983,9 @@ create or replace package body binding as
         if ( c > 0 ) then
 
             if ( not allowed_( k, dbms_standard.login_user, priv_write ) ) then
+
+                log_wrn_( 'save denied access: ' || key || ', '
+                                                 || dbms_standard.login_user );
 
                 raise_application_error( ec_denied, es_denied );
 
@@ -763,7 +997,11 @@ create or replace package body binding as
         delete from filter$ a
          where a.key = k;
 
+        log_inf_( 'save removed ' || to_char( sql%rowcount ) || ' row(s) for ' || key );
+
         --
+        log_trc_( 'save processing ' || to_char( lst.count ) || ' bind(s) for ' || key );
+
         for i in 1 .. lst.count loop
 
             insert into filter$ a
@@ -802,6 +1040,8 @@ create or replace package body binding as
 
                     if ( b is not null ) then
 
+                        log_trc_( 'save adding default access to: ' || b );
+
                         --
                         while true loop
 
@@ -837,8 +1077,16 @@ create or replace package body binding as
                                         p
                                     );
 
+                                    log_trc_( 'save inserted privilege: ' || k || ', ' 
+                                                                          || to_char( n ) || ', ' 
+                                                                          || to_char( p ) );
+
                                     exception
                                         when dup_val_on_index then
+
+                                            log_inf_( 'save privilege exists: ' || k || ', ' 
+                                                                                || to_char( n ) || ', ' 
+                                                                                || to_char( p ) );
                                             null;
 
                                 end;
@@ -851,6 +1099,9 @@ create or replace package body binding as
 
                     -- assign ownership to creator, if not already privliged
                     if ( not priv_( k, dbms_standard.login_user ) ) then
+
+                        log_inf_( 'save assigning ownership: ' || k || ', ' 
+                                                               || dbms_standard.login_user );
 
                         n := oid( null );
 
@@ -871,8 +1122,16 @@ create or replace package body binding as
                                     priv_readwrite
                                 );
 
+                                log_trc_( 'save inserted ownership: ' || k || ', ' 
+                                                                      || to_char( n ) || ', ' 
+                                                                      || to_char( priv_readwrite ) );
+
                                 exception
                                     when dup_val_on_index then
+
+                                        log_inf_( 'save ownership exists: ' || k || ', ' 
+                                                                            || to_char( n ) || ', ' 
+                                                                            || to_char( priv_readwrite ) );
                                         null;
 
                             end;
@@ -892,6 +1151,7 @@ create or replace package body binding as
         exception
             when others then
                 rollback;
+                log_err_( 'save key ' || key || ' falied: ' || sqlerrm );
                 raise;
 
     end save;

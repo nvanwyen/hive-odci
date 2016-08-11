@@ -12,47 +12,53 @@ alter session set current_schema = hive;
 --
 create or replace package remote as
 
-    --
+    -- get session level paraemter
     function session_param( name  in varchar2 ) return varchar2;
 
-    --
+    -- set session level paraemter
     procedure session_param( name  in varchar2,
                              value in varchar2 );
 
-    -- 
+    -- set the session log level
+    procedure session_log_level( typ in number );
+
+    -- (re)set connection paraemter
+    procedure session( url in varchar2 );
+
+    -- (re)set connection paraemters
     procedure session( usr in varchar2,
                        pwd in varchar2 );
 
-    -- 
-    procedure session( hst in varchar2,
-                       prt in varchar2,
+    -- (re)set connection paraemters
+    procedure session( url in varchar2,
                        usr in varchar2,
                        pwd in varchar2 );
 
-    -- set session connection data
+    -- (re)set connection paraemters
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2,
+                       ath in varchar2 );
+
+    -- (re)set the connection object
     procedure session( con in connection );
 
-    -- get session connection data (password returned is intentionally null)
+    -- current session object
     function session return connection;
 
-    --
+    -- execute a remote query
     function query( stm in varchar2,
                     bnd in binds      default null,
                     con in connection default null ) return anydataset pipelined using hive_t;
 
-    --
+    -- execute remote DML
     procedure dml( stm in varchar2,
                    bnd in binds      default null,
                    con in connection default null );
 
-    --
+    -- execute remote DDL
     procedure ddl( stm in varchar2,
                    con in connection default null );
-
-    --
-    ex_not_eligible exception;
-    es_not_eligible constant varchar2( 256 ) := 'Parameter is not eligible for change at the session level';
-    ec_not_eligible constant number          := -20103;
 
 end remote;
 /

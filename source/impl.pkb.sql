@@ -61,6 +61,12 @@ create or replace package body impl as
 
     begin
 
+        if ( log_ > 0 ) then
+
+            log_trace( 'impl::param_( ' || n || ' ) called' );
+
+        end if;
+
         v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
 
         if ( v is null ) then
@@ -70,15 +76,50 @@ create or replace package body impl as
               from param$ a
              where a.name = n;
 
+            if ( log_ > 0 ) then
+
+                log_trace( 'impl::param_( ' || n || ' ) not found at session level' );
+
+            end if;
+
+        else
+
+            if ( log_ > 0 ) then
+
+                log_trace( 'impl::param_( ' || n || ' ) found at session level' );
+
+            end if;
+
         end if;
 
         --
+        if ( log_ > 0 ) then
+
+            log_trace( 'impl::param_( ' || n || ' ) returns: ' || v );
+
+        end if;
+
         return v;
 
         --
         exception
             when no_data_found then
+                --
+                if ( log_ > 0 ) then
+
+                    log_trace( 'impl::param_( ' || n || ' ) no data found' );
+
+                end if;
                 return null;
+
+            when others then
+                --
+                if ( log_ > 0 ) then
+
+                    log_trace( 'impl::param_ error: ' || sqlerrm );
+
+                end if;
+                raise;
 
     end param_;
 
@@ -110,10 +151,14 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::conv_( <att>, <typ> ) called' );
+
         if ( att.count > 0 ) then
 
             --
             anytype.begincreate( dbms_types.typecode_object, col );
+
+            log_trace( 'impl::conv_ began ANYTYPE object creation' );
 
             --
             for i in 1 .. att.count loop
@@ -127,15 +172,25 @@ create or replace package body impl as
                              case when att( i ).csid  = -1 then null else att( i ).csid  end,
                              case when att( i ).csfrm = -1 then null else att( i ).csfrm end );
 
+                log_trace( 'impl::conv_ added ATTRIBUTE: ' || att( i ).name );
+
             end loop;
 
             --
             col.endcreate;
 
+            log_trace( 'impl::conv_ ended ANYTYPE object creation' );
+
             --
             anytype.begincreate( dbms_types.typecode_table, typ );
             typ.setinfo( null, null, null, null, null, col, dbms_types.typecode_object, 0 );
             typ.endcreate();
+
+            log_trace( 'impl::conv_ set ANYTYPE metadata' );
+
+        else
+
+            log_trace( 'impl::conv_ ATTRIBUTE count is zero' );
 
         end if;
 
@@ -150,6 +205,8 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::url_ called' );
+
         while ( true ) loop
 
             i := i + 1;
@@ -157,10 +214,13 @@ create or replace package body impl as
 
             if ( length( trim( v ) ) > 0 ) then
 
+                log_trace( 'impl::url_ found ' || 'hive_jdbc_url.' || to_char( i ) || ': ' || v );
+
                 u := u || ';' || v;
 
             else
 
+                log_trace( 'impl::url_ ' || 'hive_jdbc_url.' || to_char( i - 1 ) || ' is last parameter' );
                 exit;
 
             end if;
@@ -250,12 +310,14 @@ create or replace package body impl as
             insert into log$ a
             (
                 a.stamp,
+                a.name,
                 a.type,
                 a.text
             )
             values
             (
                 current_timestamp,
+                dbms_standard.login_user,
                 typ,
                 txt
             );
@@ -270,9 +332,92 @@ create or replace package body impl as
     end log;
 
     --
+    procedure log_error( txt in varchar2 ) is
+    begin
+
+        log( error, txt );
+
+    end log_error;
+
+    --
+    procedure log_warn( txt in varchar2 ) is
+    begin
+
+        log( warn, txt );
+
+    end log_warn;
+
+    --
+    procedure log_info( txt in varchar2 ) is
+    begin
+
+        log( info, txt );
+
+    end log_info;
+
+    --
+    procedure log_trace( txt in varchar2 ) is
+    begin
+
+        log( trace, txt );
+
+    end log_trace;
+
+    --
+    function session_param( name in varchar2 ) return varchar2 is
+
+        n varchar2( 4000 ) := substr( name, 1, 30 );
+        v varchar2( 4000 ) := null;
+
+    begin
+
+        v := sys_context( ctx, n, 4000 );
+
+        log_trace( 'impl::session_param( ' || n || ' ) context: ' || ctx || ', returns: ' || v );
+        return v;
+
+        exception
+            when others then
+                log_error( 'impl::session_param( ' || n || ' ) error: ' || sqlerrm );
+                raise;
+
+    end session_param;
+
+    --
+    procedure session_param( name  in varchar2,
+                             value in varchar2 ) is
+    begin
+
+        if ( name in ( 'application',
+                       'version',
+                       'encrypted_values',
+                       'hive_users',
+                       'hive_admin',
+                       'hive_jdbc_driver',
+                       'query_limit' ) ) then
+
+            log_warn( 'impl::session_param( ' || name || ' ): ' || es_not_eligible );
+            raise_application_error( ec_not_eligible, es_not_eligible );
+
+        else
+
+            log_info( 'impl::session_param( ' || name || ' ) set: ' || nvl( value, '{null}' ) );
+            dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
+
+        end if;
+
+        exception
+            when others then
+                log_error( 'impl::session_param( ' || name || ', ' || value || ' ) error: ' || sqlerrm );
+                raise;
+
+    end session_param;
+
+    --
     procedure session_log_level( typ in number ) is
     begin
 
+        log_info( 'impl::session_log_level resetting value ' || to_char( log_ ) || ' to ' || to_char( typ ) );
         log_ := typ;
 
     end session_log_level;
@@ -284,9 +429,16 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::session( ' || url || ' ) called' );
+
         con.url := url;
 
         session( con );
+
+        exception
+            when others then
+                log_error( 'impl::session( ' || url || ' ) error: ' || sqlerrm );
+                raise;
 
     end session;
 
@@ -298,10 +450,18 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::session( ' || usr || ', ' 
+                                     || pwd || ' ) called' );
+
         con.name := usr;
         con.pass := pwd;
 
         session( con );
+
+        exception
+            when others then
+                log_error( 'impl::session( ' || usr || ', ' || pwd || ' ) error: ' || sqlerrm );
+                raise;
 
     end session;
 
@@ -313,6 +473,10 @@ create or replace package body impl as
         con connection := session_;
 
     begin
+
+        log_trace( 'impl::session( ' || url || ', ' 
+                                     || usr || ', ' 
+                                     || pwd || ' ) called' );
 
         --
         con.url := case when ( url is null )
@@ -335,6 +499,11 @@ create or replace package body impl as
         --
         session( con );
 
+        exception
+            when others then
+                log_error( 'impl::session( ' || url || ', ' || pwd || ' ) error: ' || sqlerrm );
+                raise;
+
     end session;
 
     -- 
@@ -346,6 +515,11 @@ create or replace package body impl as
         con connection := session_;
 
     begin
+
+        log_trace( 'impl::session( ' || url || ', ' 
+                                     || usr || ', ' 
+                                     || pwd || ', ' 
+                                     || ath || ' ) called' );
 
         --
         con.url := case when ( url is null )
@@ -380,7 +554,19 @@ create or replace package body impl as
     procedure session( con in connection ) is
     begin
 
+        log_trace( 'impl::session( ' || con.url || ', ' 
+                                     || con.name || ', ' 
+                                     || con.pass || ', ' 
+                                     || con.auth || ' ) by object called' );
         connection_( con );
+
+        exception
+            when others then
+                log_error( 'impl::session( ' || con.url || ', ' 
+                                             || con.name || ', ' 
+                                             || con.pass || ', ' 
+                                             || con.auth || ' ) object error: ' || sqlerrm );
+                raise;
 
     end session;
 
@@ -388,7 +574,13 @@ create or replace package body impl as
     function session return connection is
     begin
 
+        log_trace( 'impl::session returns currect connection' );
         return current_;
+
+        exception
+            when others then
+                log_error( 'impl::session currect connection error: ' || sqlerrm );
+                raise;
 
     end session;
 
@@ -400,15 +592,24 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::sql_describe( ' || stm || ', <bnd>, <con> ) called' );
+
         ret := sql_describe( typ, stm, bnd, nvl( con, current_ ) );
 
         if ( ret = odciconst.success ) then
 
+            log_trace( 'impl::sql_describe success for: ' || stm );
             return typ;
 
         end if;
 
+        log_warn( 'impl::sql_describe failed for: ' || stm );
         return null;
+
+        exception
+            when others then
+                log_error( 'impl::sql_describe ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end sql_describe;
 
@@ -423,23 +624,35 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::sql_describe( <typ>, ' || stm || ', <bnd>, <con> ) called' );
+
         ret := describe_( att, stm, bnd, nvl( con, current_ ) );
 
         if ( ret = odciconst.success ) then
 
+            log_trace( 'impl::sql_describe success for: ' || stm );
+
             if ( att.count > 0 ) then
 
+                log_trace( 'impl::sql_describe succeeded with ' || to_char( att.count ) || ' attribute(s)' );
                 conv_( att, typ );
 
             else
 
+                log_warn( 'impl::sql_describe failed (no attributes) for: ' || stm );
                 ret := odciconst.error;
 
             end if;
 
         end if;
 
+        log_trace( 'impl::sql_describe returns: ' || to_char( ret ) );
         return ret;
+
+        exception
+            when others then
+                log_error( 'impl::sql_describe ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end sql_describe;
 
@@ -453,23 +666,39 @@ create or replace package body impl as
 
     begin
 
+        log_trace( 'impl::sql_describe( ' || to_char( key ) || ', <typ> ) called' );
+
         ret := describe_( att, key );
 
         if ( ret = odciconst.success ) then
 
             if ( att.count > 0 ) then
 
+                log_trace( 'impl::sql_describe succeeded with ' || to_char( att.count ) 
+                                                                || ' attribute(s) for key: ' 
+                                                                || to_char( key ) );
                 conv_( att, typ );
 
             else
 
+                log_warn( 'impl::sql_describe failed (no attributes) for: ' || to_char( key ) );
                 ret := odciconst.error;
 
             end if;
 
+        else
+
+            log_warn( 'impl::sql_describe falied for key: ' || to_char( key ) );
+
         end if;
 
+        log_trace( 'impl::sql_describe returns: ' || to_char( ret ) || ' for key: ' || to_char( key ) );
         return ret;
+
+        exception
+            when others then
+                log_error( 'impl::sql_describe key: ' || to_char( key ) || ', error: ' || sqlerrm );
+                raise;
 
     end sql_describe;
 
@@ -480,7 +709,13 @@ create or replace package body impl as
                        con in  connection default null ) return number is
     begin
 
+        log_trace( 'impl::sql_open( <key>, ' || stm || ', <bnd>, <con> ) called' );
         return open_( key, stm, bnd, nvl( con, current_ ) );
+
+        exception
+            when others then
+                log_error( 'impl::sql_open ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end sql_open;
 
@@ -490,7 +725,15 @@ create or replace package body impl as
                         rws out records ) return number is
     begin
 
+        log_trace( 'impl::sql_fetch( ' || to_char( key ) || ', ' || to_char( num ) || ', <rws> ) called' );
         return fetch_( rws, key, num );
+
+        exception
+            when others then
+                log_error( 'impl::sql_fetch key: ' || to_char( key ) 
+                                      || ', num: ' || to_char( num ) 
+                                      || ', error: ' || sqlerrm );
+                raise;
 
     end sql_fetch;
 
@@ -498,7 +741,14 @@ create or replace package body impl as
     function sql_close( key in number ) return number is
     begin
 
+        log_trace( 'impl::sql_close( ' || to_char( key ) || ' ) called' );
         return close_( key );
+
+        exception
+            when others then
+                log_error( 'impl::sql_close key: ' || to_char( key ) 
+                                    || ', error: ' || sqlerrm );
+                raise;
 
     end sql_close;
 
@@ -508,7 +758,13 @@ create or replace package body impl as
                        con in  connection default null ) is
     begin
 
+        log_trace( 'impl::sql_dml( ' || stm || ', <bnd>, <con> ) called' );
         dml_( stm, bnd, con );
+
+        exception
+            when others then
+                log_error( 'impl::sql_dml ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end sql_dml;
 
@@ -517,7 +773,13 @@ create or replace package body impl as
                        con in  connection default null ) is
     begin
 
+        log_trace( 'impl::sql_ddl( ' || stm || ', <con> ) called' );
         ddl_( stm, con );
+
+        exception
+            when others then
+                log_error( 'impl::sql_ddl ' || stm || ', error: ' || sqlerrm );
+                raise;
 
     end sql_ddl;
 

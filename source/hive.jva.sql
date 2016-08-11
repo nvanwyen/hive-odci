@@ -136,10 +136,10 @@ public class log
 };
 
 //
-public class DBMS_TYPES
+public class dbms_types
 {
     /*
-        This java class duplicates the PL/SQL SYS.DBMS_TYPES
+        This java class duplicates the PL/SQL SYS.dbms_types
         package specification type codes for convenience
         as of 12c (may not be applicable in later version)
     */
@@ -323,10 +323,12 @@ public class DBMS_TYPES
         catch ( SQLException ex )
         {
             //
+            log.error( "dbms_types::nls_charset_id SQLException: " + ex.getMessage() );
         }
         catch ( Exception ex )
         {
             //
+            log.error( "dbms_types::nls_charset_id Exception: " + ex.getMessage() );
         }
         finally
         {
@@ -336,8 +338,14 @@ public class DBMS_TYPES
                 if ( stm != null )
                     stm.close();
             }
-            catch ( SQLException ex ) {}
-            catch ( Exception ex ) {}
+            catch ( SQLException ex ) 
+            {
+                log.error( "dbms_types::nls_charset_id (finally_block) SQLException: " + ex.getMessage() );
+            }
+            catch ( Exception ex )
+            {
+                log.error( "dbms_types::nls_charset_id (finally_block) Exception: " + ex.getMessage() );
+            }
 
             // *** do not close the "default" connection ***
         }
@@ -421,10 +429,12 @@ public class hive_parameter
         catch ( SQLException ex )
         {
             //
+            log.error( "hive_parameter::value SQLException: " + ex.getMessage() );
         }
         catch ( Exception ex )
         {
             //
+            log.error( "hive_parameter::value Exception: " + ex.getMessage() );
         }
         finally
         {
@@ -434,8 +444,14 @@ public class hive_parameter
                 if ( stm != null )
                     stm.close();
             }
-            catch ( SQLException ex ) {}
-            catch ( Exception ex ) {}
+            catch ( SQLException ex ) 
+            {
+                log.error( "hive_parameter::value (finally_block) SQLException: " + ex.getMessage() );
+            }
+            catch ( Exception ex )
+            {
+                log.error( "hive_parameter::value (finally_block) Exception: " + ex.getMessage() );
+            }
 
             // *** do not close the "default" connection ***
         }
@@ -473,10 +489,12 @@ public class hive_parameter
         catch ( SQLException ex )
         {
             //
+            log.error( "hive_parameter::env SQLException: " + ex.getMessage() );
         }
         catch ( Exception ex )
         {
             //
+            log.error( "hive_parameter::env Exception: " + ex.getMessage() );
         }
         finally
         {
@@ -486,8 +504,14 @@ public class hive_parameter
                 if ( stm != null )
                     stm.close();
             }
-            catch ( SQLException ex ) {}
-            catch ( Exception ex ) {}
+            catch ( SQLException ex ) 
+            {
+                log.error( "hive_parameter::env (finally_block) SQLException: " + ex.getMessage() );
+            }
+            catch ( Exception ex )
+            {
+                log.error( "hive_parameter::env (finally_block) Exception: " + ex.getMessage() );
+            }
 
             // *** do not close the "default" connection ***
         }
@@ -895,7 +919,10 @@ public class hive_bind
                 DateFormat fmt = new SimpleDateFormat( par, Locale.ENGLISH );
                 val = (java.sql.Date) fmt.parse( value );
             }
-            catch ( Exception /*ParseException*/ ex ) {}
+            catch ( Exception /*ParseException*/ ex ) 
+            {
+                log.warn( "hive_bind::toDate ParseException: " + ex.getMessage() );
+            }
         }
 
         log.trace( "hive_bind::toDate: " + toString() );
@@ -989,7 +1016,10 @@ public class hive_bind
                 DateFormat fmt = new SimpleDateFormat( par, Locale.ENGLISH );
                 val = new Time( ( (Date) fmt.parse( value ) ).getTime() );
             }
-            catch ( ParseException ex ) {}
+            catch ( ParseException ex ) 
+            {
+                log.warn( "hive_bind::toTime ParseException: " + ex.getMessage() );
+            }
         }
 
         log.trace( "hive_bind::toTime: " + toString() );
@@ -1013,7 +1043,10 @@ public class hive_bind
                 DateFormat fmt = new SimpleDateFormat( par, Locale.ENGLISH );
                 val = new Timestamp( ( (Date) fmt.parse( value ) ).getTime() );
             }
-            catch ( ParseException ex ) {}
+            catch ( ParseException ex ) 
+            {
+                log.warn( "hive_bind::toTimestamp ParseException: " + ex.getMessage() );
+            }
         }
 
         log.trace( "hive_bind::toTimestamp: " + toString() );
@@ -1029,7 +1062,10 @@ public class hive_bind
         {
             val = new URL( value );
         }
-        catch ( MalformedURLException ex ) {}
+        catch ( MalformedURLException ex )
+        {
+            log.warn( "hive_bind::toUrl MalformedURLException: " + ex.getMessage() );
+        }
 
         log.trace( "hive_bind::toUrl: " + toString() );
         return val;
@@ -2188,6 +2224,7 @@ public class hive_manager
         catch ( hive_exception ex )
         {
             // nothing to do ...
+            log.warn( "hive_manager::removeContext hive_exception: " + ex.getMessage() );
         }
 
         return ctx;
@@ -2294,19 +2331,19 @@ public class hive implements SQLData
 
         if ( rmd.getColumnCount() > 0 )
         {
-            int cset = DBMS_TYPES.nls_charset_id();
-            int cfrm = DBMS_TYPES.nls_charset_format();
+            int cset = dbms_types.nls_charset_id();
+            int cfrm = dbms_types.nls_charset_format();
 
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
                 attribute atr = new attribute();
 
                 atr.name = rmd.getColumnName( i );
-                atr.code = DBMS_TYPES.to_dbms_type( rmd.getColumnType( i ) );
+                atr.code = dbms_types.to_dbms_type( rmd.getColumnType( i ) );
 
                 switch ( atr.code )
                 {
-                    case DBMS_TYPES.TYPECODE_VARCHAR2:
+                    case dbms_types.TYPECODE_VARCHAR2:
                         {
                             if ( rmd.getPrecision( i ) > 4000 )
                                 atr.len = 4000;
@@ -2324,7 +2361,7 @@ public class hive implements SQLData
                         atr.scale = -1;
                         break;
 
-                    case DBMS_TYPES.TYPECODE_NUMBER:
+                    case dbms_types.TYPECODE_NUMBER:
                         atr.prec = rmd.getPrecision( i );
                         atr.scale = rmd.getScale( i );
 
@@ -2342,27 +2379,27 @@ public class hive implements SQLData
 
                         break;
 
-                    case DBMS_TYPES.TYPECODE_CLOB:
+                    case dbms_types.TYPECODE_CLOB:
                         atr.len = rmd.getPrecision( i );
                         atr.csid = cset;
                         atr.csfrm = cfrm;
                         break;
 
-                    case DBMS_TYPES.TYPECODE_BLOB:
+                    case dbms_types.TYPECODE_BLOB:
                         atr.len = rmd.getPrecision( i );
                         break;
 
-                    case DBMS_TYPES.TYPECODE_DATE:
+                    case dbms_types.TYPECODE_DATE:
                         break;
 
-                    case DBMS_TYPES.TYPECODE_TIMESTAMP:
-                    case DBMS_TYPES.TYPECODE_TIMESTAMP_TZ:
-                    case DBMS_TYPES.TYPECODE_TIMESTAMP_LTZ:
+                    case dbms_types.TYPECODE_TIMESTAMP:
+                    case dbms_types.TYPECODE_TIMESTAMP_TZ:
+                    case dbms_types.TYPECODE_TIMESTAMP_LTZ:
                         atr.prec = 0;
                         atr.scale = 6;
                         break;
 
-                    case DBMS_TYPES.TYPECODE_OBJECT:
+                    case dbms_types.TYPECODE_OBJECT:
                     default:
                         break;
                 }
@@ -2414,11 +2451,11 @@ public class hive implements SQLData
                 attribute atr = new attribute();
 
                 atr.name = rmd.getColumnName( i );
-                atr.code = DBMS_TYPES.to_dbms_type( rmd.getColumnType( i ) );
+                atr.code = dbms_types.to_dbms_type( rmd.getColumnType( i ) );
 
                 switch ( atr.code )
                 {
-                    case DBMS_TYPES.TYPECODE_VARCHAR2:
+                    case dbms_types.TYPECODE_VARCHAR2:
                         {
                             if ( rmd.getPrecision( i ) > 4000 )
                                 atr.len = 4000;
@@ -2432,23 +2469,23 @@ public class hive implements SQLData
                         }
                         break;
 
-                    case DBMS_TYPES.TYPECODE_NUMBER:
+                    case dbms_types.TYPECODE_NUMBER:
                         atr.prec = rmd.getPrecision( i );
                         atr.scale = rmd.getScale( i );
                         break;
 
-                    case DBMS_TYPES.TYPECODE_CLOB:
+                    case dbms_types.TYPECODE_CLOB:
                         atr.len = rmd.getPrecision( i );
                         break;
 
-                    case DBMS_TYPES.TYPECODE_BLOB:
+                    case dbms_types.TYPECODE_BLOB:
                         atr.len = rmd.getPrecision( i );
                         break;
 
-                    case DBMS_TYPES.TYPECODE_DATE:
+                    case dbms_types.TYPECODE_DATE:
                         break;
 
-                    case DBMS_TYPES.TYPECODE_OBJECT:
+                    case dbms_types.TYPECODE_OBJECT:
                     default:
                         break;
                 }
@@ -2577,17 +2614,17 @@ public class hive implements SQLData
             for ( int c = 1; c <= cnt; ++c )
             {
                 Object col = ctx.getObject( c );
-                int typ = DBMS_TYPES.to_dbms_type( ctx.columnType( c ) );
+                int typ = dbms_types.to_dbms_type( ctx.columnType( c ) );
 
                 Object[] atr =
                 {
                     new BigDecimal( typ ),                                  // type code
-                    ( typ == DBMS_TYPES.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
-                    ( typ == DBMS_TYPES.TYPECODE_NUMBER )    ? col : null,  // val_number
-                    ( typ == DBMS_TYPES.TYPECODE_DATE )      ? col : null,  // val_date
-                    ( typ == DBMS_TYPES.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
-                    ( typ == DBMS_TYPES.TYPECODE_CLOB )      ? col : null,  // val_clob
-                    ( typ == DBMS_TYPES.TYPECODE_BLOB )      ? col : null   // val_blob
+                    ( typ == dbms_types.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
+                    ( typ == dbms_types.TYPECODE_NUMBER )    ? col : null,  // val_number
+                    ( typ == dbms_types.TYPECODE_DATE )      ? col : null,  // val_date
+                    ( typ == dbms_types.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
+                    ( typ == dbms_types.TYPECODE_CLOB )      ? col : null,  // val_clob
+                    ( typ == dbms_types.TYPECODE_BLOB )      ? col : null   // val_blob
                 };
 
                 //

@@ -32,22 +32,13 @@ select *
 create or replace view dba_hive_params
 as
 select name,
-       case when name in ( 'log_level',
-                           'hive_jdbc_driver',
-                           'hive_jdbc_url',
-                           'hive_host',
-                           'hive_port',
-                           'hive_auth',
-                           'hive_user',
-                           'hive_pass',
-                           'hive_principal',
-                           'java.security.krb5.realm',
-                           'java.security.krb5.kdc',
-                           'java.security.krb5.conf',
-                           'java.security.auth.login.index',
-                           'java.security.auth.login.config',
-                           'sun.security.krb5.debug',
-                           'default_bind_access' )
+       case when name not in ( 'application',
+                               'version',
+                               'encrypted_values',
+                               'hive_users',
+                               'hive_admin',
+                               'hive_jdbc_driver',
+                               'query_limit' )
             then nvl( sys_context( 'hivectx', substr( name, 1, 30 ), 4000 ), value ) 
             else null
        end session_value,
@@ -105,6 +96,7 @@ select p.key,
 create or replace view dba_hive_log
 as
 select stamp,
+       name,
        type,
        text
   from log$

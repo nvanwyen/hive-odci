@@ -41,6 +41,7 @@ create table priv$
 create table log$
 (
     stamp timestamp        not null,
+    name  varchar2( 256 )  not null,
     type  number           not null,
     text  varchar2( 4000 )     null
 )

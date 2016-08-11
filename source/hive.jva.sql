@@ -497,6 +497,55 @@ public class hive_parameter
     }
 };
 
+// properties parsing class
+public class hive_properties
+{
+    //
+    static public String property( String prop )
+    {
+        return hive_parameter.value( prop );
+    }
+
+    //
+    static public String name( String prop )
+    {
+        String val = null;
+        String dat = property( prop );
+
+        if ( dat != null )
+        {
+            String[] ary = dat.split( "=" );
+
+            if ( ary.length > 0 )
+                val = ary[ 0 ];
+        }
+
+        return val;
+    }
+
+    //
+    static public String value( String prop )
+    {
+        String val = null;
+        String dat = property( prop );
+
+        if ( dat != null )
+        {
+            String[] ary = dat.split( "=" );
+
+            if ( ary.length > 1 )
+            {
+                if ( ary.length > 2 )
+                    val = dat.substring( dat.indexOf( "=" ) + 1 );
+                else
+                    val = ary[ 1 ];
+            }
+        }
+
+        return val;
+    }
+};
+
 // define an empty callback handler, which sets both the
 // username and password data to an empty string (as there
 // is no ability to provide a prompted response from a user)
@@ -526,23 +575,21 @@ public class callback_handler implements CallbackHandler
 //
 public class hive_session
 {
-    String sql_;
-
-    public String host;
-    public String port;
-
-    // auth type (kerberos or userIdPassword)
-    public String auth;
+    //
+    public String url;
 
     // when auth = userIdPassword
     public String name;
     public String pass;
 
+    // auth type
+    public String auth;
+
     // when auth = kerberos
-    public String kerb; // see also system parameters: java.security.krb5.realm
-                        //                             java.security.krb5.kdc
-                        //                             java.security.krb5.conf
-                        //                             java.security.auth.login.config
+    // see system parameters: java.security.krb5.realm
+    //                        java.security.krb5.kdc
+    //                        java.security.krb5.conf
+    //                        java.security.auth.login.config
 
     //
     public hive_session()
@@ -550,66 +597,64 @@ public class hive_session
         auth = hive_parameter.value( "hive_auth" );
 
         if ( auth == null )
-            auth = "userIdPassword";
+            auth = "normal";
 
-        host = "";
-        port = "";
+        url  = "";
         name = "";
         pass = "";
-        kerb = "";
 
         log.trace( "hive_session default ctor" );
     }
 
     //
-    public hive_session( String h, String p )
+    public hive_session( String u )
     {
         auth = hive_parameter.value( "hive_auth" );
 
         if ( auth == null )
-            auth = "userIdPassword";
+            auth = "normal";
 
-        host = h;
-        port = p;
+        url  = u;
         name = "";
         pass = "";
-        kerb = "";
 
-        log.trace( "hive_session ctor - host: " + h + ", port: " + p );
+        log.trace( "hive_session ctor - url: " + u );
     }
 
     //
-    public hive_session( String h, String p, String n, String w )
+    public hive_session( String u, String n, String p )
     {
         auth = hive_parameter.value( "hive_auth" );
 
         if ( auth == null )
-            auth = "userIdPassword";
+            auth = "normal";
 
-        host = h;
-        port = p;
+        url  = u;
         name = n;
-        pass = w;
-        kerb = "";
+        pass = p;
 
-        log.trace( "hive_session ctor - host: " + h + ", port: " + p + " , name: " + n + ", pass: " + p );
+        log.trace( "hive_session ctor - url: " + u + " , name: " + n + ", pass: " + p );
     }
 
     //
-    public hive_session( String h, String p, String k )
+    public hive_session( String u, String n, String p, String a )
     {
         auth = hive_parameter.value( "hive_auth" );
 
         if ( auth == null )
-            auth = "userIdPassword";
+            auth = "normal";
 
-        host = h;
-        port = p;
-        kerb = k;
-        name = "";
-        pass = "";
+        url  = u;
+        name = n;
+        pass = p;
 
-        log.trace( "hive_session ctor - host: " + h + ", port: " + p + ", kerb: " + k );
+        if ( a != null )
+        {
+            if ( a.trim().length() > 0 )
+                auth = a;
+        }
+
+        log.trace( "hive_session ctor - url: " + u + " , name: " + n + ", pass: " + p );
     }
 
     //
@@ -623,57 +668,44 @@ public class hive_session
             auth = hive_parameter.value( "hive_auth" );
 
             if ( auth == null )
-                auth = "userIdPassword";
+                auth = "normal";
 
             if ( atr.length > 0 )
             {
                 if ( atr[ 0 ] != null )
-                    host = atr[ 0 ].toString();
+                    url = atr[ 0 ].toString();
                 else
-                    host = "";
+                    url = "";
             }
             else
-                host = "";
+                url = "";
 
             if ( atr.length > 1 )
             {
                 if ( atr[ 1 ] != null )
-                    port = atr[ 1 ].toString();
-                else
-                    port = "";
-            }
-            else
-                port = "";
-
-            if ( atr.length == 4 )
-            {
-                if ( atr[ 2 ] != null )
-                    name = atr[ 2 ].toString();
+                    name = atr[ 1 ].toString();
                 else
                     name = "";
-
-                if ( atr[ 3 ] != null )
-                    pass = atr[ 3 ].toString();
-                else
-                    pass = "";
-
-                kerb = "";
-            }
-            else if ( atr.length == 3 )
-            {
-                if ( atr[ 2 ] != null )
-                    kerb = atr[ 2 ].toString();
-                else
-                    kerb = "";
-
-                name = "";
-                pass = "";
             }
             else
-            {
                 name = "";
+
+            if ( atr.length > 2 )
+            {
+                if ( atr[ 2 ] != null )
+                    pass = atr[ 2 ].toString();
+                else
+                    pass = "";
+            }
+            else
                 pass = "";
-                kerb = "";
+
+            if ( atr.length > 3 )
+            {
+                if ( atr[ 3 ] != null )
+                    auth = atr[ 3 ].toString();
+                else
+                    auth = "normal";
             }
 
             log.trace( "hive_session ctor - oracle.sql.STRUCT: " + obj.toString() );
@@ -687,24 +719,10 @@ public class hive_session
     {
         String str = "";
 
-        str += "host: " + host + "\n";
-        str += "port: " + port + "\n";
-
+        str += "url:  " + url + "\n";
+        str += "name: " + name + "\n";
+        str += "pass: " + pass + "\n";
         str += "auth: " + auth + "\n";
-
-        if ( auth.equals( "userIdPassword" ) )
-        {
-            str += "name: " + name + "\n";
-            str += "pass: " + pass + "\n";
-        }
-        else if ( auth.equals( "kerberos" ) )
-        {
-            str += "kerb: " + kerb + "\n";
-        }
-        else
-        {
-            // nothing to do ?
-        }
 
         log.trace( "hive_session toString: " + str );
         return str;
@@ -717,12 +735,10 @@ public class hive_session
 
         if ( val != null )
         {
-            if ( auth.equals( val.auth )
-              && host.equals( val.host )
-              && port.equals( val.port )
+            if ( url.equals( val.url )
               && name.equals( val.name )
               && pass.equals( val.pass )
-              && kerb.equals( val.kerb ) )
+              && auth.equals( val.auth ) )
                 eq = true;
         }
 
@@ -1106,7 +1122,6 @@ public class hive_connection
 {
     //
     private static String driver_;
-    String url_;
 
     //
     public hive_session session;
@@ -1134,21 +1149,21 @@ public class hive_connection
     }
 
     //
-    public hive_connection( String host, String port )
+    public hive_connection( String url )
     {
-        session = new hive_session( host, port );
+        session = new hive_session( url );
     }
 
     //
-    public hive_connection( String host, String port, String name, String pass )
+    public hive_connection( String url, String name, String pass )
     {
-        session = new hive_session( host, port, name, pass );
+        session = new hive_session( url, name, pass );
     }
 
     //
-    public hive_connection( String host, String port, String kerb )
+    public hive_connection( String url, String name, String pass, String auth )
     {
-        session = new hive_session( host, port, kerb );
+        session = new hive_session( url, name, pass, auth );
     }
 
     //
@@ -1172,6 +1187,7 @@ public class hive_connection
         if ( driver_ == null )
         {
             driver_ = hive_parameter.value( "hive_jdbc_driver" );
+            log.trace( "Loaded hive_jdbc_driver: " + driver_ );
 
             if ( driver_ == null )
                 throw new hive_exception( "Could not find parameter value for JDBC driver" );
@@ -1185,156 +1201,49 @@ public class hive_connection
     public hive_session getSession() { return session; }
 
     //
-    public void setHost( String val ) { session.host = val; }
-    public void setPort( String val ) { session.port = val; }
+    public void setUrl( String val )  { session.url = val; }
     public void setUser( String val ) { session.name = val; }
     public void setPass( String val ) { session.pass = val; }
-    public void setKerb( String val ) { session.kerb = val; }
+    public void setAuth( String val ) { session.auth = val; }
 
     //
-    public String getHost() { return session.host; }
-    public String getPort() { return session.port; }
     public String getUser() { return session.name; }
     public String getPass() { return session.pass; }
-    public String getKerb() { return session.kerb; }
+    public String getAuth() { return session.auth; }
 
     //
     public String getUrl() throws hive_exception
     {
-        url_ = hive_parameter.value( "hive_jdbc_url" );
+        int idx = 0;
 
-        if ( url_ == null )
-            throw new hive_exception( "Could not find parameter for Hive URL" );
-
-        if ( ( session.host.length() > 0 )
-          && ( session.port.length() > 0 ) )
+        if ( session.url.trim().length() == 0 )
         {
-            url_ += session.host + ":" + session.port;
+            session.url = hive_parameter.value( "hive_jdbc_url" );
 
-            if ( session.auth != null )
+            if ( session.url == null )
+                throw new hive_exception( "Could not find parameter for Hive URL" );
+
+            while ( true )
             {
-                url_ += ";AuthenticationMethod=" + session.auth;
+                String val = hive_parameter.value( "hive_jdbc_url." + Integer.toString( ++idx ) );
 
-                if ( session.auth.equals( "userIdPassword" ) )
+                if ( val != null )
                 {
-                    if ( session.name != null )
+                    if ( val.trim().length() > 0 )
                     {
-                        if ( session.name.length() > 0 )
-                            url_ += ";User=" + session.name;
-                        else
-                            throw new hive_exception( "Missing user in connection data" );
+                        log.trace( "Set URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]: " + val );
+                        session.url += ";" + val;
                     }
                     else
-                        throw new hive_exception( "Encountered NULL user in connection data" );
-
-                    if ( session.pass != null )
-                    {
-                        if ( session.pass.length() > 0 )
-                            url_ += ";Password=" + session.pass;
-                        else
-                            throw new hive_exception( "Missing password in connection data" );
-                    }
-                    else
-                        throw new hive_exception( "Encountered NULL password in connection data" );
-                }
-                else if ( session.auth.equals( "kerberos" ) )
-                {
-                    if ( session.kerb != null )
-                    {
-                        if ( session.kerb.length() > 0 )
-                            url_ += ";ServicePrincipalName=" + session.kerb;
-                        else
-                            throw new hive_exception( "Missing Kerberos principal in connection data" );
-                    }
-                    else
-                        throw new hive_exception( "Encountered NULL Kerberos principal in connection data" );
+                        log.trace( "Ignored NULL URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]" );
                 }
                 else
-                {
-                    throw new hive_exception( "Unknown authentication method [" + session.auth + "] encountered" );
-                }
-            }
-            else
-            {
-                throw new hive_exception( "Encountered NULL session authentication method" );
+                    break;
             }
         }
-        else
-        {
-            if ( session.host.length() == 0 )
-                throw new hive_exception( "Missing host in connection data" );
 
-            if ( session.port.length() == 0 )
-                throw new hive_exception( "Missing port in connection data" );
-        }
-        
-        log.info( url_ );
-        return url_;
-    }
-
-    //
-    public boolean loadConnection() throws hive_exception
-    {
-        if ( session.host.length() == 0 )
-            session.host = hive_parameter.value( "hive_host" );
-
-        if ( session.port.length() == 0 )
-            session.port = hive_parameter.value( "hive_port" );
-
-        if ( session.auth.equals( "userIdPassword" ) )
-        {
-            if ( session.name.length() == 0 )
-                session.name = hive_parameter.value( "hive_user" );
-
-            if ( session.pass.length() == 0 )
-                session.pass = hive_parameter.value( "hive_pass" );
-
-            session.kerb = "";
-        }
-        else if ( session.auth.equals( "kerberos" ) )
-        {
-            if ( session.kerb.length() == 0 )
-                session.kerb = hive_parameter.value( "hive_principal" );
-
-            session.name = "";
-            session.pass = "";
-        }
-        else
-        {
-            session.name = "";
-            session.pass = "";
-            session.kerb = "";
-        }
-
-        //
-        if ( session.host.length() == 0 )
-            throw new hive_exception( "Undefined hive_host parameter!" );
-
-        if ( session.port.length() == 0 )
-            throw new hive_exception( "Undefined hive_port parameter!" );
-
-        if ( session.auth.length() > 0 )
-        {
-            if ( session.auth.equals( "userIdPassword" ) )
-            {
-                if ( session.name.length() == 0 )
-                    throw new hive_exception( "Undefined hive_user parameter!" );
-
-                if ( session.pass.length() == 0 )
-                    throw new hive_exception( "Undefined hive_pass parameter!" );
-            }
-            else if ( session.auth.equals( "kerberos" ) )
-            {
-                if ( session.kerb.length() == 0 )
-                    throw new hive_exception( "Undefined hive_principal parameter!" );
-            }
-            else
-                throw new hive_exception( "Invalid hive_auth parameter!" );
-        }
-        else
-            throw new hive_exception( "Undefined hive_auth parameter!" );
-
-        return true;
+        log.info( session.url );
+        return session.url;
     }
 
     //
@@ -1344,26 +1253,30 @@ public class hive_connection
     }
 
     //
-    public String getExtra()
+    public boolean setProperties()
     {
-        String xp = "";
+        int idx = 0;
 
-        try
+        while ( true )
         {
-            xp = hive_parameter.value( "url_extra" );
+            String n = hive_properties.name( "java_property." + Integer.toString( ++idx ) );
 
-            if ( xp != null )
-                xp = ";" + xp;
+            if ( n != null )
+            {
+                String v = hive_properties.value( "java_property." + Integer.toString( idx ) );
+
+                log.trace( "Set system property [" + "java_property." + Integer.toString( idx ) + "]: " +
+                           "name: "  + n +
+                           "value: " + v );
+
+                System.setProperty( n, v );
+            }
             else
-                xp = "";
-        }
-        catch ( Exception ex )
-        {
-           // ... do nothing
+                break;
         }
 
-        log.trace( "getExtra URL: " + xp );
-        return xp;
+        log.trace( "Set " + Integer.toString( idx ) + " system properties" );
+        return ( idx > 1 ); // found at least 1 property to set
     }
 
     //
@@ -1371,24 +1284,31 @@ public class hive_connection
     {
         if ( getConnection() == null )
         {
-            //
-            if ( loadConnection() )
-            {
-                String url = getUrl();
+            String url = getUrl();
 
-                if ( url.length() > 0 )
+            if ( url.length() > 0 )
+            {
+                if ( setProperties() )
                 {
+                    // if no java properties are set, then kerberos cannot be used
                     if ( session.auth.equals( "kerberos" ) )
                         login();
 
-                    url += getExtra();
-
                     log.trace( "createConnection URL: " + url );
+                }
+
+                if ( ( session.name.trim().length() == 0 )
+                  && ( session.pass.trim().length() == 0 ) )
+                {
+                    log.trace( "DriverManager.getConnection( " + url + ")" );
                     conn_ = DriverManager.getConnection( url );
                 }
+                else
+                {
+                    log.trace( "DriverManager.getConnection( " + url + ", " + session.name.trim() + ", " + session.pass.trim() + ")" );
+                    conn_ = DriverManager.getConnection( url, session.name.trim(), session.pass.trim() );
+                }
             }
-            else
-                throw new hive_exception( "Could not load connection data" );
         }
 
         return conn_;
@@ -1399,63 +1319,12 @@ public class hive_connection
     {
         boolean ok = false;
 
-        //
-        String rlm = hive_parameter.value( "java.security.krb5.realm" );
-        String kdc = hive_parameter.value( "java.security.krb5.kdc" );
-        String cnf = hive_parameter.value( "java.security.krb5.conf" );
-        String jdb = hive_parameter.value( "java.security.auth.login.config" );
-        String dbg = hive_parameter.value( "sun.security.krb5.debug" );
-
-        if ( rlm != null )
-        {
-            log.trace( "login setting java.security.krb5.realm: " + rlm );
-            System.setProperty( "java.security.krb5.realm", rlm );
-        }
-
-        if ( kdc != null )
-        {
-            log.trace( "login setting java.security.krb5.kdc: " + kdc );
-            System.setProperty( "java.security.krb5.kdc", kdc );
-        }
-
-        if ( cnf != null )
-        {
-            if ( cnf.indexOf( "?" ) >= 0 )
-            {
-                String oh = hive_parameter.env( "ORACLE_HOME" );
-
-                if ( oh != null )
-                    cnf = cnf.replace( "?", oh );
-            }
-
-            log.trace( "login setting java.security.krb5.conf: " + cnf );
-            System.setProperty( "java.security.krb5.conf", cnf );
-        }
-
-        if ( jdb != null )
-        {
-            if ( jdb.indexOf( "?" ) >= 0 )
-            {
-                String oh = hive_parameter.env( "ORACLE_HOME" );
-
-                if ( oh != null )
-                    jdb = jdb.replace( "?", oh );
-            }
-
-            log.trace( "login setting java.security.auth.login.config: " + jdb );
-            System.setProperty( "java.security.auth.login.config", jdb );
-        }
-
-        if ( dbg != null )
-        {
-            log.trace( "login setting sun.security.krb5.debug: " + dbg );
-            System.setProperty( "sun.security.krb5.debug", dbg );
-        }
-
         try
         {
+            String idx = "";
+
             Subject sub = new Subject();
-            LoginContext lc = new LoginContext( "JDBC_DRIVER_01", sub, new callback_handler() );
+            LoginContext lc = new LoginContext( idx, sub, new callback_handler() );
 
             lc.login();
             ok = true;

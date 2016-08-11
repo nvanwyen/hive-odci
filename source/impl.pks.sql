@@ -26,22 +26,22 @@ create or replace package impl as
     procedure session_log_level( typ in number );
 
     -- 
-    procedure session( krb in varchar2 );
+    procedure session( url in varchar2 );
 
     -- 
     procedure session( usr in varchar2,
                        pwd in varchar2 );
 
     -- 
-    procedure session( hst in varchar2,
-                       prt in varchar2,
-                       krb in varchar2 );
-
-    -- 
-    procedure session( hst in varchar2,
-                       prt in varchar2,
+    procedure session( url in varchar2,
                        usr in varchar2,
                        pwd in varchar2 );
+
+    -- 
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2,
+                       ath in varchar2 );
 
     --
     procedure session( con in connection );

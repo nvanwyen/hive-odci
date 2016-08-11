@@ -185,7 +185,7 @@ create or replace type body hive_t as
 
                         else
 
-                            raise_application_error( -20010, 'Record type code ['
+                            raise_application_error( -20210, 'Record type code ['
                                                            || to_char( rec( i ).code )
                                                            ||' ] not supported for column index ['
                                                            || to_char( i ) || ']' );

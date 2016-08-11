@@ -49,6 +49,11 @@ create or replace package remote as
     procedure ddl( stm in varchar2,
                    con in connection default null );
 
+    --
+    ex_not_eligible exception;
+    es_not_eligible constant varchar2( 256 ) := 'Parameter is not eligible for change at the session level';
+    ec_not_eligible constant number          := -20103;
+
 end remote;
 /
 

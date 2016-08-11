@@ -13,6 +13,24 @@ alter session set current_schema = hive;
 create or replace package body dbms_hive as
 
     --
+    function exist( name in varchar2 ) return boolean is
+
+        c number := 0;
+        n varchar2( 4000 ) := name;
+
+    begin
+
+        --
+        select count(0) into c
+          from param$ a
+         where a.name = n;
+
+        --
+        return ( c > 0 );
+
+    end exist;
+
+    --
     function param( name in varchar2 ) return varchar2 is
 
         val varchar2( 4000 );
@@ -38,39 +56,57 @@ create or replace package body dbms_hive as
     procedure param( name in varchar2, value in varchar2 ) is
 
         pragma autonomous_transaction;
+        n varchar2( 4000 ) := name;
+        v varchar2( 4000 ) := value;
 
     begin
 
         --
-        insert into param$ a ( a.name, a.value )
-        values ( name, value );
+        if ( not exist( name ) ) then
+
+            --
+            insert into param$ a ( a.name, a.value )
+            values ( n, v );
+
+        else
+
+            --
+            update param$ a
+               set a.value = v
+             where a.name = n;
+
+        end if;
 
         --
         commit;
 
         exception
-            --
-            when dup_val_on_index then
-                --
-                begin
-
-                    --
-                    update param$ a set a.value = value
-                     where a.name = name;
-
-                    --
-                    commit;
-
-                    --
-                    exception
-                        when others then rollback; raise;
-
-                end;
-
-            --
             when others then rollback; raise;
 
     end param;
+
+    --
+    procedure remove( name in varchar2 ) is
+
+        pragma autonomous_transaction;
+        n varchar2( 4000 ) := name;
+
+    begin
+
+        if ( exist( n ) ) then
+
+            delete from param$ a
+             where a.name = n;
+
+            commit;
+
+        end if;
+
+        exception
+            when no_data_found then null;
+            when others then rollback; raise;
+
+    end remove;
 
     --
     procedure purge_log is

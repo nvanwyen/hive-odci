@@ -13,8 +13,14 @@ alter session set current_schema = hive;
 create or replace package dbms_hive as
 
     --
-    function param( name in varchar2 ) return varchar2;
-    procedure param( name in varchar2, value in varchar2 );
+    function exist( name in varchar2 ) return boolean;      -- paraemter exists
+
+    --
+    function param( name in varchar2 ) return varchar2;     -- get
+    procedure param( name in varchar2, value in varchar2 ); -- set
+
+    --
+    procedure remove( name in varchar2 );                   -- unset (e.g. remove)
 
     --
     procedure purge_log;

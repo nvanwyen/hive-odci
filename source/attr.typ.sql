@@ -54,11 +54,10 @@ show errors
 -- 
 create or replace type connection as object
 (
-    host varchar2( 256 ),
-    port varchar2( 256 ),
-    name varchar2( 256 ),
-    pass varchar2( 256 ),
-    kerb varchar2( 256 ) 
+    url  varchar2( 4000 ),  -- param: hive_jdbc_url[.x]
+    name varchar2( 256 ),   --        hive_user
+    pass varchar2( 256 ),   --        hive_pass
+    auth varchar2( 40 )     --        hive_auth
 );
 /
 

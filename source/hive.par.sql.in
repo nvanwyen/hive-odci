@@ -16,85 +16,27 @@ set serveroutput on
 declare
 
     --
-    function exists_( n varchar2 ) return boolean is
-
-        c number := 0;
-
-    begin
-
-        select count(0) into c
-          from param$
-         where name = n;
-
-        return ( c > 0 );
-
-    end exists_;
-
-    --
-    procedure insert_( n in varchar2, v in varchar2 ) is
-
-        pragma autonomous_transaction;
-
-    begin
-
-        insert into param$ ( name, value )
-        values ( n, v );
-
-        dbms_output.put_line( 'Paraemter added:   ' || n );
-        commit;
-
-        exception
-            when others then
-                rollback;
-                dbms_output.put_line( 'Insert error [' || n || ']: ' || sqlerrm );
-
-    end insert_;
-
-    --
-    procedure update_( n in varchar2, v in varchar2 ) is
-
-        pragma autonomous_transaction;
-
-    begin
-
-        update param$
-           set value = v
-         where name = n;
-
-        dbms_output.put_line( 'Paraemter updated: ' || n );
-        commit;
-
-        exception
-            when others then
-                rollback;
-                dbms_output.put_line( 'Update error [' || n || ']: ' || sqlerrm );
-
-    end update_;
-
-    --
     procedure param_( n in varchar2, v in varchar2 ) is
     begin
 
-        if ( exists_( n ) ) then
-
-            update_( n, v );
-
-        else
-
-            insert_( n, v );
-
-        end if;
+        --
+        dbms_hive.param( n, v );
+        dbms_output.put_line( '* ' || rpad( n, 21, ' ' ) || ': ' || v );
 
     end param_;
 
 begin
 
     --
+    dbms_output.put_line( 'Hive Paraemters' );
+    dbms_output.put_line( rpad( '-', 80, '-' ) );
+
+    --
     param_( 'application', 'Hive ODCI' );
     param_( 'version', '%version%' );
 
     --
-    param_( 'log_level', '3' );
+    param_( 'log_level', '31' );
 
     --
     param_( 'encrypted_values', 'hive_pass' );
@@ -105,31 +47,49 @@ begin
 
     --
     param_( 'hive_jdbc_driver', 'com.ddtek.jdbc.hive.HiveDriver' );
-    param_( 'hive_jdbc_url', 'jdbc:datadirect:hive://' );
 
     --
-    param_( 'hive_host', 'hive.mtihq.com' );
-    param_( 'hive_port', '10000' );
+    param_( 'hive_jdbc_url',   'jdbc:datadirect:hive://hive.mtihq.com:10000' );
 
-    -- auth method should be "kerberos" or "userIdPassword"
-    param_( 'hive_auth', 'userIdPassword' );
+    -- URL paraemters, each represents a ";" delineated option
+    param_( 'hive_jdbc_url.1', 'AuthenticationMethod=userIdPassword' );
+    param_( 'hive_jdbc_url.2', 'User=oracle' );
+    param_( 'hive_jdbc_url.3', 'Password=welcome1' );
+    param_( 'hive_jdbc_url.4', 'url_extra=SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
 
-    -- applicable for hive_auth = userIdPassword
-    param_( 'hive_user', 'oracle' );
-    param_( 'hive_pass', 'welcome1' );
+    -- URL paraemters are processed in the order 1 .. X, consecutively
+    -- until a value cannot be found. For example 1, 2, 3, 5, 6, ...
+    --                                                  ^
+    --                                                  stops reading here
 
-    -- applicable for hive_auth = kerberos
-    param_( 'hive_principal', 'hive/hive.mtihq.com@MTI.COM' );
+    -- extra, debugging (ddtek)
+    -- param_( 'hive_jdbc_url.4', 'SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
 
-    -- applicable for hive_auth = kerberos
-    param_( 'java.security.krb5.realm',        'MTI.COM' );
-    param_( 'java.security.krb5.kdc',          'kdc.mti.com' );
-    param_( 'java.security.krb5.conf',         '?/krb/krb5.conf' );
-    param_( 'java.security.auth.login.index',  'JDBC_DRIVER_01' );
-    param_( 'java.security.auth.login.config', '?/krb/jdbc.conf' );
+    -- connection parameters, use NULL to ignore
+    param_( 'hive_user', null );
+    param_( 'hive_pass', null );
+    param_( 'hive_auth', 'normal' );    -- type can be 'normal', 'kerberos', ...
+                                        -- use "kerberos", for pre-authentication
+                                        -- of session before loading driver
+
+    -- Java system properties (e.g. System.setProperty( name, value ) )
+    param_( 'java_property.1', 'java.security.krb5.realm=MTI.COM' );
+    param_( 'java_property.2', 'java.security.krb5.realm=kdc.mti.com' );
+    param_( 'java_property.3', 'java.security.krb5.conf=/etc/krb5.conf' );
+    param_( 'java_property.4', 'java.security.auth.login.index=Client' );
+    param_( 'java_property.5', 'java.security.auth.login.config=/etc/jdbc.conf' );
 
     -- when 'true" enable java output ... SQL> exec dbms_java.set_output( 1000000 );
-    param_( 'sun.security.krb5.debug', 'false' );
+    param_( 'java_property.6', 'sun.security.krb5.debug=true' );
+
+    -- Java system properties are processed in the order 1 .. X, consecutively
+    -- until a value cannot be found. For example 1, 2, 3, 4, 5, 6, 10, 11 ...
+    --                                                           ^
+    --                                          stops reading here
+
+    -- some Java propertiers require dbms_java permissions to be granted ahead of time
+    -- so the use of SQL> exec dbms_java.grant_permission( 'HIVE', 'SYS:<property>', '...', '...' );
+    -- may be needed before the property can be used (see hive.prm.sql for examples).
 
     -- default bind access (upon creation) can be "public", schema, role or "%user%", ...
     -- each comma delineated item is access seperated as by a colon e.g. <account>:<access>
@@ -137,10 +97,7 @@ begin
     param_( 'default_bind_access', 'public:1, %user%:3' );
 
     --
-    param_( 'query_limit', 5000 );
-
-    -- extra, debugging (ddtek)
-    -- param_( 'url_extra', 'SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
+    param_( 'query_limit', 1000 );
 
 end;
 /

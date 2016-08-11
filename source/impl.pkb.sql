@@ -17,7 +17,7 @@ create or replace package body impl as
 
     --
     log_     number     := -1;
-    session_ connection := connection( null, null, null, null, null );
+    session_ connection := connection( null, null, null, null );
 
     --
     function describe_( atr out attributes, stm in varchar2, bnd in binds, con in connection ) return number as
@@ -142,6 +142,36 @@ create or replace package body impl as
     end conv_;
 
     --
+    function url_ return varchar2 is
+
+        i number           := 0;
+        u varchar2( 4000 ) := param_( 'hive_jdbc_url' );
+        v varchar2( 4000 ) := null;
+
+    begin
+
+        while ( true ) loop
+
+            i := i + 1;
+            v := param_( 'hive_jdbc_url.' || to_char( i ) );
+
+            if ( length( trim( v ) ) > 0 ) then
+
+                u := u || ';' || v;
+
+            else
+
+                exit;
+
+            end if;
+
+        end loop;
+
+        return u;
+
+    end url_;
+
+    --
     function connection_ return connection is
     begin
 
@@ -151,67 +181,43 @@ create or replace package body impl as
 
     --
     procedure connection_( con in connection ) is
-
-        auth varchar2( 256 ) := nvl( param_( 'hive_auth' ), 'userIdPassword' );
-
     begin
 
         --
-        session_.host := case when ( con.host is null )
-                              then case when ( session_.host is null )
-                                        then param_( 'hive_host' )
-                                        else session_.host
+        session_.url := case when ( con.url is null )
+                             then case when ( session_.url is null )
+                                       then url_
+                                       else session_.url
+                                  end
+                             else con.url
+                        end;
+
+        --
+        session_.name := case when ( con.name is null )
+                              then case when ( session_.name is null )
+                                        then param_( 'hive_user' )
+                                        else session_.name
                                    end
-                              else con.host
+                              else con.name
                          end;
 
         --
-        session_.port := case when ( con.port is null )
-                              then case when ( session_.port is null )
-                                        then param_( 'hive_port' )
-                                        else session_.port
+        session_.pass := case when ( con.pass is null )
+                              then case when ( session_.pass is null )
+                                        then param_( 'hive_pass' )
+                                        else session_.pass
                                    end
-                              else con.port
+                              else con.pass
                          end;
 
-        if ( auth = 'userIdPassword' ) then
-
-            --
-            session_.name := case when ( con.name is null )
-                                  then case when ( session_.name is null )
-                                            then param_( 'hive_user' )
-                                            else session_.name
-                                       end
-                                  else con.name
-                             end;
-
-            --
-            session_.pass := case when ( con.pass is null )
-                                  then case when ( session_.pass is null )
-                                            then param_( 'hive_pass' )
-                                            else session_.pass
-                                       end
-                                  else con.pass
-                             end;
-
-            session_.kerb := null;
-
-        else -- auth = 'kerberos'
-
-            --
-            session_.kerb := case when ( con.kerb is null )
-                                  then case when ( session_.kerb is null )
-                                            then param_( 'hive_principal' )
-                                            else session_.kerb
-                                       end
-                                  else con.kerb
-                             end;
-
-            session_.name := null;
-            session_.pass := null;
-
-
-        end if;
+        --
+        session_.auth := case when ( con.auth is null )
+                              then case when ( session_.auth is null )
+                                        then nvl( param_( 'hive_auth' ), 'normal' )
+                                        else session_.auth
+                                   end
+                              else con.auth
+                         end;
 
     end connection_;
 
@@ -219,11 +225,10 @@ create or replace package body impl as
     function current_ return connection is
     begin
 
-        if ( ( session_.host is null ) and
-             ( session_.port is null ) and
+        if ( ( session_.url  is null ) and
              ( session_.name is null ) and
              ( session_.pass is null ) and
-             ( session_.kerb is null ) ) then
+             ( session_.auth is null ) ) then
 
             connection_( session_ );
 
@@ -273,13 +278,13 @@ create or replace package body impl as
     end session_log_level;
 
     -- 
-    procedure session( krb in varchar2 ) is
+    procedure session( url in varchar2 ) is
 
         con connection := session_;
 
     begin
 
-        con.kerb := krb;
+        con.url := url;
 
         session( con );
 
@@ -301,44 +306,7 @@ create or replace package body impl as
     end session;
 
     -- 
-    procedure session( hst in varchar2,
-                       prt in varchar2,
-                       krb in varchar2 ) is
-
-        con connection := session_;
-
-    begin
-
-        --
-        con.host := case when ( hst is null )
-                         then param_( 'hive_host' )
-                         else hst
-                    end;
-
-        --
-        con.port := case when ( prt is null )
-                         then param_( 'hive_port' )
-                         else prt
-                    end;
-
-        --
-        con.kerb := case when ( krb is null )
-                         then param_( 'hive_principal' )
-                         else krb
-                    end;
-
-        --
-        con.name := null;
-        con.pass := null;
-
-        --
-        session( con );
-
-    end session;
-
-    -- 
-    procedure session( hst in varchar2,
-                       prt in varchar2,
+    procedure session( url in varchar2,
                        usr in varchar2,
                        pwd in varchar2 ) is
 
@@ -347,16 +315,10 @@ create or replace package body impl as
     begin
 
         --
-        con.host := case when ( hst is null )
-                         then param_( 'hive_host' )
-                         else hst
-                    end;
-
-        --
-        con.port := case when ( prt is null )
-                         then param_( 'hive_port' )
-                         else prt
-                    end;
+        con.url := case when ( url is null )
+                        then url_
+                        else url
+                   end;
 
         --
         con.name := case when ( usr is null )
@@ -371,7 +333,43 @@ create or replace package body impl as
                     end;
 
         --
-        con.kerb := null;
+        session( con );
+
+    end session;
+
+    -- 
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2,
+                       ath in varchar2 ) is
+
+        con connection := session_;
+
+    begin
+
+        --
+        con.url := case when ( url is null )
+                        then url_
+                        else url
+                   end;
+
+        --
+        con.name := case when ( usr is null )
+                         then param_( 'hive_user' )
+                         else usr
+                    end;
+
+        --
+        con.pass := case when ( pwd is null )
+                         then param_( 'hive_pass' )
+                         else pwd
+                    end;
+
+        --
+        con.auth := case when ( ath is null )
+                         then nvl( param_( 'hive_auth' ), 'normal' )
+                         else ath
+                    end;
 
         --
         session( con );

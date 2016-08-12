@@ -86,8 +86,8 @@ case, the update will fail.
 
 ***Important***: If this is a RAC installation, then you will need to run
 ```$ORACLE_HOME/javavm/install/update_javavm_binaries.pl``` and 
-```make -f ins_rdbms.mk ioracle``` in ```$ORACLE_HOME/rdbms/lib``` on each Node 
-in the cluster
+```make -f ins_rdbms.mk ioracle``` in ```$ORACLE_HOME/rdbms/lib``` on each 
+Node in the cluster
 
 #### Java Policy Files
 Depending on your intended use, you may need to use the [(JCE) Unlimited 
@@ -163,6 +163,11 @@ PL/SQL procedure successfully completed.
 
 Run: jdbc/load-jdbc.sh "sys"
 ```
+> Note: If the installation was unsuccessful, remove the installation using the
+> ```remove_hive.sql``` as shown in the [Removal](#Removal) section. Fix 
+> the errors and try again
+
+#### Load the Driver
 If the PL/SQL object installation was successful (as show above), then it's 
 time to install the JDBC Driver of your choice in the database. 
 
@@ -224,9 +229,8 @@ this may impact updates and patches at a later time if not correctly specified.
 
 #### Load the JDBC Driver
 You will not be able to use the ```jdbc/load-jdbc.sh``` bash script in Windows 
-(unless you have [Cygwin ][2] or something similar installed). Therefore, you 
-will have load each JAR file manually using the Oracle provided [loadjava][3] 
-utility..
+(unless you have [Cygwin ][2] or something similar installed). Therefore, you will 
+have load each JAR file manually using the Oracle provided [loadjava][3]  utility..
 
 For each JAR file you have to load use the following as a template for 
 executing.

@@ -123,10 +123,16 @@ been tested with the following:
 If you are installing the distribution on or from Windows platform you must do
 the following pre-steps before running the ```install_hive.sql``` script.
 
-#### Rename the ```hive.par.sql.in``` file
+#### Rename and modify the ```hive.par.sql.in``` file
 The ```hive.par.sql.in``` file is an input file modified with the current 
-version information. Open the file in a text editor (capable of reading UNIX 
-formatted file, and find the version parameter.
+version information. Copy or move the file, to get rid of the ```.in```
+extension, for example ...
+```
+copy /b hive.par.sql.in hive.par.sql
+```
+
+The open the file in a text editor (capable of reading UNIX 
+formatted file, and find the version parameter, so it can be set manually,
 
 ```
 param_( 'version', '%version%' );

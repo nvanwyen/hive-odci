@@ -279,6 +279,8 @@ Frequently Asked Questions (FAQ) and Known Issues
 For more information please contact your friends at MTI or Nicholas Van Wyen 
 directly as shown in the [Authors](#Authors) section above.
 
+Of course your question, concerns or comments are always welcome.
+
 
   [0]: https://docs.oracle.com/database/121/ADDCI/toc.htm
   [1]: http://www.mtihq.com

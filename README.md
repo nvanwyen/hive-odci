@@ -130,6 +130,8 @@ extension, for example ...
 ```
 copy /b hive.par.sql.in hive.par.sql
 ```
+The ```install_hive.sql` script looks for the file name ```hive.par.sql```,
+during the installation and if it's missing will fail.
 
 Then open the file in a text editor (capable of reading UNIX formatted file),
 and find the version parameter, so it can be set manually,

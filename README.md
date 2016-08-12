@@ -145,7 +145,7 @@ The ```install_hive.sql``` script looks for the file name ```hive.par.sql```,
 during the installation and if it's missing will fail.
 
 Then open the file ```hive.par.sql``` in a text editor (capable of reading
-UNIX formatted file), and find the version parameter, so it can be set manually,
+UNIX formatted files), and find the version parameter, so it can be set manually,
 
 ```
 param_( 'version', '%version%' );
@@ -180,7 +180,7 @@ loadjava -force ^
 ```
 Setup
 ------------------------------
-Once Hive-JDBC has been successfully installed and a compliant JDBC Driver 
+Once Hive-ODCI has been successfully installed and a compliant JDBC Driver 
 loaded you must setup the parameters to use that Driver. The following is 
 **not** an exhaustive overview of the parameters used by Hive-ODCI, just those 
 commonly needed to get started.

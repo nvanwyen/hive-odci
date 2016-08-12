@@ -245,13 +245,15 @@ param_( 'java_property.5', 'java.security.auth.login.config=/etc/jdbc.conf' );
 param_( 'java_property.6', 'sun.security.krb5.debug=true' );
 ```
 As they are read Hive-ODCI will set them in the order in which they are
-encountered. While most Java Properties are inter-dependent on on another,
+encountered. While most Java Properties are not inter-dependent on on another,
 some may be, so make sure the order you specify is correct.
 
 > Note: Using these parameters may require additional grants not initially 
 anticipated and provided in the installation. You may need to provide grants 
-for any operations not already provided using  ```ABM's_java.grant_permission( 
-'HIVE', 'SYS:<property>', '...', '...' )```
+for any operations not already provided using
+```
+dbms_java.grant_permission( 'HIVE', 'SYS:<property>', '...', '...' );
+```
 
 Removal
 ------------------------------

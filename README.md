@@ -120,8 +120,8 @@ been tested with the following:
 >  * Progress Data Direct JDBC Hive Driver
 
 ### Windows
-If you are installing the distribution on from Windows platform you must do the 
-following pre-steps before running the ```install_hive.sql``` script.
+If you are installing the distribution on or from Windows platform you must do
+the following pre-steps before running the ```install_hive.sql``` script.
 
 #### Rename the ```hive.par.sql.in``` file
 The ```hive.par.sql.in``` file is an input file modified with the current 

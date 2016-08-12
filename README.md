@@ -102,6 +102,16 @@ Run: jdbc/load-jdbc.sh "sys"
 ```
 If the PL/SQL object installation was successful (as show above), then it's 
 time to install the JDBC Driver of your choice in the database. 
+
+Copy all the JAR files needed for your Driver into the ```./jdbc``` directory.
+You may want to remove the existing ```jdbc/hive.jar``` file which came with the
+distribution.
+
+The run the load script ```jdbc/load-jdbc.sh```. It will prompt you for a
+User/Password if one was not provided on the command line. if you are using the
+```SYSDBA``` account ```SYS``` locally on your Linux machine, then the password
+will be ignored by the utility, so fell free to use anything.
+
 ````
 jdbc/load-jdbc.sh "sys" "xxx"
 ````
@@ -149,8 +159,8 @@ this may impact updates and patches at a later time if not correctly specified.
 
 #### Load the JDBC Driver
 You will not be able to use the ```jdbc/load-jdbc.sh``` bash script in Windows 
-(unless you have [Cygwin ][2] or something similar installed. Therefore, you 
-will have load each JAR file manually using the oracle provided [loadjava][3] 
+(unless you have [Cygwin ][2] or something similar installed). Therefore, you 
+will have load each JAR file manually using the Oracle provided [loadjava][3] 
 utility..
 
 For each JAR file you have to load use the following as a template for 

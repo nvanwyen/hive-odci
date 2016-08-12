@@ -84,6 +84,11 @@ command ```make -f ins_rdbms.mk ioracle ```.
 auto start/stop through ```dbstart``` and ```dbshut```. If this is not the 
 case, the update will fail.
 
+***Important***: If this is a RAC installation, then you will need to run
+```$ORACLE_HOME/javavm/install/update_javavm_binaries.pl``` and 
+```make -f ins_rdbms.mk ioracle``` in ```$ORACLE_HOME/rdbms/lib``` on each Node 
+in the cluster
+
 #### Java Policy Files
 Depending on your intended use, you may need to use the [(JCE) Unlimited 
 Strength Jurisdiction Policy Files][6]. This is certainly the case if you 

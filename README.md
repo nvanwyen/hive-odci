@@ -213,7 +213,7 @@ param_( 'hive_jdbc_url.2', 'UID=oracle' );
 param_( 'hive_jdbc_url.3', 'PWD=welcome1' );
 ```
 As they are read Hive-ODCI will append them in order to the URL, each
-deleineated by a semi-colon. 
+delineated by a semi-colon. 
 For example ```jdbc:hive2://hive.mtihq.com:1000;ssl=0;UID=oracle;PWD=welcome1```
 
 #### * ```hive_user``` and ```hive_pass```

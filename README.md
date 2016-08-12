@@ -131,8 +131,8 @@ extension, for example ...
 copy /b hive.par.sql.in hive.par.sql
 ```
 
-The open the file in a text editor (capable of reading UNIX 
-formatted file, and find the version parameter, so it can be set manually,
+Then open the file in a text editor (capable of reading UNIX formatted file),
+and find the version parameter, so it can be set manually,
 
 ```
 param_( 'version', '%version%' );

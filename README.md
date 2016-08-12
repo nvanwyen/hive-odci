@@ -52,6 +52,64 @@ release][4] release.
 The project home is publicly available on Github at 
 https://github.com/nvanwyen/hive-odci
 
+Pre-installation
+------------------------------
+It may be necessary to perform some pre-installtion steps before getting 
+started.
+
+#### Oracle JVM Version
+Check that the Oracle JVM Version installed is Java 7 (1.7.x) before attempt to 
+install Hive-ODCI. Using [SQL*Plus][2], run the following query in the database 
+and make sure you have a  similar output ...
+```
+SQL> select dbms_java.get_jdk_version from dual;
+
+GET_JDK_VERSION
+------------------
+1.7.0_51
+```
+If your current Java is still at 1.6.x then you will need to update the 
+[JVM][5]. You can use the distribution provided bash shell script 
+```jdbc/update_javavm.sh``` in the following manner. On the Oracle Database 
+Server, run the script like ...
+```
+jdbc/update_javavm.sh 7
+```
+This will shutdown the database, run the Oracle provided 
+```$ORACLE_HOME/javavm/install/update_javavm_binaries.pl``` script and (re)link 
+the Oracle binaries in the ```$ORACLE_HOME/rdbms/lib``` directory using the 
+command ```make -f ins_rdbms.mk ioracle ```.
+
+> Note: the ```/etc/oratab ``` file must be set for the ```$ORACLE_SID``` to be 
+auto start/stop through ```dbstart``` and ```dbshut```. If this is not the 
+case, the update will fail.
+
+#### Java Policy Files
+Depending on your intended use, you may need to use the [(JCE) Unlimited 
+Strength Jurisdiction Policy Files][6]. This is certainly the case if you 
+intended to use Kerberos Authentication with a high encryption algorithm, such 
+as AES-256.
+
+You can update the Policy file from the ```./policy``` directory using the 
+```set_policies.sh``` bash script.
+
+> Note: the Java 7 JCE Unlimited Policy JAR files are already provided with the 
+distribution.
+> * US_export_policy.jar
+> * local_policy.jar
+
+The script will make sure the JCE policy file in the ```./policy``` directory 
+have not already been installed. It will backup the existing policy files the 
+```$ORACLE_HOME/javavm/jdk/jdk7/lib/security/``` directory and then copy the 
+Unlimited JCE files.
+```
+policy/set_policies.sh 7
+```
+> Note: There is no need to bounce the database after setting these files.
+
+> ***Important***: If this is a RAC installation, then you will need to update 
+the files on each Node in the cluster.
+
 Installation
 ------------------------------
 The scripts are intended for Linux distributions only, and tested on RHEL 6. If 
@@ -145,7 +203,8 @@ The ```install_hive.sql``` script looks for the file name ```hive.par.sql```,
 during the installation and if it's missing will fail.
 
 Then open the file ```hive.par.sql``` in a text editor (capable of reading
-UNIX formatted files), and find the version parameter, so it can be set manually,
+UNIX formatted files), and find the version parameter, so it can be set 
+manually,
 
 ```
 param_( 'version', '%version%' );
@@ -199,7 +258,8 @@ This parameter is the URL of the driver, which may or may not contain
 host, port, etc... are correct for your environment. Examples, would be ...
 >  * CDH 6 Apache Hive JDBC Standalone: ```jdbc:hive2://<host>:<port>/<db>```
 >  * MTI CDH 5, JDBC Thin Driver: ```jdbc:hive2://<host>:<port>/<db>```
->  * Progress Data Direct JDBC Hive Driver: ```jdbc:datadirect:hive://<host>:<port>/<db>```
+>  * Progress Data Direct JDBC Hive Driver: 
+```jdbc:datadirect:hive://<host>:<port>/<db>```
 
 #### * ```hive_jdbc_url.x```
 Use these parameters, specified as ```hive_jdbc_url.1``` ... 
@@ -287,3 +347,5 @@ Of course your question, concerns or comments are always welcome.
   [2]: https://www.cygwin.com
   [3]: http://docs.oracle.com/database/121/JJDEV/chtwo.htm#JJDEV02000
   [4]: https://github.com/nvanwyen/hive-odci/releases/latest
+  [5]: https://docs.oracle.com/database/121/JJDEV/chone.htm#CACDGBBI
+  [6]: http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html

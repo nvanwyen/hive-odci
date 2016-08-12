@@ -25,30 +25,6 @@ License
 modification, are permitted provided that the following conditions
 are met:
 >> 1. Redistributions of source code must retain the above copyright
-   ve-ODCI is an [Oracle Data Cartridge Interface][0] for dynamically accessing 
-Hadoop/Hive data-stores through an Oracle 12c database. In other words 
-Hive-ODCI makes Hadoop/Hive tables accessible as first-class, native, objects 
-directly using PL/SQL, SQL, VIEWS, DML, DDL, etc.... in an Oracle 12c database.
-
-----------
-
-Author
-------------------------------
-Metasystem Technologies Inc. (MTI)
-[www.mtihq.com][1]
-
-Nicholas Van Wyen
-nvanwyen@mtihq.com
-
-License
-------------------------------
-**Copyright (c) 2006 - 2016 Nicholas Van Wyen, MTI**
-**All rights reserved.**
-
-> Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
->> 1. Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
 >> 2. Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the

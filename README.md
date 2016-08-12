@@ -10,7 +10,7 @@ directly using PL/SQL, SQL, VIEWS, DML, DDL, etc.... in an Oracle 12c database.
 
 Author
 ------------------------------
-Metasystem Technolgies Inc. (MTI)
+Metasystem Technologies Inc. (MTI)
 [www.mtihq.com][1]
 
 Nicholas Van Wyen
@@ -49,7 +49,7 @@ All releases can be found on Github
 https://github.com/nvanwyen/hive-odci/releases, along with the [latest 
 release][4] release.
 
-The project home is pubically avaiable on Github at 
+The project home is publicly available on Github at 
 https://github.com/nvanwyen/hive-odci
 
 Installation
@@ -125,8 +125,8 @@ following pre-steps before running the ```install_hive.sql``` script.
 
 #### Rename the ```hive.par.sql.in``` file
 The ```hive.par.sql.in``` file is an input file modified with the current 
-version information. Open the file in a text editor (capible of reading UNIX 
-formatted file, and find the version paraemter.
+version information. Open the file in a text editor (capable of reading UNIX 
+formatted file, and find the version parameter.
 
 ```
 param_( 'version', '%version%' );
@@ -195,7 +195,7 @@ param_( 'hive_jdbc_url.2', 'UID=oracle' );
 param_( 'hive_jdbc_url.3', 'PWD=welcome1' );
 ```
 #### * ```hive_user``` and ```hive_pass```
-The ```Drvier,.getConnection()``` call in Java  is overloaded to accept a URL 
+The ```Driver,.getConnection()``` call in Java  is overloaded to accept a URL 
 (see [above](#hive_jdbc_url)) only or optionally with a User, Password. These 
 parameters are used for those Drivers which expect the User/Password to be 
 provided through the ```Driver.getConnection()``` call. If these parameters are 
@@ -206,13 +206,13 @@ param_( 'hive_pass', 'welcome1' );
 ```
 
 #### * ```java_property.x```
-Like the [URL paraemters](#hive_jdbc_url.x), the ```java_property.x``` 
-parameters are a conseutive list starting at ```java_property.1``` through 
-```java_property.x``` (and like the [URL paraemters](#hive_jdbc_url.x) a gap in 
+Like the [URL parameters](#hive_jdbc_url.x), the ```java_property.x``` 
+parameters are a consecutive list starting at ```java_property.1``` through 
+```java_property.x``` (and like the [URL parameters](#hive_jdbc_url.x) a gap in 
 the numbering sequence will cause Hive-ODCI to stop reading the parameters 
 assuming that it has reached the end of the list). These parameters are used in 
 the ```System.setProperty( name, value )``` call with the Java Stored 
-Procedure, to setup the Java Environment for the Driver.  For example, you ay 
+Procedure, to setup the Java Environment for the Driver.  For example, you may 
 need to setup your Kerberos Authentication parameters, like so ....
 ```
 param_( 'java_property.1', 'java.security.krb5.realm=MTI.COM' );
@@ -224,7 +224,7 @@ param_( 'java_property.6', 'sun.security.krb5.debug=true' );
 ```
 > Note: Using these parameters may require additional grants not initially 
 anticipated and provided in the installation. You may need to provide grants 
-for any opertions not already provided using  ```dbms_java.grant_permission( 
+for any operations not already provided using  ```dbms_java.grant_permission( 
 'HIVE', 'SYS:<property>', '...', '...' )```
 
 Removal

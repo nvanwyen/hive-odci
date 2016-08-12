@@ -282,7 +282,7 @@ This parameter is the class name of the driver Hive-ODCI will load using
 choose to use.. Common driver classes are
 >  * CDH 6 Apache Hive JDBC Standalone: ```com.cloudera.hive.jdbc.HS1Driver```
 >  * MTI CDH 5, JDBC Thin Driver: ```org.mti.hive.jdbc.thin.HiveDriver```
->  * Progress Data Direct JDBC Hive Driver: ```com.ddtek.jdbc.hive.HiveDriver```
+>  * Progress JDBC Hive Driver: ```com.ddtek.jdbc.hive.HiveDriver```
 
 #### * ```hive_jdbc_url```
 This parameter is the URL of the driver, which may or may not contain 
@@ -290,8 +290,7 @@ This parameter is the URL of the driver, which may or may not contain
 host, port, etc... are correct for your environment. Examples, would be ...
 >  * CDH 6 Apache Hive JDBC Standalone: ```jdbc:hive2://<host>:<port>/<db>```
 >  * MTI CDH 5, JDBC Thin Driver: ```jdbc:hive2://<host>:<port>/<db>```
->  * Progress Data Direct JDBC Hive Driver: 
-```jdbc:datadirect:hive://<host>:<port>/<db>```
+>  * Progress JDBC Hive Driver: ```jdbc:datadirect:hive://<host>:<port>/<db>```
 
 #### * ```hive_jdbc_url.x```
 Use these parameters, specified as ```hive_jdbc_url.1``` ... 
@@ -614,7 +613,7 @@ This parameter is the class name of the driver Hive-ODCI will load using
 choose to use.. Common driver classes are
 >  * CDH 6 Apache Hive JDBC Standalone: ```com.cloudera.hive.jdbc.HS1Driver```
 >  * MTI CDH 5, JDBC Thin Driver: ```org.mti.hive.jdbc.thin.HiveDriver```
->  * Progress Data Direct JDBC Hive Driver: ```com.ddtek.jdbc.hive.HiveDriver```
+>  * Progress JDBC Hive Driver: ```com.ddtek.jdbc.hive.HiveDriver```
 
 #### * ```hive_jdbc_url```
 This parameter is the URL of the driver, which may or may not contain 
@@ -622,7 +621,7 @@ This parameter is the URL of the driver, which may or may not contain
 host, port, etc... are correct for your environment. Examples, would be ...
 >  * CDH 6 Apache Hive JDBC Standalone: ```jdbc:hive2://<host>:<port>/<db>```
 >  * MTI CDH 5, JDBC Thin Driver: ```jdbc:hive2://<host>:<port>/<db>```
->  * Progress Data Direct JDBC Hive Driver: ```jdbc:datadirect:hive://<host>:<port>/<db>```
+>  * Progress JDBC Hive Driver: ```jdbc:datadirect:hive://<host>:<port>/<db>```
 
 #### * ```hive_jdbc_url.x```
 Use these parameters, specified as ```hive_jdbc_url.1``` ... 

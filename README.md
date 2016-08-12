@@ -107,7 +107,7 @@ Copy all the JAR files needed for your Driver into the ```./jdbc``` directory.
 You may want to remove the existing ```jdbc/hive.jar``` file which came with the
 distribution.
 
-The run the load script ```jdbc/load-jdbc.sh```. It will prompt you for a
+Then run the load script ```jdbc/load-jdbc.sh```. It will prompt you for a
 User/Password if one was not provided on the command line. if you are using the
 ```SYSDBA``` account ```SYS``` locally on your Linux machine, then the password
 will be ignored by the utility, so fell free to use anything.
@@ -135,8 +135,9 @@ the following pre-steps before running the ```install_hive.sql``` script.
 
 #### Rename and modify the ```hive.par.sql.in``` file
 The ```hive.par.sql.in``` file is an input file modified with the current 
-version information. Copy or move the file, to get rid of the ```.in```
-extension, for example ...
+version information by the ```ver``` bash shell script.
+
+Copy or move the file, to get rid of the ```.in``` extension, for example ...
 ```
 copy /b hive.par.sql.in hive.par.sql
 ```

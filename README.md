@@ -194,7 +194,7 @@ param_( 'hive_jdbc_url.1', 'ssl=0' );
 param_( 'hive_jdbc_url.2', 'UID=oracle' );
 param_( 'hive_jdbc_url.3', 'PWD=welcome1' );
 ```
-#### * ```hive_user``` and ```hive_user```
+#### * ```hive_user``` and ```hive_pass```
 The ```Drvier,.getConnection()``` call in Java  is overloaded to accept a URL 
 (see [above](#hive_jdbc_url)) only or optionally with a User, Password. These 
 parameters are used for those Drivers which expect the User/Password to be 

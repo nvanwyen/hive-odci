@@ -271,9 +271,9 @@ operating system.
 Users Guide
 ------------------------------
 Hive-ODCI has been released with a comprehensive Users Guide which can be found 
-at ```./doc``` off of the installation root directory. This guide provides a 
-more in-depth look at Hive-ODCI, its design, configuration, usage, examples, 
-Frequently Asked Questions (FAQ) and .Known Issues.
+in ```./doc``` directory in the installation root. This guide provides
+a more in-depth look at Hive-ODCI, its design, configuration, usage, examples, 
+Frequently Asked Questions (FAQ) and Known Issues
 
 ### Need help?
 For more information please contact your friends at MTI or Nicholas Van Wyen 

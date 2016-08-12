@@ -75,5 +75,9 @@ exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission',
 exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
 
 --
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.', '' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.other', '' );
+
+--
 -- ... done!
 --

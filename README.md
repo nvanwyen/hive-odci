@@ -218,7 +218,7 @@ For example ```jdbc:hive2://hive.mtihq.com:1000;ssl=0;UID=oracle;PWD=welcome1```
 
 #### * ```hive_user``` and ```hive_pass```
 The ```Driver,.getConnection()``` call in Java  is overloaded to accept a URL 
-(see [above](#hive_jdbc_url)) only or optionally with a User, Password. These 
+(see [above](#hive_jdbc_url)) only or optionally with a User/Password. These 
 parameters are used for those Drivers which expect the User/Password to be 
 provided through the ```Driver.getConnection()``` call. If these parameters are 
 NULL, they are simply ignored (e.g. not provided to the call)

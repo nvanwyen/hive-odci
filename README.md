@@ -199,8 +199,7 @@ This parameter is the URL of the driver, which may or may not contain
 host, port, etc... are correct for your environment. Examples, would be ...
 >  * CDH 6 Apache Hive JDBC Standalone: ```jdbc:hive2://<host>:<port>/<db>```
 >  * MTI CDH 5, JDBC Thin Driver: ```jdbc:hive2://<host>:<port>/<db>```
->  * Progress Data Direct JDBC Hive Driver: 
-```jdbc:datadirect:hive://<host>:<port>/<db>```
+>  * Progress Data Direct JDBC Hive Driver: ```jdbc:datadirect:hive://<host>:<port>/<db>```
 
 #### * ```hive_jdbc_url.x```
 Use these parameters, specified as ```hive_jdbc_url.1``` ... 

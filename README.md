@@ -107,7 +107,7 @@ policy/set_policies.sh 7
 ```
 > Note: There is no need to bounce the database after setting these files.
 
-> ***Important***: If this is a RAC installation, then you will need to update 
+***Important***: If this is a RAC installation, then you will need to update 
 the files on each Node in the cluster.
 
 Installation

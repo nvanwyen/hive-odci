@@ -101,7 +101,6 @@ select current_timestamp "beginning installation"
 @@dbms_hive.pkb.sql
 
 -- transient
-@@hive.jva.sql
 @@hive.typ.sql
 @@hive.fnc.sql
 
@@ -169,9 +168,17 @@ end;
 /
 
 --
-prompt
-prompt Run: jdbc/load-jdbc.sh "sys"
-prompt
+!( ./java/compile.sh )
+
+--
+!( ./jdbc/load-jdbc.sh "sys" "sys" )
+
+--
+-- note: A patch may be requireed if you are getting "O/S Message: No child\
+--       processes", see MOS: Doc ID 2021977.1
+--
+--       Patch 19033356: SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND RESULT.
+--
 
 --
 spool off

@@ -52,37 +52,37 @@ create or replace package body impl as
     --
     function describe_( atr out attributes, stm in varchar2, bnd in binds, con in connection ) return number as
     language java
-    name 'oracle.mti.hive.SqlDesc( oracle.sql.ARRAY[], java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT ) return java.math.BigDecimal';
+    name 'oracle.mti.odci.hive.SqlDesc( oracle.sql.ARRAY[], java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT ) return java.math.BigDecimal';
 
     --
     function describe_( atr out attributes, key in number ) return number as
     language java
-    name 'oracle.mti.hive.SqlDesc( oracle.sql.ARRAY[], java.math.BigDecimal ) return java.math.BigDecimal';
+    name 'oracle.mti.odci.hive.SqlDesc( oracle.sql.ARRAY[], java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
     function open_( key out number, stm in varchar2, bnd in binds, con in connection ) return number as
     language java
-    name 'oracle.mti.hive.SqlOpen( java.math.BigDecimal[], java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT ) return java.math.BigDecimal';
+    name 'oracle.mti.odci.hive.SqlOpen( java.math.BigDecimal[], java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT ) return java.math.BigDecimal';
 
     --
     function fetch_( rws out records, key in number, num in number ) return number as
     language java
-    name 'oracle.mti.hive.SqlFetch( oracle.sql.ARRAY[], java.math.BigDecimal, java.math.BigDecimal ) return java.math.BigDecimal';
+    name 'oracle.mti.odci.hive.SqlFetch( oracle.sql.ARRAY[], java.math.BigDecimal, java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
     function close_( key in number ) return number as
     language java
-    name 'oracle.mti.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
+    name 'oracle.mti.odci.hive.SqlClose( java.math.BigDecimal ) return java.math.BigDecimal';
 
     --
     procedure dml_( stm in varchar2, bnd in binds, con in connection ) as
     language java
-    name 'oracle.mti.hive.SqlDml( java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT )';
+    name 'oracle.mti.odci.hive.SqlDml( java.lang.String, oracle.sql.ARRAY, oracle.sql.STRUCT )';
 
     --
     procedure ddl_( stm in varchar2, con in connection ) as
     language java
-    name 'oracle.mti.hive.SqlDdl( java.lang.String, oracle.sql.STRUCT )';
+    name 'oracle.mti.odci.hive.SqlDdl( java.lang.String, oracle.sql.STRUCT )';
 
     --
     function param_( n in varchar2 ) return varchar2 is

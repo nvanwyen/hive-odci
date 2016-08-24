@@ -39,8 +39,6 @@ import java.lang.*;
 import java.math.*;
 import java.util.*;
 import java.text.*;
-// import java.security.*;
-// import java.util.regex.*;
 
 import oracle.sql.*;
 import oracle.jdbc.*;

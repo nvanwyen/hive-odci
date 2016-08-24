@@ -173,12 +173,10 @@ end;
 --
 !( ./jdbc/load-jdbc.sh "sys" "sys" )
 
---
--- note: A patch may be requireed if you are getting "O/S Message: No child\
---       processes", see MOS: Doc ID 2021977.1
---
---       Patch 19033356: SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND RESULT.
---
+-- note: A patch may be required if you are getting O/S Message: No child
+--       processes, see MOS: Doc ID 2021977.1, apply Patch 19033356.
+--       SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND
+--       RESULT to resolve this error
 
 --
 spool off

@@ -141,7 +141,7 @@ source/
 ...
 ```
 
-Go the ```./source``` directory of the install home and using the ```SYSDBA```  
+Go the ```./source``` directory of the install home and using the ```SYSDBA```
 account run the ```install_hive.sql``` script using [SQL*Plus][2].
 ```
 $ sqlplus "/ as sysdba" @install_hive.sql
@@ -159,12 +159,42 @@ no rows selected
 Installation successful
 
 PL/SQL procedure successfully completed.
-
-Run: jdbc/load-jdbc.sh "sys"
 ```
 > Note: If the installation was unsuccessful, remove the installation using the
 > ```remove_hive.sql``` as shown in the [Removal](#Removal) section. Fix 
 > the errors and try again
+
+If you are installing on a Linux server, then the installation should 
+automatically continue to the next steps of building and loading the 
+Hive-ODCI jar file.
+```
+!( ./java/compile.sh )
+Using Java compiler Version: 1.7.0_51
+Compiling log.java ... OK
+Compiling dbms_types.java ... OK
+Compiling hive_exception.java ... OK
+Compiling hive_parameter.java ... OK
+Compiling hive_properties.java ... OK
+Compiling callback_handler.java ... OK
+Compiling hive_session.java ... OK
+Compiling hive_bind.java ... OK
+Compiling hive_bindings.java ... OK
+Compiling hive_connection.java ... OK
+Compiling hive_context.java ... OK
+Compiling hive_manager.java ... OK
+Compiling hive_attribute.java ... OK
+Compiling hive.java ... OK
+Building JAR hive-odci.jar ... done
+```
+> Note: A patch may be required if you are getting ```O/S Message: No child
+> processes```, see MOS: Doc ID 2021977.1, apply ```Patch 19033356.
+> SQLPLUS WHENEVER OSERROR FAILS REGARDLESS OF OS COMMAND
+> RESULT``` to resolve this error
+
+Finally the installtion will attempt to load the driver JAR files found in the
+```./jdbc/``` directory, including the one built above. So if you have already
+copied the JDBC driver of your choice to that directory or you are using the one
+provided, the installation will load those classes.
 
 #### Load the Driver
 If the PL/SQL object installation was successful (as show above), then it's 
@@ -198,7 +228,9 @@ been tested with the following:
 
 ### Windows
 If you are installing the distribution on or from Windows platform you must do
-the following pre-steps before running the ```install_hive.sql``` script.
+the following pre-steps before running the ```install_hive.sql``` script. Also, 
+please forgive me as I'm not a "Windows guy", so the commands and instructions 
+are from a lifetime ago and may not be exactly correct.
 
 #### Rename and modify the ```hive.par.sql.in``` file
 The ```hive.par.sql.in``` file is an input file modified with the current 
@@ -226,6 +258,34 @@ param_( 'version', 'v0.1.5.19' );
 > **Important** -- Make sure to use the correct version data from the file, as 
 this may impact updates and patches at a later time if not correctly specified.
 
+#### Build the JAR File
+Because Windows does not support ```bash``` scripting out of the box, you may be 
+forced to build the ```hive-odci.jar``` file yourself before proceeding.
+
+On Windows change directory into the ```./source/java/``` directory.  Then 
+create a sub-directory ```oracle/mti/odci``` for the class files to be copied
+later. Then using ```%JAVA_HOME%/javac``` build each class file in the order
+defined in the ```class.order``` file ensuring the 
+```%ORACLE_HOME%/jdbc/lib/ojdbc7.jar``` file is in the class path.
+```
+javac -Xlint:unchecked ^
+      -Xlint:-deprecation ^
+      -XDignore.symbol.file ^
+      -cp %CLASSPATH%;%ORACLE_HOME%/jdbc/lib/ojdbc7.jar ^
+      log.java
+```
+Copy the ```*.class``` file output from the command to sub-directory created
+ealier (```oracle/mti/odci```). Do this for each file identified in 
+```class.order``` and in the order specified.
+
+Once complete, create a JAR file to be loaded in the Oracle 12c database.
+```
+cd oracle/mti/odci
+jar cvf ../../../../jdbc/hive-odci.jar *.class
+```
+When complete,. you will be ready to start loading the JAR and Drivers into the 
+database.
+
 #### Load the JDBC Driver
 You will not be able to use the ```jdbc/load-jdbc.sh``` bash script in Windows 
 (unless you have [Cygwin ][2] or something similar installed). Therefore, you will 
@@ -243,7 +303,7 @@ loadjava -force ^
          -resolver "((* hive) (* sys) (* public))" ^
          -user "$sys" ^
          -schema hive ^
-         hive.jar
+         hive-odci.jar
 ```
 Setup
 ------------------------------
@@ -332,7 +392,7 @@ the install home and using the ```SYSDBA```  account run the
 including all associated objects, the public synonyms and the tablespaces used 
 when installing Hive-ODCI.
 
-> Note: The procedure for removal remains the same on the Windows platform.  
+> Note: The procedure for removal remains the same on the Windows platform.
 There are no additional steps, before or after, which need to be done for this 
 operating system.
 

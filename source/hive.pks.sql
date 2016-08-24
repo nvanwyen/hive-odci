@@ -52,6 +52,9 @@ create or replace package remote as
     -- set the session log level
     procedure session_log_level( typ in number );
 
+    -- clear all session data
+    procedure session_clear;
+
     -- (re)set connection paraemter
     procedure session( url in varchar2 );
 

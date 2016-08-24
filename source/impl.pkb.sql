@@ -452,6 +452,15 @@ create or replace package body impl as
 
     end session_log_level;
 
+    --
+    procedure session_clear is
+    begin
+
+        log_trace( 'impl::session_clear called' );
+        session_ := connection( null, null, null, null );
+
+    end session_clear;
+
     -- 
     procedure session( url in varchar2 ) is
 

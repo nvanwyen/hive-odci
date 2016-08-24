@@ -167,6 +167,15 @@ create or replace package body remote as
     end session_log_level;
 
     --
+    procedure session_clear is
+    begin
+
+        log_trc_( 'session clear' );
+        impl.session_clear;
+
+    end session_clear;
+
+    --
     procedure session( url in varchar2 ) is
     begin
 

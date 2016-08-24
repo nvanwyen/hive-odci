@@ -67,6 +67,9 @@ create or replace package impl as
     --
     procedure session_log_level( typ in number );
 
+    --
+    procedure session_clear;
+
     -- 
     procedure session( url in varchar2 );
 

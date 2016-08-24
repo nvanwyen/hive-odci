@@ -108,6 +108,22 @@ exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission',
 exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.', '' );
 exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.other', '' );
 
+-- kerberos deligation
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', '*', '' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.JDBC_DRIVER_01', '' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.Client', '' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'doAs', '' );
+
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.kerberos.ServicePermission', '*', 'initiate' );
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.kerberos.DelegationPermission', '*', '');
+--
+-- use multiple princliple names if needed, example "hive/hive@MTIHQ.com"
+--                                                  "krbtgt/kerberos@MTIHQ.com"
+
+exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.PrivateCredentialPermission', -
+                                         'javax.security.auth.kerberos.KerberosTicket javax.security.auth.kerberos.KerberosPrincipal "*"', -
+                                         'read');
+
 --
 -- ... done!
 --

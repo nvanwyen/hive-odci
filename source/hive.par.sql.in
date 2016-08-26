@@ -136,7 +136,7 @@ begin
 
     -- Java system properties (e.g. System.setProperty( name, value ) )
     param_( 'java_property.1', 'java.security.krb5.realm=MTI.COM' );
-    param_( 'java_property.2', 'java.security.krb5.realm=kdc.mti.com' );
+    param_( 'java_property.2', 'java.security.krb5.kdc=kdc.mti.com' );
     param_( 'java_property.3', 'java.security.krb5.conf=/etc/krb5.conf' );
     param_( 'java_property.4', 'java.security.auth.login.index=Client' );
     param_( 'java_property.5', 'java.security.auth.login.config=/etc/jdbc.conf' );

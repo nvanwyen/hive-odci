@@ -258,7 +258,7 @@ everyone is using the same thing.
 
 #### Hive-ODCI object creation
 As denoted above we have PL/SQL code and a VIEW which is now 
-invalid because the ```SCOTT.USER_LOG``` table longer exists.
+invalid because the ```SCOTT.USER_LOG``` table no longer exists.
 
 So, let's put it back using Hive-ODCI. First let's create a new
 VIEW which replaces the table.
@@ -379,9 +379,160 @@ now and be the hero.
 
 Guidelines
 ------------------------------
+The following sections are guidelines based on practical real-world
+experience and are intended to help you in the decision making process
+only. They are not hard-and-fast rules of "thou shalt not"
+commandments that must be followed to use Hive-ODCI.
 
+The sections are separated into focus areas for Developers and
+Administrators. In the real-world these are often blurry, completely
+undefined and are overlapping. While that is true, no matter what
+role you play, the distinction between them should always be upheld as
+much as possible.
+ 
 ## For Developers
+While Hive-ODCI is intended to help the transition of moving data into
+a Hadoop/Hive data-store, it can with planning and understanding make
+it transparent to your customers. But at some point it may require
+Developer intervention.
 
+### Performance Considerations
+Hive-ODCI is a ```PIPLINE``` type, so its performance is impacted
+almost entirely on the performance of Hadoop/Hive. So make sure that
+Hive is performing at optimal levels.
+
+Ensure that when moving data from Oracle to Hadoop/Hive or creating
+new tables you have designed in performance from the beginning. 
+
+#### Analytics over in-line views 
+If you are using in-line views within the query, you may find that using
+the built-in ```RANK()``` and ```OVER()``` functions perform much better.
+
+For example, take the following query
+```
+    select user_log.*
+      from user_log join
+           ( select account,
+                    max( stamp ) as stamp
+              from user_log
+             group by account ) inline
+       on user_log.account = inline.account
+      and user_log.stamp = inline.stamp;
+```
+
+While there is nothing technically wrong with this query, based on the
+plan it could be much better. let's try again ...
+```
+    select *
+     from ( select *,
+                   rank() over
+                   ( partition by account,
+                     order by stamp ) as rank
+             from user_log ) ranking
+    where ranking.rank = 1;
+```
+
+Much better. We get the same result with almost a magnitude in increase
+on performance. If all of this looks familiar, then your right. This has
+been in Oracle RDBMS for years, so use the same common-sense techniques
+in your Hadoop/Hive queries as you would in your Oracle RDBMS queries.
+
+#### The CBO
+In recent additions of Hadoop/Hive a Cost-Based-Optimizer (CBO) was
+introduced, which like in Oracle RDBMS, performs optimizations based
+on cost, which can adjust the execution plan based on order joins, types
+of joins, degree of parallelism, etc... leading to increases in query
+performance.
+
+If not enabled globally, you can still use the Hadoop/Hive CBO, by
+setting the following parameters at the beginning of the query.
+```
+    set hive.cbo.enable=true;
+    set hive.compute.query.using.stats=true;
+    set hive.stats.fetch.column.stats=true;
+    set hive.stats.fetch.partition.stats=true;
+```
+
+Just like Oracle RDBMS, it's important to analyze the tables so the CBO
+has current cost information. For example, collect statistics at the
+table and column levels as necessary.
+```
+    analyze table my_table compute statistics;
+    analyze table my_table compute statistics for columns;
+    analyze table my_table compute statistics for columns col1, col2;
+```
+
+#### ORCFile
+Using ORCFile for Hadoop/Hive table should really be a matter of
+practice already because it is so extremely beneficial to get fast
+response times for queries.
+
+If existing tables are not already ORC then it would be prudent to
+migrate them as soon as possible, even if you convert them by-hand.
+However, if possible the best case would be to modify the ingest
+process to use ORC up front.
+
+#### Apache Tez
+Whenever possible can use the Apache Tez execution engine instead of 
+a  Map-reduce engine. If it is not enabled by default in your
+environment, then use the following setting at the beginning of the
+query or enable it for the whole environment.
+```
+    set hive.execution.engine=tez;
+```
+#### Vectorized queries
+Like scans, aggregations, filters and joins vectorized query execution
+improves performance of operations by splitting them into batches of
+1024 rows at a time instead of single row. Use the following setting 
+to enable.
+```
+    set hive.vectorized.execution.enabled = true;
+    set hive.vectorized.execution.reduce.enabled = true;
+```
+### New horizons
+Putting Hive-ODCI into practice is not all that hard, but it is a new
+way of doing business. And with "new" things come hiccups and 
+unforeseen circumstances that can put you behind or stop you dead in
+your tracks.
+
+The biggest thing here, is to identify those risks upfront and mitigate
+them as soon as possible. Don't wait until the last minute, plan ahead
+and you won't regret it. I know this is "touchy-feely" advice that you
+can get at the local coffee shop, but we often forget about the small
+things in our rush.
+
+#### Change your PL/SQL code
+If your PL/SQL can be changed for the better when using Hive-ODCI, do
+it. In reviewing your PL/SQL you may find that leveraging the 
+functionality provided by Hive-ODCI makes it more readable, faster,
+maintainable, etc... then go ahead and make arrangements to modify
+the existing code base or introduce new code.
+
+Sometimes, that's not feasible or even possible but many times we
+(the big we) have a tendency to force-fit a solution when that isn't
+warranted based on the situation.
+
+#### Keep signatures consistent
+Even with the above statement being true, it's best to keep the
+underlying ```TABLE``` an ```VIEW``` objects with the same signature,
+column names, types, lengths, etc...
+
+#### Familiarize yourself with the API
+Finally, make sure you familiarize yourself and are comfortable with
+the Hive-ODCI API. I know reading documentation is boring (writing
+it even more so, trust me) but take the time and go through it as 
+many times as needed to get a firm understanding. This is
+particularly import for Developers, as they are the "real" users of
+the system.
+
+Write some test scripts, see how it behaves in particular situations
+and make darn sure you know what's coming when you start inserting
+this stuff into your process.
+
+If you've read the manual, tried it out, found a bug, or simply do
+not understand, then see the Authors section for POC information and
+contact me. I'll be happy to help where I can or provide advice and
+moral support as needed.
 
 ## For Administrators
 

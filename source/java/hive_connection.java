@@ -183,6 +183,34 @@ public class hive_connection
     }
 
     //
+    public String getProperty( String name )
+    {
+        String val = "";
+        int idx = 0;
+
+        while ( true )
+        {
+            String n = hive_properties.name( "java_property." + Integer.toString( ++idx ) );
+
+            if ( n != null )
+            {
+                if ( n.equals( name ) )
+                {
+                    val = hive_properties.value( "java_property." + Integer.toString( idx ) );
+
+                    log.trace( "Found property [" + name + "] at index: " + Integer.toString( idx ) );
+                    break;
+                }
+            }
+            else
+                break;
+        }
+
+        log.trace( "Get property [" + name + "]: " + val );
+        return val;
+    }
+
+    //
     public boolean setProperties()
     {
         int idx = 0;
@@ -220,6 +248,8 @@ public class hive_connection
             {
                 if ( setProperties() )
                 {
+                    log.trace( "createConnection mode: " + session.auth );
+
                     // if no java properties are set, then kerberos cannot be used
                     if ( session.auth.equals( "kerberos" ) )
                         login();
@@ -235,7 +265,11 @@ public class hive_connection
                 }
                 else
                 {
-                    log.trace( "DriverManager.getConnection( " + url + ", " + session.name.trim() + ", " + session.pass.trim() + ")" );
+                    log.trace( "DriverManager.getConnection( " + url 
+                                                               + ", " + session.name.trim() 
+                                                               + ", " + session.pass.trim() 
+                                                               + ")" );
+
                     conn_ = DriverManager.getConnection( url, session.name.trim(), session.pass.trim() );
                 }
             }
@@ -251,15 +285,26 @@ public class hive_connection
 
         try
         {
-            String idx = "";
+            String idx = getProperty( "java.security.auth.login.index" );
 
-            Subject sub = new Subject();
-            LoginContext lc = new LoginContext( idx, sub, new callback_handler() );
+            if ( idx.length() > 0 )
+            {
+                log.trace( "Usiing LoginContext index: " + idx );
 
-            lc.login();
-            ok = true;
+                Subject sub = new Subject();
+                LoginContext lc = new LoginContext( idx, sub, new callback_handler() );
 
-            log.trace( "kerberos login successful" );
+                lc.login();
+                ok = true;
+
+                log.trace( "kerberos login successful" );
+            }
+            else
+            {
+                ok = false;
+                log.warn( "Property \"java.security.auth.login.index\" not specified in parameter list" );
+                throw new hive_exception( "Property \"java.security.auth.login.index\" not specified in parameter list" );
+            }
         }
         catch ( LoginException ex )
         {
@@ -268,6 +313,7 @@ public class hive_connection
             throw new hive_exception( "Kerberos exception: " + ex.getMessage() );
         }
 
+        log.trace( "connection login() returns: " + ( ( ok ) ? "true" : "false" ) );
         return ok;
     }
 

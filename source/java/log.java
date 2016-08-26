@@ -50,8 +50,96 @@ public class log
     public static final int INFO            =  4;
     public static final int TRACE           =  8;
 
+    // this is private, because the hive_paramter object
+    // will not have been created yet, and there was a need early
+    // on to get a paraemter value. This is no longer the case
+    // so we can remove this function
+    static private String param( String name )
+    {
+        //
+        String val = null;
+
+        //
+        Connection con = null;
+        PreparedStatement stm = null;
+
+        try
+        {
+            String sql = "select sys_context( 'hivectx', substr( ?, 1, 30 ), 4000 ) value " +
+                           "from dual";
+
+            //
+            con = DriverManager.getConnection( "jdbc:default:connection:" );
+
+            //
+            stm = con.prepareStatement( sql );
+            stm.setString( 1, name );
+
+            //
+            ResultSet rst = stm.executeQuery();
+
+            if ( rst.next() )
+                val = rst.getString( "value" );
+
+            //
+            rst.close();
+            stm.close();
+
+            if ( val == null )
+            {
+                sql = "select value " +
+                        "from param$ " +
+                       "where name = ?";
+
+                //
+                stm = con.prepareStatement( sql );
+                stm.setString( 1, name );
+
+                //
+                rst = stm.executeQuery();
+
+                if ( rst.next() )
+                    val = rst.getString( "value" );
+
+                //
+                rst.close();
+                stm.close();
+            }
+        }
+        catch ( SQLException ex )
+        {
+            // ... do nothing!
+        }
+        catch ( Exception ex )
+        {
+            // ... do nothing!
+        }
+        finally
+        {
+            try
+            {
+                //
+                if ( stm != null )
+                    stm.close();
+            }
+            catch ( SQLException ex ) 
+            {
+                // ... do nothing!
+            }
+            catch ( Exception ex )
+            {
+                // ... do nothing!
+            }
+
+            // *** do not close the "default" connection ***
+        }
+
+        //
+        return val;
+    }
+
     //
-    public static void write( int type, String text ) throws SQLException, Exception
+    static public void write( int type, String text ) throws SQLException, Exception
     {
         //
         Connection con = null;
@@ -110,25 +198,25 @@ public class log
     }
 
     //
-    public static void error( String text )
+    static public void error( String text )
     {
         try { write( ERROR, text ); } catch ( Exception ex ) {}
     }
 
     //
-    public static void warn( String text )
+    static public void warn( String text )
     {
         try { write( WARN, text ); } catch ( Exception ex ) {}
     }
 
     //
-    public static void info( String text )
+    static public void info( String text )
     {
         try { write( INFO, text ); } catch ( Exception ex ) {}
     }
 
     //
-    public static void trace( String text )
+    static public void trace( String text )
     {
         try { write( TRACE, text ); } catch ( Exception ex ) {}
     }

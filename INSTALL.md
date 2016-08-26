@@ -1,5 +1,5 @@
-Hive-ODCI
-===================
+Hive-ODCI- Install Guide
+========================
 
 Hive-ODCI is an [Oracle Data Cartridge Interface][0] for dynamically accessing 
 Hadoop/Hive data-stores through an Oracle 12c database. In other words 
@@ -22,26 +22,26 @@ License
 **All rights reserved.**
 
 > Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
+> modification, are permitted provided that the following conditions
+> are met:
 >> 1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
+>> notice, this list of conditions and the following disclaimer.
 >> 2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
+>> notice, this list of conditions and the following disclaimer in the
+>> documentation and/or other materials provided with the distribution.
 >> 3. The name of the author may not be used to endorse or promote products
-   derived from this software without specific prior written permission.
+>> derived from this software without specific prior written permission.
 
 > THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+> IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+> OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+> IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+> INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+> NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+> DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+> THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+> (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+> THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 Pre-installation
 ------------------------------
@@ -319,8 +319,7 @@ This parameter is the URL of the driver, which may or may not contain
 host, port, etc... are correct for your environment. Examples, would be ...
 >  * CDH 6 Apache Hive JDBC Standalone: ```jdbc:hive2://<host>:<port>/<db>```
 >  * MTI CDH 5, JDBC Thin Driver: ```jdbc:hive2://<host>:<port>/<db>```
->  * Progress Data Direct JDBC Hive Driver: 
-```jdbc:datadirect:hive://<host>:<port>/<db>```
+>  * Progress Data Direct Hive Driver: ```jdbc:datadirect:hive://<host>:<port>```
 
 #### * ```hive_jdbc_url.x```
 Use these parameters, specified as ```hive_jdbc_url.1``` ... 

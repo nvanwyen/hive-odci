@@ -64,6 +64,7 @@ as
 select name,
        case when name not in ( 'application',
                                'version',
+                               'license',
                                'encrypted_values',
                                'hive_users',
                                'hive_admin',

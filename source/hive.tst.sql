@@ -41,6 +41,10 @@ set serveroutput on
 exec dbms_java.set_output( 1000000 );
 
 --
+exec dbms_hive.purge_log;
+exec hive_remote.session_log_level( 31 );
+
+--
 col cust_id    for 9999990
 col last_name  for a30
 col first_name for a30
@@ -70,5 +74,7 @@ select * from table( hive_q( 'select cust_id, last_name, first_name from cust' )
 
 set linesize 80
 desc hive.cust
+
+@../util/show_log
 
 exit

@@ -40,11 +40,6 @@ import java.math.*;
 import java.util.*;
 import java.util.regex.*;
 
-import javax.security.auth.*;
-import javax.security.auth.login.*;
-import javax.security.auth.callback.*;
-import javax.security.auth.kerberos.*;
-
 import oracle.sql.*;
 import oracle.jdbc.*;
 

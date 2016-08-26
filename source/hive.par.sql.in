@@ -51,7 +51,15 @@ declare
 
         --
         dbms_hive.param( n, v );
-        dbms_output.put_line( '* ' || rpad( n, 21, ' ' ) || ': ' || v );
+
+        --
+        if ( n not in ( 'application',
+                        'version',
+                        'license' ) ) then
+
+            dbms_output.put_line( '* ' || rpad( n, 21, ' ' ) || ': ' || v );
+
+        end if;
 
     end param_;
 
@@ -64,6 +72,30 @@ begin
     --
     param_( 'application', 'Hive ODCI' );
     param_( 'version', '%version%' );
+    param_( 'license', 'Copyright (c) 2006 - 2016 Nicholas Van Wyen, MTI All rights reserved.'     || chr( 13 )
+                    ||                                                                                chr( 13 )
+                    || 'Redistribution and use in source and binary forms, with or without'        || chr( 13 )
+                    || 'modification, are permitted provided that the following conditions'        || chr( 13 )
+                    || 'are met:'                                                                  || chr( 13 )
+                    ||                                                                                chr( 13 )
+                    || ' 1. Redistributions of source code must retain the above copyright'        || chr( 13 )
+                    || '    notice, this list of conditions and the following disclaimer.'         || chr( 13 )
+                    || ' 2. Redistributions in binary form must reproduce the above copyright'     || chr( 13 )
+                    || '    notice, this list of conditions and the following disclaimer in the '  || chr( 13 )
+                    || '    documentation and/or other materials provided with the distribution.'  || chr( 13 )
+                    || ' 3. The name of the author may not be used to endorse or promote products' || chr( 13 )
+                    || '    derived from this software without specific prior written permission.' || chr( 13 )
+                    ||                                                                                chr( 13 )
+                    || 'THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR'      || chr( 13 )
+                    || 'IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES' || chr( 13 )
+                    || 'OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.'   || chr( 13 )
+                    || 'IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,'          || chr( 13 )
+                    || 'INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT ' || chr( 13 )
+                    || 'NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,' || chr( 13 )
+                    || 'DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY '    || chr( 13 )
+                    || 'THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT'       || chr( 13 )
+                    || '(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF'  || chr( 13 )
+                    || 'THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.'         || chr( 13 ) );
 
     --
     param_( 'log_level', '3' );

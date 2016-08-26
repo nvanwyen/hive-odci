@@ -420,6 +420,7 @@ create or replace package body impl as
 
         if ( name in ( 'application',
                        'version',
+                       'license',
                        'encrypted_values',
                        'hive_users',
                        'hive_admin',

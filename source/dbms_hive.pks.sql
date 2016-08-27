@@ -56,6 +56,9 @@ create or replace package dbms_hive as
     procedure purge_log;
     procedure purge_filter( key in varchar2 default null );
 
+    --
+    procedure move_ts( ts in varchar2, obj in varchar2 default null );
+
 end dbms_hive;
 /
 

@@ -1,4 +1,4 @@
-Hive-ODCI - Users Guide
+# Hive-ODCI - Users Guide
 =======================
 
 Hive-ODCI is an [Oracle Data Cartridge Interface][0] for dynamically accessing 
@@ -8,7 +8,7 @@ directly using PL/SQL, SQL, VIEWS, DML, DDL, etc.... in an Oracle 12c database.
 
 ----------
 
-Author
+# Author
 ------------------------------
 Metasystem Technologies Inc. (MTI)
 [www.mtihq.com][1]  
@@ -16,7 +16,7 @@ Metasystem Technologies Inc. (MTI)
 Nicholas Van Wyen
 nvanwyen@mtihq.com
 
-License
+# License
 ------------------------------
 **Copyright (c) 2006 - 2016 Nicholas Van Wyen, MTI**
 **All rights reserved.**
@@ -43,7 +43,7 @@ License
 > (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 > THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-Releases
+# Releases
 ------------------------------
 All releases can be found on Github 
 https://github.com/nvanwyen/hive-odci/releases, along with the [latest 
@@ -52,11 +52,11 @@ release][2] release.
 The project home is publicly available on Github at 
 https://github.com/nvanwyen/hive-odci
 
-Installation and Removal
+# Installation and Removal
 ------------------------------
 See INSTALL.md for instructions
 
-Concepts
+# Concepts
 ------------------------------
 Hive-ODCI is a pass-through interface allowing SQL access from within
 an Oracle RDBMS to access information in an external Hive/Hadoop
@@ -89,6 +89,8 @@ installation.
 The client accesses the Hive-ODCI interface using the PL/SQL objects
 provided and/or a first-class ```VIEW```, controlled by RBAC, to 
 access the data for its community.
+
+<div style="page-break-after: always;"></div>
 
 ```
 ................................................................................
@@ -127,7 +129,7 @@ access the data for its community.
 ```
 
 
-Tutorial
+# Tutorial
 ------------------------------
 Because the majority of us *learn by example*, let's jump right into
 a tutorial of how to use Hive-ODCI. All information provided here,
@@ -163,7 +165,7 @@ the table and creates reports for upper management and they are not
 going to change their application to read from 2 different places using
 2 different methods (oh, what to do).
 
-### Hive-ODCI to the rescue
+## Hive-ODCI to the rescue
 The reporting application also contains PL/SQL to create the reports
 and has a VIEW used in displaying the details of the report generated.
 
@@ -236,7 +238,7 @@ Hive table, of the same name. Our remote table looks like this ...
 
 ```
 
-#### Hive-ODCI configuration
+### Hive-ODCI configuration
 Now that we have our table in Hadoop/Hive and we can connect via
 beeline, and see it there, let's setup Hive-ODCI as an access point
 to that table.
@@ -256,7 +258,7 @@ level to meet their needs specifically, but for now we'll assume
 everyone is using the same thing.
 
 
-#### Hive-ODCI object creation
+### Hive-ODCI object creation
 As denoted above we have PL/SQL code and a VIEW which is now 
 invalid because the ```SCOTT.USER_LOG``` table no longer exists.
 
@@ -377,7 +379,7 @@ PL/SQL procedure. Everything remains exactly as it was before, but
 our data exists only in Hadoop/Hive. So, you can go to your meeting
 now and be the hero.
 
-Guidelines
+# Guidelines
 ------------------------------
 The following sections are guidelines based on practical real-world
 experience and are intended to help you in the decision making process
@@ -535,38 +537,921 @@ contact me. I'll be happy to help where I can or provide advice and
 moral support as needed.
 
 ## For Administrators
+Administrators are by enlarge the last line of defense against all
+manner of issues, they are the gatekeepers for security, performance,
+storage, new technologies, legacy systems, and a full onslaught of
+change management from every direction.
+
+Whether the systems is large or small, clustered or single instance
+the administrator's toolbox is typically a plethora of knowledge,
+scripts and documentation. Hive-ODCI attempts add to that toolbox,
+without being just "something else to learn" by leveraging common
+facilities which already exist for the administrator. Most Hive-ODCI
+footprint objects will be first-class citizens in the Oracle 
+ecosystem and will be managed, secured and monitored in the same way
+as other object types.
+
+### Wait events
+An administrator knows which wait events to look for and which ones
+can be ignored or are simply part of a running system. Hive-ODCI does
+not change those presumptions. Mainly because the load Hive-ODCI
+incurs is on the remote Hadoop/Hive system and not the Oracle RDBMS.
+
+Something to be aware of, however is that unless all your users are
+hitting Hive-ODCI object simultaneously a wait event for Hive-ODCI
+will not float to the top of the wait percentages.
+
+A Hive-ODCI object having issue would still be in one of the more
+innocuous wait events or classes. Additionally, won't be in a blocking
+state, so you have to recognize those events which may be indicating
+problems for the clients.
+
+#### WAIT_TIME and SECONDS_IN_WAIT
+In the ```GV$SESSION``` view the columns WAIT_TIME and SECONDS_IN_WAIT
+can easily be used to determine if Hive-ODCI is waiting on a remote
+call to respond ot complete.
+
+#### SQL*Net message to client
+This wait event can be observed while the Hive-ODCI is sending or
+responding to the call. While this event itself is not an issue, one
+that is taking a longer time than normal may indicate that the
+```query_limit``` parameter is set too high.
+
+#### buffer latch and latch free
+While these in normal circumstances, indicate query issues they do
+not necessarily mean the same thing for Hive-ODCI. You may get these
+events when the Hive-ODCI is materializing large amounts of data,
+for example in local sorting or aggregate processing of the returned
+data.
+
+If this event is observed too high, or too often for a particular
+Hive-ODCI object then look into off-loading the sort, group or
+aggregate operations to Hadoop/Hive instead of locally.
+
+Take for example the following
+```
+    select * 
+      from table( hive_q( q'[ select cust_id, 
+                                     last_name, 
+                                     first_name 
+                                from cust ]',
+                             null, 
+                             null ) )
+     order by cust_id;
+
+```
+
+If this query is showing up in a wait event that is indicating
+issues materializing the ```cust_id``` column locally for sorting
+then considered making the following change to off-load that
+operation to Hadoop/Hive
+```
+    select * 
+      from table( hive_q( q'[ select cust_id, 
+                                     last_name, 
+                                     first_name 
+                                from cust 
+                               order by cust_id ]',
+                             null, 
+                             null ) );
+
+```
+
+This produces the same end result, but with less wait activity
+in the Oracle RDBMS.
+
+### Storage
+Hive-ODCI is a zero storage object, like a ```VIEW```, for the
+majority of it is used. However certain aspects of Hive-ODCI will
+consume space, such as the Hive-ODCI Log and the Saved Filters
+(Binding).
+
+It is unlikely that your user community, no matter how large, or
+how much Hive-ODCI is used will generate Filters that impact
+your storage, necessitating TS extents beyond what was allocated
+during the installation.
+
+The Hive Log data is another story. Depending on the ```log_level```
+set for the System, Hive-ODCI can generate a large amount of
+data. The ```log_level``` value is a bitmask, which allows
+log types top be turned on and off. The types are detailed below
+but also here
+```
+    create or replace package impl as
+
+        --
+        none  constant number := 0;
+        error constant number := 1;
+        warn  constant number := 2;
+        info  constant number := 4;
+        trace constant number := 8;
+
+        ...        
+
+    end impl;
+```
+Each level is progressively aggressive with what is written. The
+types should be obvious, but needless to say ```error``` write only
+critical exception, while ```trace``` writes all operations. So a
+value of ```3``` would be ```error + warn``` and a value of ```31```
+would be ```error + warn + info + trace```.
+
+If you find that the Hive Log is filling up faster than expected,
+review the column ```NAME``` in the ```DBA_HIVE_LOG``` view to
+determine which account is writing the data.
+
+If you find that the ```log_level``` is set appropriately, as
+expected, then this means that the client has set the
+```session_log_level()``` to something too high, which may need to
+be adjusted or justified.
 
 
+#### Move to a different TS
+By default Hive-ODCI installs to the same tablespace assigned to
+the ```SYSTEM``` schema. This for most installations will be
+sufficient. If you disagree with the installation choice, or you
+have a larger storage consumption than anticipated you can move
+Hive-ODCI to another tablespace using the ```MOVE_TS``` procedure
+in the ```DBMS_HIVE``` package. 
+```
+    create or replace package dbms_hive as
 
-API 
+        ...
+
+        --
+        procedure move_ts( ts  in varchar2, 
+                           obj in varchar2 default null );
+
+    end dbms_hive;
+```
+
+#### Purge log and filters
+If the Hive-ODCI log data or filter data becomes too large, it
+can easily be purged using the ```PURGE_LOG``` and
+```PURGE_FILTER``` procedures respectively in the ```DBMS_HIVE```
+package. 
+```
+    create or replace package dbms_hive as
+
+        ...
+
+        --
+        procedure purge_log;
+        procedure purge_filter( key in varchar2 default null );
+
+        ...
+
+    end dbms_hive;
+```
+
+These procedures do exactly what they indicate. And because they
+are exposed through the Hive-ODCI management package they can be
+called by a trusted user who has been granted the ```HIVE_ADMIN```
+role.
+
+### Role Based Access Control
+As indicated multiple times now, Hive-ODCI objects are primarily
+first-class and are managed with RBAC just like any other object.
+
+When Hive-ODCI is installed, it creates 2 helper roles for you
+setting up the appropriate permissions for their use.
+
+The ```HIVE_USER``` role has access to the common Hive-ODCI
+objects making it possible to Query, use DML or DDL, manage Bind
+variables, etc...
+
+The second role, is ```HIVE_ADMIN``` which provides access to
+the management of Hive-ODCI itself, such as Logs, Parameters,
+etc... This role is also granted to the ```DBA``` role by default
+so be cognizant that a user with ```HIVE_ADMIN``` is considered
+a trusted and responsible party, similar to a user with ```DBA```
+but having less permissions in the database.
+
+#### Bindings
+Filters, or saved ```HIVE_BINDS``` work more like Network ACL (see
+```DBMS_NETWORK_ACl_ADMIN```) and Java Policies (see ```DBMS_JAVA```)
+than they do first-class object permissions.
+
+When created a Filter will by default assign ownership of the
+```HIVE_BINDS``` object key to the account which created it.
+
+That account, or a ```HIVE_ADMIN``` assigned account can grant and
+revoke permissions to both users and roles using the
+```HIVE_BINDING``` type methods.
+```
+    create or replace package binding as
+
+        ...
+
+        --
+        priv_read       constant guard     :=  1;
+        priv_write      constant guard     :=  2;
+        priv_readwrite  constant guard     :=  3;
+
+        --
+        procedure allow( key in varchar2,
+                         act in varchar2,
+                         lvl in guard default priv_readwrite );
+
+        --
+        procedure deny( key in varchar2,
+                        act in varchar2 );
+
+
+        ...
+
+    end binding;
+```
+
+The ```ALLOW()``` procedure works like a ```GRANT``` and the
+```DENY()``` works like a ```REVOKE```
+
+When a ```HIVE_BIND``` is accessed from the stored Filter the
+permission is checked for the operation (e.g. read, write,
+etc...). If a ```PUBLIC``` grant is made, then all accounts may
+access the Filter at the level granted.
+
+## Java Policies
+Hive-ODCI will in no way automatically grant or revoke Java Policy
+permissions, therefore is is necessary for the administrator to take
+on this action as needed.
+
+When Hive-ODCI attempts to set a Java Property at run-time, which has
+not been granted the appropriate policy an exception is thrown. As
+part of that exception, the necessary ```DBMS_JAVA.GRANT_PERMISSION()```
+is provided to the caller as part of the exception text. It is likely 
+that the text generated by the database will be sent to the
+administrator requesting it be executed.
+
+Before doing so, make sure there is a clear understanding of what that
+permission provides as well as what the property enables or achieves.
+
+Failure to understand the property and/or permission may result in
+reducing the security posture of the database or at worst make the
+database unstable. For the most part this will not happen, but it is
+good practice to have full situational awareness before proceeding.
+
+# API 
 ------------------------------
 The Application programming Interface (API) for Hive-ODCI is accessible
 through the PL/SQL objects created during installation. The objects
 include Views, Packages, Procedure, Types and Functions each providing
 a unique set of functionality based on need.
 
-The following is a list of objects which can be used 
-
 ## Packages
+------------------------------
+
+### binding
+An interface for creating, manipulating and saving ```HIVE_BINDS```
+arrays of ```HIVE_BIND``` objects. These objects are used in the 
+marshaling and interpretation of arguments to and from the JDBC
+Driver providing both data type and direction.
+
+This object is accessible through the ```HIVE_USER``` role and is
+referenced as the ```SYNONYM``` name ```HIVE_BINDING``` 
+
+#### Subtypes
+
+* reference -- ```number``` for bind scope values
+* typeof    -- ```number``` for bind value types
+* guard     -- ```number``` for bind access privileges
+
+#### Constants
+Helper constants for abstracting type information
+
+##### Generic
+```
+    Name              Value
+    ----------------- --------
+    none                    0
+```
+
+##### Privilege
+```
+    Name              Value
+    ----------------- --------
+    priv_read               1
+    priv_write              2
+    priv_readwrite          3
+```
+
+##### Scope
+```
+    Name              Value
+    ----------------- --------
+    scope_in                1
+    scope_out               2
+    scope_inout             3
+```
+
+##### Type
+```
+    Name              Value
+    ----------------- --------
+    type_bool               1
+    type_date               2
+    type_float              3
+    type_int                4
+    type_long               5
+    type_null               6
+    type_rowid              7
+    type_short              8
+    type_string             9
+    type_time              10
+    type_timestamp         11
+    type_url               12
+```
+
+#### Interface
+
+##### get()
+Overloaded ```FUNCTION``` to retrieve a saved ```HIVE_BINDS```
+filter based on Key name or returns a single ```HIVE_BIND```
+from the session array.
+
+* Prototype
+```
+    function get( key in varchar2 ) return binds;
+
+    function get( idx in number, lst in binds ) return bind;
+```
+
+* Parameter
+```
+    key     -   Saved key name
+    idx     -   Ordinal number of the item.
+```
+
+##### count()
+Overloaded ```FUNCTION``` to count the length of a saved
+```HIVE_BINDS``` filter based on Key name or an existing one
+provided.
+
+* Prototype
+```
+    function count( key in varchar2 ) return number;
+    function count( lst in binds ) return number;
+```
+
+* Parameter
+```
+    key     -   Saved key name
+    lst     -   Existing HIVE_BINDS array
+```
+
+##### new()
+A ```FUNCTION``` to create a new, single, ```HIVE_BIND``` object.
+
+* Prototype
+```
+    function new( value in varchar2,
+                  type  in typeof    default type_string,
+                  scope in reference default scope_in ) return bind;
+```
+
+* Parameter
+```
+    value   -   Value of the HIVE_BIND
+    type    -   Interpretation type of the HIVE_BIND
+    scope   -   Reference scope, direction, for using the HIVE_BIND
+```
+
+##### append()
+Overloaded ```PROCEDURE``` to append a ```HIVE_BIND``` object to an
+existing ```HIVE_BINDS``` array, saved or passed in.
+
+* Prototype
+```
+    procedure append( key   in varchar2,
+                      value in varchar2,
+                      type  in typeof    default type_string,
+                      scope in reference default scope_in );
+
+    procedure append( value in     varchar2,
+                      type  in     typeof    default type_string,
+                      scope in     reference default scope_in,
+                      lst   in out binds );
+
+    procedure append( key in varchar2, val in bind );
+
+    procedure append( val in bind, lst in out binds );
+
+    procedure append( key in varchar2, val in binds );
+
+    procedure append( val in binds, lst in out binds );
+```
+
+* Parameter
+```
+    key     -   Saved key name
+    value   -   Value of the HIVE_BIND
+    type    -   Interpretation type of the HIVE_BIND
+    scope   -   Reference scope, direction, for using the HIVE_BIND
+    lst     -   Existing HIVE_BINDS array
+    val     -   A HIVE_BINDS array to be appended to the existing array
+```
+
+##### change()
+A ```PROCEDURE``` to modify an exiting element of a saved
+```HIVE_BIND``` object.
+
+* Prototype
+```
+    procedure change( key   in varchar2,
+                      idx   in number,
+                      value in varchar2,
+                      type  in typeof    default type_string,
+                      scope in reference default scope_in );
+```
+
+* Parameter
+```
+    key     -   Saved key name of the array
+    idx     -   Ordinal number of the item to modify
+    value   -   Value of the HIVE_BIND
+    type    -   Interpretation type of the HIVE_BIND
+    scope   -   Reference scope, direction, for using the HIVE_BIND
+```
+
+##### remove()
+A ```PROCEDURE``` to delete an exiting element of a saved ```HIVE_BIND```
+object.
+
+* Prototype
+```
+    procedure remove( key in varchar2,
+                      idx in number );
+```
+
+* Parameter
+```
+    key     -   Saved key name of the array
+    idx     -   Ordinal number of the item to modify
+```
+
+##### replace()
+A ```PROCEDURE``` to replace one ```HIVE_BINDS``` array
+with another.
+
+* Prototype
+```
+    procedure replace( val in binds, lst in out binds );
+```
+
+* Parameter
+```
+    val     -   A HIVE_BINDS array to be appended to the existing array
+    lst     -   HIVE_BINDS array to overwrite
+```
+
+##### clear()
+An overloaded ```PROCEDURE``` to remove all elements in a saved Filter
+or a passed in array.
+
+* Prototype
+```
+    procedure clear( key in varchar2 );
+    procedure clear( lst in out binds );
+```
+
+* Parameter
+```
+    key     -   Saved key name of the array
+    lst     -   HIVE_BINDS array to overwrite
+```
+
+##### allow()
+A ```PROCEDURE``` to grant access rights to saved Filter. If an
+existing grant was already made, then it is replaced by the change
+
+* Prototype
+```
+    procedure allow( key in varchar2,
+                     act in varchar2,
+                     lvl in guard default priv_readwrite );
+```
+
+* Parameter
+```
+    key     -   Saved key name of the array
+    act     -   Name of the account to allow access, which
+                can be an Oracle username or role
+    lvl     -   The level of access to grant
+```
+
+##### deny()
+A ```PROCEDURE``` to revoke access rights from a saved Filter. If no
+existing grant exists an exception if thrown.
+
+* Prototype
+```
+    procedure deny( key in varchar2,
+                    act in varchar2 );
+```
+
+* Parameter
+```
+    key     -   Saved key name of the array
+    act     -   Name of the account to allow access, which
+                can be an Oracle username or role
+```
+
+##### save()
+A ```PROCEDURE``` to save a passed in ```HIVE_BINDS``` array. If a
+key of the same name already exists, an exception is thrown.
+
+* Prototype
+```
+    procedure save( key in varchar2, lst in binds );
+```
+
+* Parameter
+```
+    key     -   Saved key name of the array
+    lst     -   HIVE_BINDS array to save
+```
+
+#### Exception
+
+#### ex_unknown
+This exception is thrown when an unknown error has been encountered.
+```
+    ex_unknown  exception;
+    es_unknown  constant varchar2( 256 ) := 'Unknown error encountered';
+    ec_unknown  constant number := -20001;
+    pragma      exception_init( ex_unknown, -20001 );
+```
+
+#### ex_denied
+This exception is thrown when a saved Filter access attempt has failed
+because of insufficient privileges.
+```
+    ex_denied   exception;
+    es_denied   constant varchar2( 256 ) := 'Request denied,
+                                             insufficient privileges';
+    ec_denied   constant number := -20002;
+    pragma      exception_init( ex_denied, -20002 );
+```
+
+#### ex_no_grant
+This is exception is thrown when a revoke attempt is made on a saved Filter
+that does not contain a previous grant for the account specified
+```
+    ex_no_grant exception;
+    es_no_grant constant varchar2( 256 ) := 'Privileges not granted';
+    ec_no_grant constant number := -20003;
+    pragma      exception_init( ex_no_grant, -20003 );
+```
+
+### dbms_hive
+A ```PACKAGE``` provideing the interfaces for management of
+Hive-ODCI configurations.
+
+This object is accessible through the ```HIVE_ADMIN``` role and is
+referenced as the ```SYNONYM``` name ```DBMS_HIVE```
+
+#### Interface
+
+##### exist()
+A ```FUNCTION``` returning a ```BOOLEAN``` value
+(```true``` or ```false```) if the parameter name exists
+
+* Prototype
+```
+    function exist( name in varchar2 ) return boolean;
+```
+
+* Parameter
+```
+    name    -   Case sensitive name of the parameter to check
+```
+
+##### param()
+An overloaded ```FUNCTION``` and ```PROCEDURE``` to both set
+and get a parameter. When setting, if the parameter exists then
+it's value is overwritten
+
+* Prototype
+```
+    -- get
+    function param( name in varchar2 ) return varchar2;    
+
+    -- set
+    procedure param( name in varchar2, value in varchar2 );
+```
+
+* Parameter
+```
+    name    -   Case sensitive name of the parameter to get
+                or set
+    value   -   Value of the parameter when setting. The value
+                is the return for the FUNCTION
+```
+
+If the a parameter does not exist, then the function returns ```NULL```
+
+
+##### remove()
+A ```PROCEDURE``` for removing a parameter. If the parameter does
+not exist, no error is thrown.
+
+* Prototype
+```
+    procedure remove( name in varchar2 );
+```
+
+* Parameter
+```
+    name    -   Case sensitive name of the parameter to
+                delete
+```
+
+##### purge_log()
+A ```PROCEDURE``` which purges all data in the ```DBA_HIVE_LOG``
+
+* Prototype
+```
+    procedure purge_log;
+```
+
+##### purge_filter()
+A ```PROCEDURE``` for removing all saved Filters by name. If no
+name value or a ```NULL``` is provided as the argument then **ALL**
+Filters are removed.
+
+* Prototype
+```
+    procedure purge_filter( key in varchar2 default null );
+```
+
+* Parameter
+```
+    key     -   Key name of the array to remove, this defaults
+                to NULL which indicates ALL values are removed
+```
+
+##### move_ts()
+A ```PROCEDURE``` moving the Hive-ODCI objects to different
+tablespace. If the current tablespace name is the same as the
+one specified then no errors are thrown. If the tablespace
+specified does not exists then an exception is thrown.
+
+An ```OBJECT``` name is alternatively provided which will move
+only a single object. If no value or ```NULL``` is used then **ALL**
+objects are moved.
+
+Only the values "```NULL```", "param", "filter", "priv" or "log"
+can be used, all other values will be ignored.
+
+* Prototype
+```
+    procedure move_ts( ts  in varchar2,
+                       obj in varchar2 default null );
+```
+
+* Parameter
+```
+    ts      -   Destination tablespace name.
+    obj     -   Optional object name, can be NULL, "param", "filter",
+                "priv" or "log". Any other value will be ignored
+```
+
+### remote
+This ```PACKAGE``` is the interface for managing the remote connectivity
+of the current session. This is also the interface to execute remote
+commands, such as queries, DDL and DML operations.
+
+This object is accessible through the ```HIVE_USER``` role and is
+referenced as the ```SYNONYM``` name ```HIVE_REMOTE```
+
+#### Interface
+
+##### session_param()
+Overloaded ```FUNCTION``` and ```PROCEDURE``` to get and set 
+parameters only for the current session. Parameters set using
+this ```PROCEDURE``` are valid only for the duration of the Oracle
+session and are discarded when the session ends.
+
+A session level parameter takes precedence over the system level
+parameter of the same name.
+
+* Prototype
+```
+    -- get
+    function session_param( name  in varchar2 ) return varchar2;
+
+    -- set
+    procedure session_param( name  in varchar2,
+                             value in varchar2 );
+```
+
+* Parameter
+```
+    name    -   Case sensitive name of the parameter to get
+                or set
+    value   -   Value of the parameter when setting. The value
+                is the return for the FUNCTION
+```
+
+If the session level parameter is not set, or does not exist then
+the function returns ```NULL``` 
+
+##### session_log_level()
+A ```PROCEDURE``` which allows the logging level to be set for
+the current session. This setting is valid only for the duration of
+the Oracle session and are discarded when the session ends.
+
+* Prototype
+```
+    procedure session_log_level( typ in number );
+```
+
+* Parameter
+```
+    typ     -   The log level type
+```
+
+Log level values are bit masks, to allow for multiple values to
+be specified in a single numeric value. They are defined as part
+of the ```IMPL``` package specification. 
+```
+    none  constant number := 0;
+    error constant number := 1;
+    warn  constant number := 2;
+    info  constant number := 4;
+    trace constant number := 8;
+```
+
+##### session_clear()
+This ```PROCEDURE``` clears the session ```CONNECTION``` type.
+
+* Prototype
+```
+    procedure session_clear;
+```
+
+After being cleared, consecutive attempts will rebuild the ```CONNECTION```
+type from the parameter information.
+
+##### session()
+An overloaded ```FUNCTION``` and ```PROCEDURE``` which creates, gets, or
+modifies the current session ```CONNECTION``` type.
+
+* Prototype
+```
+    -- get
+    function session return connection;
+
+    -- set
+    procedure session( url in varchar2 );
+
+    procedure session( usr in varchar2,
+                       pwd in varchar2 );
+
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2 );
+
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2,
+                       ath in varchar2 );
+
+    procedure session( con in connection );
+```
+
+* Parameter
+```
+    url     -   The JDBC URL of the remote connection
+    usr     -   User name to be applied for the connection
+    pwd     -   The user password to be applied
+    ath     -   The authentication type of the connection
+```
+
+When getting the current ```CONNECTION``` type, the password
+value is redacted by the function, no matter what its value
+or the authentication type specified.
+
+##### query()
+A ```PIPELINED``` ```FUNCTION``` which returns an ```ANYDATASET```
+value. This value contains the description information of a given 
+row type along with the set of data instances of that row.
+
+* Prototype
+```
+    function query( stm in varchar2,
+                    bnd in binds      default null,
+                    con in connection default null )
+             return anydataset pipelined using hive_t;
+```
+
+* Parameter
+```
+    stm     -   The SQL query statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the SQL statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+This function can be used in a casting statement to retrieve the
+remote records, but is does not contain a ```PACKAGE BODY```
+definition, rather it uses the ```HIVE_T``` ODCI object  type
+making the following 2 examples equivalent
+```
+    val := hive_q( 'select cust_id, 
+                           last_name, 
+                           first_name 
+                      from cust', null, null );
+``` 
+vs.
+```
+    val := hive_remote.query( 'select cust_id, 
+                                      last_name, 
+                                      first_name 
+                                 from cust', null, null );
+``` 
+
+##### dml()
+This ```PROCEDURE``` allows remote DML to be executed using the
+provided SQL statement, bind variables and connection type.
+
+* Prototype
+```
+    procedure dml( stm in varchar2,
+                   bnd in binds      default null,
+                   con in connection default null );
+```
+
+* Parameter
+```
+    stm     -   The DML statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the DML statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+##### ddl()
+This ```PROCEDURE``` allows remote DDL to be executed using the
+provided command statement and connection type.
+
+* Prototype
+```
+    procedure ddl( stm in varchar2,
+                   con in connection default null );
+```
+
+* Parameter
+```
+    stm     -   The DML statement to be executed remotely
+    con     -   Optionally, the remote CONNECTION information
+```
+
+### impl
 
 ## Procedures
+------------------------------
 
 ## Functions
+------------------------------
 
 ## Types
-
-
-Parameters
 ------------------------------
 
-
-Roles
+## Parameters
 ------------------------------
 
-
-
-FAQ 
+## Roles
 ------------------------------
+
+## Synonyms
+------------------------------
+
+Hive-ODCI synonyms are the public alternative names for the interface
+objects providing location transparency.
+
+### hive_q
+### hive_t 
+### hive_remote
+### hive_bind
+### hive_binds
+### hive_binding
+### hive_attribute
+### hive_attributes
+### hive_data
+### hive_records
+### hive_connection
+### dbms_hive
+### dba_hive_params
+### dba_hive_filters
+### dba_hive_filter_privs
+### dba_hive_log
+### user_hive_params
+### user_hive_filters
+### user_hive_filter_privs
+
+# FAQ 
+------------------------------
+
 
 
 

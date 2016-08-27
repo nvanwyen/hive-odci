@@ -277,6 +277,14 @@ create or replace package body dbms_hive as
 
     end purge_filter;
 
+    --
+    procedure move_ts( ts in varchar2, obj in varchar2 default null ) is
+    begin
+
+        null;
+
+    end move_ts;
+
 end dbms_hive;
 /
 

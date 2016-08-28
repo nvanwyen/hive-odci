@@ -634,7 +634,7 @@ during the installation.
 The Hive Log data is another story. Depending on the ```log_level```
 set for the System, Hive-ODCI can generate a large amount of
 data. The ```log_level``` value is a bitmask, which allows
-log types top be turned on and off. The types are detailed below
+log types to be turned on and off. The types are detailed below
 but also here
 ```
     create or replace package impl as
@@ -651,20 +651,43 @@ but also here
     end impl;
 ```
 Each level is progressively aggressive with what is written. The
-types should be obvious, but needless to say ```error``` write only
-critical exception, while ```trace``` writes all operations. So a
+types should be obvious, but needless to say ```error``` writes only
+critical exceptions, while ```trace``` writes all operations. So a
 value of ```3``` would be ```error + warn``` and a value of ```31```
 would be ```error + warn + info + trace```.
 
 If you find that the Hive Log is filling up faster than expected,
-review the column ```NAME``` in the ```DBA_HIVE_LOG``` view to
-determine which account is writing the data.
+review the column ```VALUE``` in the ```DBA_HIVE_PARAMS``` view
+to determine the current value.
+```
+    select value 
+      from dba_hive_params 
+     where name = 'log_level';
+```
 
 If you find that the ```log_level``` is set appropriately, as
 expected, then this means that the client has set the
 ```session_log_level()``` to something too high, which may need to
 be adjusted or justified.
 
+The account which created the log data is stored in the column
+```NAME``` found in the ```DBA_HIVE_LOG``` view. use the following
+to get counts of the name generating the most logging information.
+```
+    select name,
+            count(0) total
+      from dba_hive_log
+     group by name
+     order by 2 desc;
+```
+
+Log information can be purged by any trusted account granted the
+```HIVE_ADMIN``` role using the following statement.
+```
+    exec dbms_hive.purge_log;
+```
+
+Be aware that the statement removes **ALL** log data.
 
 #### Move to a different TS
 By default Hive-ODCI installs to the same tablespace assigned to
@@ -797,6 +820,105 @@ The Application programming Interface (API) for Hive-ODCI is accessible
 through the PL/SQL objects created during installation. The objects
 include Views, Packages, Procedure, Types and Functions each providing
 a unique set of functionality based on need.
+
+## Views
+------------------------------
+Views are the insight into Hive-ODCI, providing invaluable information
+for both Administrators and Users.
+
+### dba_hive_params
+Lists both the system and session level values.
+
+This view is accessible only by the ```HIVE_ADMIN`` role
+
+* Columns
+```
+    name            - Parameter name
+    session_value   - Current session value
+    system_value	- Default system value
+```
+
+### dba_hive_filters
+Lists the saved Filters.
+
+This view is accessible only by the ```HIVE_ADMIN`` role
+
+* Columns
+```
+    key     -   Filter key name
+    seq     -   The ordinal bind sequence
+    type	-   The bind type
+    scope	-   The bind reference scope
+    value	-   The value of the bind data
+```
+
+### dba_hive_filter_privs
+Lists the privileges of the saved Filters.
+
+This view is accessible only by the ```HIVE_ADMIN`` role
+
+* Columns
+```
+    key     -   Filter key name
+    grantee -   The grantee name, user or role
+    read    -   Contains read access
+    write   -   Contains write access
+```
+
+### dba_hive_log
+Lists the log data
+
+This view is accessible only by the ```HIVE_ADMIN`` role
+
+* Columns
+```
+    stamp   -   The time stamp the log record
+    name    -   Account name who create the log record
+    type    -   The type of log record
+    text    -   The text of the log record
+```
+
+### user_hive_params
+Lists current parameter values used by the session
+
+This view is accessible by both the ```HIVE_ADMIN`` and
+```HIVE_USER``` roles
+
+* Columns
+```
+    name    -   Parameter name
+    value   -   Parameter value
+```
+
+### user_hive_filters
+Lists the saved Filters which are accessible by the session
+
+This view is accessible by both the ```HIVE_ADMIN`` and
+```HIVE_USER``` roles
+
+* Columns
+```
+    key     -   Filter key name
+    seq     -   The ordinal bind sequence
+    type	-   The bind type
+    scope	-   The bind reference scope
+    value	-   The value of the bind data
+```
+
+### user_hive_filter_privs
+Lists the privileges of the saved Filters which are
+accessible by the session
+
+This view is accessible by both the ```HIVE_ADMIN`` and
+```HIVE_USER``` roles
+
+* Columns
+```
+    key     -   Filter key name
+    grantee -   The grantee name, user or role
+    read    -   Contains read access
+    write   -   Contains write access
+```
 
 ## Packages
 ------------------------------
@@ -1407,51 +1529,721 @@ provided command statement and connection type.
 ```
 
 ### impl
+This ```PACKAGE``` is the primary implementation of the ODCI layer
+and the interface called by Oracle ODCI through the ```HIVE_T```
+object type.
 
-## Procedures
-------------------------------
+This interface is used internally only, and while it is available
+for execution with the ```HIVE_ADMIN``` role it should never be called
+directly. It is included here only for completeness of the
+documentation.
+
+There is no SYNONYM for this object and both its specification and
+body are wrapped during the installation process.
+
+#### Constants
+Helper constants for abstracting type information
+
+##### Log level
+```
+    none  constant number := 0;
+    error constant number := 1;
+    warn  constant number := 2;
+    info  constant number := 4;
+    trace constant number := 8;
+```
+
+Log level values are bit masks, to allow for multiple values to
+be specified in a single numeric value.
+
+#### Interface
+
+##### log()
+This procedure writes a logging record of the type specified,
+if ```log_level``` at the systems or session set set to support
+it.
+
+* Prototype
+```
+    procedure log( typ in number, txt in varchar2 );
+```
+
+Additionally, there are pass-through procedures which call this
+procedure using the predefined type.
+```
+    procedure log_error( txt in varchar2 );
+    procedure log_warn( txt in varchar2 );
+    procedure log_info( txt in varchar2 );
+    procedure log_trace( txt in varchar2 );
+```
+
+* Parameter
+```
+    typ     -   The type of log to write, ignored if the log_level
+                is not set to support that type
+    txt     -   The text of the message
+```
+
+##### session_param()
+Overloaded ```FUNCTION``` and ```PROCEDURE``` to get and set 
+parameters only for the current session. Parameters set using
+this ```PROCEDURE``` are valid only for the duration of the Oracle
+session and are discarded when the session ends.
+
+A session level parameter takes precedence over the system level
+parameter of the same name.
+
+* Prototype
+```
+    -- get
+    function session_param( name  in varchar2 ) return varchar2;
+
+    -- set
+    procedure session_param( name  in varchar2,
+                             value in varchar2 );
+```
+
+* Parameter
+```
+    name    -   Case sensitive name of the parameter to get
+                or set
+    value   -   Value of the parameter when setting. The value
+                is the return for the FUNCTION
+```
+
+If the session level parameter is not set, or does not exist then
+the function returns ```NULL``` 
+
+##### session_log_level()
+A ```PROCEDURE``` which allows the logging level to be set for
+the current session. This setting is valid only for the duration of
+the Oracle session and are discarded when the session ends.
+
+* Prototype
+```
+    procedure session_log_level( typ in number );
+```
+
+* Parameter
+```
+    typ     -   The log level type
+```
+
+##### session_clear()
+This ```PROCEDURE``` clears the session ```CONNECTION``` type.
+
+* Prototype
+```
+    procedure session_clear;
+```
+
+After being cleared, consecutive attempts will rebuild the ```CONNECTION```
+type from the parameter information.
+
+##### session()
+An overloaded ```FUNCTION``` and ```PROCEDURE``` which creates, gets, or
+modifies the current session ```CONNECTION``` type.
+
+* Prototype
+```
+    -- get
+    function session return connection;
+
+    -- set
+    procedure session( url in varchar2 );
+
+    procedure session( usr in varchar2,
+                       pwd in varchar2 );
+
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2 );
+
+    procedure session( url in varchar2,
+                       usr in varchar2,
+                       pwd in varchar2,
+                       ath in varchar2 );
+
+    procedure session( con in connection );
+```
+
+* Parameter
+```
+    url     -   The JDBC URL of the remote connection
+    usr     -   User name to be applied for the connection
+    pwd     -   The user password to be applied
+    ath     -   The authentication type of the connection
+```
+
+When getting the current ```CONNECTION``` type, the password
+value is **not** redacted by this function, unlike the function
+of the same name used in the ```REMOTE``` package
+
+##### sql_describe()
+This overloaded ```FUNCTION``` is called by ODCI to describe information
+for a table whose return type is ```ANYDATASET```. This function
+is called when ```HIVE_T``` ```ODCITableDescribe``` is encountered.
+
+* Prototype
+```
+    function sql_describe( stm in varchar2,
+                           bnd in binds      default null,
+                           con in connection default null ) return anytype;
+
+    function sql_describe( typ out anytype,
+                           stm in  varchar2,
+                           bnd in  binds      default null,
+                           con in  connection default null ) return number;
+
+    function sql_describe( key in  number,
+                           typ out anytype ) return number;
+```
+
+* Parameter
+```
+    stm     -   The SQL query statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the SQL statement
+    con     -   Optionally, the remote CONNECTION information
+    typ     -   The ANYTYPE value that describes the returned rows
+                from the table function
+    key     -   The transient key value used in the concurrent
+                calling chain, identifying the record of the context
+```
+
+If successful the return value for each function will be
+```ODCICONST.SUCCESS``` otherwise it will return ```ODCICONST.ERROR```
+
+##### sql_open()
+This ```FUNCTION``` is called by ODCI to initialize the scan of
+a table function. This function is called when ```HIVE_T```
+```ODCITableStart``` is encountered.
+
+* Prototype
+```
+    function sql_open( key out number,
+                       stm in  varchar2,
+                       bnd in  binds      default null,
+                       con in  connection default null ) return number;
+```
+
+* Parameter
+```
+    key     -   The transient key value used in the concurrent
+                calling chain, identifying the record of the context
+    stm     -   The SQL query statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the SQL statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+If successful the return value for each function will be
+```ODCICONST.SUCCESS``` otherwise it will return ```ODCICONST.ERROR```
+
+##### sql_fetch()
+This ```FUNCTION``` is called by ODCI to next batch of rows from
+a table function. This function is called when ```HIVE_T```
+```ODCITableFetch``` is encountered.
+
+* Prototype
+```
+    function sql_fetch( key in  number,
+                        num in  number,
+                        rws out records ) return number;
+```
+
+* Parameter
+```
+    key     -   The transient key value used in the concurrent
+                calling chain, identifying the record of the context
+    num     -   The number of rows the system expects in the current
+                fetch cycle.
+    rws     -   The RECORDS array for the rows requested in the 
+                current fetch cycle.
+```
+
+If successful the return value for each function will be
+```ODCICONST.SUCCESS``` otherwise it will return ```ODCICONST.ERROR```
+
+##### sql_close()
+This ```FUNCTION``` is called by ODCI to performs cleanup operations
+after scanning a table function cycle is complete. This function is 
+called when ```HIVE_T``` ```ODCITableClose``` is encountered.
+
+* Prototype
+```
+    function sql_close( key in number ) return number;
+```
+
+* Parameter
+```
+    key     -   The transient key value used in the concurrent
+                calling chain, identifying the record of the context
+```
+
+If successful the return value for each function will be
+```ODCICONST.SUCCESS``` otherwise it will return ```ODCICONST.ERROR```
+
+##### sql_dml()
+This ```PROCEDURE``` allows remote DML to be executed using the
+provided SQL statement, bind variables and connection type.
+
+* Prototype
+```
+    procedure sql_dml( stm in  varchar2,
+                       bnd in  binds      default null,
+                       con in  connection default null );
+```
+
+* Parameter
+```
+    stm     -   The DML statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the DML statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+##### sql_ddl()
+This ```PROCEDURE``` allows remote DDL to be executed using the
+provided command statement and connection type.
+
+* Prototype
+```
+    procedure sql_ddl( stm in  varchar2,
+                       con in  connection default null );
+```
+
+* Parameter
+```
+    stm     -   The DML statement to be executed remotely
+    con     -   Optionally, the remote CONNECTION information
+```
+
+#### Exception
+
+#### ex_not_eligible
+This exception is thrown when a request to change a parameter
+at the session level is ineligible for the operation.
+```
+    ex_not_eligible exception;
+    es_not_eligible constant varchar2( 256 ) := 'Parameter is not
+                                                 eligible for
+                                                 change at the
+                                                 session level';
+    ec_not_eligible constant number          := -20103;
+```
 
 ## Functions
 ------------------------------
+Only the ```HIVE_Q``` function is available for execution, while all
+other functions are for internal use only.
+
+### hive_q
+A ```PIPELINED``` ```FUNCTION``` which returns an ```ANYDATASET```
+value. This value contains the description information of a given 
+row type along with the set of data instances of that row.
+
+This function is accessible through the ```HIVE_USER``` role and is
+referenced as the ```SYNONYM``` name ```HIVE_Q``` 
+
+* Prototype
+```
+    function hive_q( stm in varchar2,
+                     bnd in binds      default null,
+                     con in connection default null )
+             return anydataset pipelined using hive_t;
+```
+
+* Parameter
+```
+    stm     -   The SQL query statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the SQL statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+This function can be used in a casting statement to retrieve the
+remote records, but is does not contain a ```PACKAGE BODY```
+definition, rather it uses the ```HIVE_T``` ODCI object  type
+making the following 2 examples equivalent
+```
+    val := hive_q( 'select cust_id, 
+                           last_name, 
+                           first_name 
+                      from cust', null, null );
+``` 
+vs.
+```
+    val := hive_remote.query( 'select cust_id, 
+                                      last_name, 
+                                      first_name 
+                                 from cust', null, null );
+``` 
+
+### bitor
+This ```FUNCTION``` performs a logical inclusive bit-wise OR
+operation on each pair of corresponding bits provided.
+
+* Prototype
+```
+    function bitor( x in number, y in number ) return number;
+```
+
+* Parameter
+```
+    x       -   First bit mask
+    y       -   Second bit mask
+```
+
+### bitxor
+This ```FUNCTION``` performs the logical exclusive OR operation
+on each pair of corresponding bits provided.
+
+* Prototype
+```
+    function bitxor( x in number, y in number ) return number;
+```
+
+* Parameter
+```
+    x       -   First bit mask
+    y       -   Second bit mask
+```
+
+### bitnot
+This ```FUNCTION``` performs logical negation on each bit,
+forming the complement of the given binary value provided.
+
+* Prototype
+```
+    function bitnot( x in number ) return number;
+```
+
+* Parameter
+```
+    x       -   Bit mask
+```
+
+### oid
+This ```FUNCTION``` returns the database object identifier for the
+name provided, which is expected to be a ```USERNAME``` or ```ROLE```
+
+The return value is used as the join key for the saved Filter privileges
+
+* Prototype
+```
+    function oid( o in varchar2 ) return number;
+```
+
+* Parameter
+```
+    o       -   Object name
+```
+
+### oname
+This ```FUNCTION``` returns the database object name for the
+identifier provided, which is expected to be a ```USER#```
+representing the ```USERNAME``` or ```ROLE```
+
+The return value is used as the join key displaying names for
+the saved Filter privileges.
+
+* Prototype
+```
+    function oname( o in number ) return varchar2;
+```
+
+* Parameter
+```
+    o       -   Object identifier
+```
 
 ## Types
 ------------------------------
+Hive-ODCI types are both objects and table (arrays) and are used
+in the transparent conversions from the JDBC Driver to the PL/SQL
+calls.
+
+### attribute
+This ``OBJECT`` type is used to describe a column value. it is used
+internally only to define rows in a record set and a table description.
+
+* Members
+```
+    name    - Name of the column
+    code    - Data type code of the column
+    prec    - The precision of the column
+    scale   - The scale of the column
+    len     - The length of the column
+    csid    - The locale identifier
+    csfrm   - The locale format
+```
+
+### attributes
+A ``TABLE`` array of ``ATTRIBUTE`` objects.
+
+* Members
+```
+    table of attribute
+```
+
+### data
+This ```OBJECT```  type contains a single column of information.
+
+* Members
+```
+    code          - The data type code, pointing to the member
+                    which actually contains the data
+    val_varchar2  - String data
+    val_number    - Numeric data
+    val_date      - Date data
+    val_timestamp - Timestamp data
+    val_clob      - CLOB data
+    val_blob      - BLOB data
+```
+
+### records
+A ``TABLE`` array of ``DATA`` objects, representing a single row
+
+* Members
+```
+    table of data
+```
+
+### connection
+This ```OBJECT```  type contains the remote connection information
+
+* Members
+```
+    url     -   The JDBC URL of the remote connection
+    name    -   User name to be applied for the connection
+    pass    -   The user password to be applied
+    auth    -   The authentication type of the connection
+```
+
+### bind
+This ```OBJECT``` defines the bind variable used for the remote command 
+
+* Members
+```
+    value   - The value of the data to be bound
+    type    - The data type code, for how to bind the data
+    scope   - The reference code direction of the bind
+```
+
+### binds
+A ``TABLE`` array of ``BIND`` objects
+
+* Members
+```
+    table of bind
+```
+
+### hive_t
+An ```OBJECT``` type for the data cartridge abstraction later. This
+object is the compliant interface for ODCI callback functionality.
+
+
+* Members
+```
+    key     - The transient key value used in the concurrent
+              calling chain, identifying the record of the context
+    ref     - The persistent ANYTYPE reference being populated
+              in the current calling cycle
+```
+
+#### ODCITableDescribe
+Retrieves describe information for a table function whose return type
+is ```ANYDATASET```.
+
+* Prototype
+```
+    function ODCITableDescribe( typ out anytype,
+                                stm in  varchar2,
+                                bnd in  binds      := null,
+                                con in  connection := null ) return number
+```
+
+* Parameter
+```
+    typ     -   The AnyType value that describes the returned rows from
+                the table function
+    stm     -   The command statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+#### ODCITablePrepare
+This ```FUNCTION``` prepares the scan context and command information
+upon a compile request.
+
+* Prototype
+```
+    function ODCITablePrepare( ctx out hive_t,
+                               inf in  sys.ODCITabFuncInfo,
+                               stm in  varchar2,
+                               bnd in  binds      := null,
+                               con in  connection := null ) return number
+```
+
+* Parameter
+```
+    ctx     -   The scan context created by this routine is the value
+                passed in as a parameter to the later routines
+                in the command cycle
+    inf     -   The projection information and the return descriptor
+                object
+    stm     -   The command statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+#### ODCITableStart
+This ````FUNCTION``` initializes the scan of a table function to start
+the command cycle.
+
+* Prototype
+```
+    function ODCITableStart( ctx in out hive_t,
+                             stm in     varchar2,
+                             bnd in     binds      := null,
+                             con in     connection := null ) return number
+```
+
+* Parameter
+```
+    ctx     -   The scan context modified by this routine is the value
+                passed in as a parameter to the later routines
+                in the command cycle
+    stm     -   The command statement to be executed remotely
+    bnd     -   Optionally, the HIVE_BINDS array containing the
+                values to be bound to the statement
+    con     -   Optionally, the remote CONNECTION information
+```
+
+#### ODCITableFetch
+This ````FUNCTION``` returns the next batch of rows in the command cycle.
+
+* Prototype
+```
+    function ODCITableFetch( cts in out hive_t,
+                             num in     number,
+                             rws out    anydataset ) return number
+```
+
+* Parameter
+```
+    ctx     -   The scan context modified by this routine is the value
+                passed in as a parameter to the later routines
+                in the command cycle
+    num     -   The number of rows the system expects in the current
+                fetch cycle.
+    rws     -   The RECORDS array for the rows requested in the 
+                current fetch cycle.
+```
+
+#### ODCITableClose
+This ```FUNCTION``` performs cleanup operations after command cycle
+is complete
+
+* Prototype
+```
+    function ODCITableClose( ctx in hive_t ) return number
+```
+
+* Parameter
+```
+    ctx     -   The scan context created by this routine is the value
+                passed in as a parameter to the later routines
+                in the command cycle
+```
 
 ## Parameters
 ------------------------------
+Parameters provide the customization of Hive-ODCI.
+
+### application
+The application name
+
+### version
+The installed or patched version
+
+### license
+The BSD licensing agreement
+
+### log_level
+The current log level
+
+### hive_jdbc_driver
+The fully qualified Java class name of the driver to load
+
+### hive_jdbc_url
+The JDBC URL for the remote system
+
+### hive_jdbc_url.X
+These paraemters are addtional URL key value pairs in consecutive
+order. A gap in the numbering sequence will cause Hive-ODCI to stop
+reading the parameters assuming that it has reached the end of the list.
+
+### java_property.X
+These paraemters are the Java Syetms properties to set in consecutive
+order. A gap in the numbering sequence will cause Hive-ODCI to stop
+reading the parameters assuming that it has reached the end of the list.
+
+### hive_user
+The ```Driver,.getConnection()``` call in Java  is overloaded to accept a URL 
+only or optionally with a User/Password. When set this parameter is passed
+through to the call as the user value.
+
+### hive_pass
+The ```Driver,.getConnection()``` call in Java  is overloaded to accept a URL 
+only or optionally with a User/Password. When set this parameter is passed
+through to the call as the password value.
+
+### hive_auth
+The authentication type for the JDBC Driver. 
+
+### query_limit
+The ceiling limitation for any given query,. When set no query will return
+more rows than the parameter specified 
 
 ## Roles
 ------------------------------
 
+### hive_user
+This role provides the access privileges necessary for common Hive-ODCI
+functionality.
+
+### hive_admin
+This role provides the escalated access privileges necessary used by
+administrators of Hive-ODCI.
+
 ## Synonyms
 ------------------------------
-
 Hive-ODCI synonyms are the public alternative names for the interface
 objects providing location transparency.
 
-### hive_q
-### hive_t 
-### hive_remote
-### hive_bind
-### hive_binds
-### hive_binding
-### hive_attribute
-### hive_attributes
-### hive_data
-### hive_records
-### hive_connection
-### dbms_hive
-### dba_hive_params
-### dba_hive_filters
-### dba_hive_filter_privs
-### dba_hive_log
-### user_hive_params
-### user_hive_filters
-### user_hive_filter_privs
-
-# FAQ 
-------------------------------
-
+* hive_q
+* hive_t 
+* hive_remote
+* hive_bind
+* hive_binds
+* hive_binding
+* hive_attribute
+* hive_attributes
+* hive_data
+* hive_records
+* hive_connection
+* dbms_hive
+* dba_hive_params
+* dba_hive_filters
+* dba_hive_filter_privs
+* dba_hive_log
+* user_hive_params
+* user_hive_filters
+* user_hive_filter_privs
 
 
 

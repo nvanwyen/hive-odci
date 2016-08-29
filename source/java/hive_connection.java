@@ -223,9 +223,9 @@ public class hive_connection
             {
                 String v = hive_properties.value( "java_property." + Integer.toString( idx ) );
 
-                log.trace( "Set system property [" + "java_property." + Integer.toString( idx ) + "]: " +
-                           "name: "  + n +
-                           "value: " + v );
+                log.trace( "Set system property [" + "java_property." + Integer.toString( idx ) + "]" +
+                           ", name: "  + n +
+                           ", value: " + v );
 
                 System.setProperty( n, v );
             }

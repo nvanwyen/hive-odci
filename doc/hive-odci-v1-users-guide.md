@@ -247,9 +247,9 @@ Because all of our clients will be accessing the same Hadoop/Hive
 data-store, we can setup a common connection strategy for Hive-ODCI
 via the parameters
 ```
-    param_( 'hive_jdbc_url',   'jdbc:hive2://hive.corp.com:10000' );
-    param_( 'hive_jdbc_url.1', 'user=oracle' );
-    param_( 'hive_jdbc_url.2', 'password=welcome1' );
+    dbms_hive.param( 'hive_jdbc_url',   'jdbc:hive2://hive.corp.com:10000' );
+    dbms_hive.param( 'hive_jdbc_url.1', 'user=oracle' );
+    dbms_hive.param( 'hive_jdbc_url.2', 'password=welcome1' );
 ```
 
 If we have clients which need a different connection strategy or
@@ -2101,7 +2101,7 @@ upon a compile request.
 ```
 
 #### ODCITableStart
-This ````FUNCTION``` initializes the scan of a table function to start
+This ```FUNCTION``` initializes the scan of a table function to start
 the command cycle.
 
 * Prototype
@@ -2124,7 +2124,7 @@ the command cycle.
 ```
 
 #### ODCITableFetch
-This ````FUNCTION``` returns the next batch of rows in the command cycle.
+This ```FUNCTION``` returns the next batch of rows in the command cycle.
 
 * Prototype
 ```

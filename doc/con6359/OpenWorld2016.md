@@ -18,6 +18,15 @@ https://oracle.rainfocus.com/scripts/catalog/oow16.jsp?search=%22Nicholas%20Van%
 --------------------------------------------------------------------------------
 
 ### Kuassi Mensah, Director, Product Management, Oracle
+Kuassi Mensah is Director of Product Management at Oracle; his scope includes:
+(i) Java performance, scalability, HA, and Security with Oracle database. (ii)
+Hadoop and Spark integration with the Oracle database (iii) Java & JavaScript
+integration with the Oracle database (OJVM, Nashorn) Mr Mensah holds a MS in CS
+from the Programming Institute of University of Paris. He is is a frequent
+speaker at IT events (Oracle Open World, JavaOne, Sangam, OTNYathra, UKOUG,
+DOAG, OUGN, BGOUG, etc) & author. @kmensah, http://db360.blogspot.com/,
+https://www.linkedin.com/in/kmensah
+
 
 ### Nicholas Van Wyen, Programmer / Developer, Metasystems Technologies Inc.
 This session explores the integration and offloading possibilities of an existing

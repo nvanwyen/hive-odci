@@ -59,7 +59,7 @@ See INSTALL.md for instructions
 # Concepts
 ------------------------------
 Hive-ODCI is a pass-through interface allowing SQL access from within
-an Oracle RDBMS to access information in an external Hive/Hadoop
+an Oracle RDBMS to information retained in an external Hive/Hadoop
 data-store. Hive-ODCI provides PL/SQL interfaces using ODCI to
 accomplish this functionality, making the access viable as native
 object in Oracle.
@@ -70,12 +70,12 @@ privileges through the ```HIVE_USER``` role or direct system privileges
 by the DBA.
 
 The client uses the PL/SQL objects to query, or execute DML/DDL in the
-remote Hive datastore, using the ```HIVE_T`` object type or one of the
+remote Hive datastore, using the ```HIVE_T``` object type or one of the
 PL/SQL packages.
 
 The ```HIVE``` schema installs Java classes in the database, which
-perform the JDBC execution on the clients behalf, and ```PIPLINED```
-the results back through the calling interface. 
+perform the JDBC execution on the clients behalf, and streams ```PIPLINED```
+results back through the same interface. 
 
 The client can dictate most levels of functionality at run-time, with
 predefined session data, bind-variables, etc... as customization for
@@ -87,8 +87,8 @@ classes access the remote data via the JDBC Driver loaded during
 installation.
 
 The client accesses the Hive-ODCI interface using the PL/SQL objects
-provided and/or a first-class ```VIEW```, controlled by RBAC, to 
-access the data for its community.
+provided and/or a first-class ```VIEW```, controlled by RBAC, for a
+2-way avenue for data.
 
 <div style="page-break-after: always;"></div>
 
@@ -145,7 +145,7 @@ We'll call ours the ```USER_LOG``` which exists in the ```SCOTT```
 schema. This table has billions upon billions of records consuming,
 multiple GB of storage space, which has been collected over the years,
 logging the activity metrics of our user community. Data over 30 days
-old is used in monthly reporting, but never changes once it's been
+old is used in monthly reporting, but rarely changes once it's been
 added to the table.
 
 Our tables looks like this ...
@@ -166,8 +166,9 @@ going to change their application to read from 2 different places using
 2 different methods (oh, what to do).
 
 ## Hive-ODCI to the rescue
-The reporting application also contains PL/SQL to create the reports
-and has a VIEW used in displaying the details of the report generated.
+On top of inserting, updating and deleting capabilities to the table,
+the application also contains PL/SQL to create the reports and has a VIEW
+used in displaying the monthly metrics.
 
 They look something like this ...
 ```
@@ -352,7 +353,7 @@ this argument, not pass it in, let it continue to be ```NULL```
 The ```hive_bind``` object also takes 3 arguments, the first is the
 data to be used as the bind. The second is the type of data to be
 bound (e.g. string, date, number, etc...). And the third is the scope of
-the bind, most useful for DML/DDL operations (e.g. IN, OUT, IN/OUT).
+the bind, most useful for DML operations (e.g. IN, OUT, IN/OUT).
 
 In our case we only care about scope references of IN, hence the
 ```1 /* ref_in */```. Since both bind operators are ``DATE`` variables
@@ -365,7 +366,7 @@ specify the format Hadoop/Hive is expecting.
 
 The Oracle RBAC controls dictate who can SELECT from the VIEWS, just as
 before. So, if you have custom roles which need access to the VIEWS,
-they can be granted in the same way.
+they can be granted access in the same way.
 ```
     grant select on scott.user_log to my_app_role;
     grant select on scott.user_log_monthly to public;
@@ -374,10 +375,118 @@ they can be granted in the same way.
 Now wala! We have a VIEW that will retrieve the last 30 days worth
 of data from Hapdoop/Hive.
 
+#### Almost there
+We now have replacements for both the PL/SQL Reporting and the monthly
+```VIEW```, but we're just not yet at a 100%, so what have we forgot?
+
+You guessed it; DML. Our application is still putting data in, modifying
+it and removing it so we need to support that too. No problem. We can use
+an ```INSTEAD OF``` trigger and send our ```INSEERT```, ```UPDATE``` and
+```DELETE``` commands to Hadopp/Hive using Hive-ODCI.
+```
+    create or replace trigger scott.user_log_dml
+
+        instead of delete or insert or update on scott.user_log
+        for each row
+
+    declare
+
+        cmd varchar2( 4000 );
+        bnd hive_binds := hive_binds();
+
+    begin
+
+        if ( inserting ) then
+
+            cmd := q'[ insert into user_log
+                           ( stamp, account, message )
+                       values
+                           ( ?, ?, ? ) ]';
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( to_char( :new.stamp, 
+                                                    'yyyy-mm-dd' ),
+                                           hive_binding.type_date,
+                                           hive_binding.ref_in );
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( :new.account,
+                                           hive_binding.type_string,
+                                           hive_binding.ref_in );
+
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( :new.message,
+                                           hive_binding.type_string,
+                                           hive_binding.ref_in );
+
+        elsif ( updating ) then
+
+            cmd := q'[ update user_log
+                          set account = ?,
+                              message = ?
+                        where stamp = ? ]';
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( :new.account,
+                                           hive_binding.type_string,
+                                           hive_binding.ref_in );
+
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( :new.message,
+                                           hive_binding.type_string,
+                                           hive_binding.ref_in );
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( to_char( :new.stamp, 
+                                                    'yyyy-mm-dd' ),
+                                           hive_binding.type_date,
+                                           hive_binding.ref_in );
+
+        elsif ( deleting ) then
+
+            cmd := q'[ delete from  user_log
+                        where stamp = ? ]';
+
+            bnd.extend;
+            bnd( bnd.count ) := hive_bind( to_char( :new.stamp, 
+                                                    'yyyy-mm-dd' ),
+                                           hive_binding.type_date,
+                                           hive_binding.ref_in );
+
+        else
+
+            null; -- should never get here
+
+        end if;
+
+        if ( ( cmd is not null ) and ( bnd.count > 0 ) ) then
+        
+            -- execute the remote statement
+            hive_remote.dml( cmd, bnd );
+
+        end if;
+
+    end user_log_dml;
+    /
+```
+This may look more complex, but it's really not. We are simply creating a
+trigger to handle the DML events and passing them off to Hive-ODCI. The
+```HIVE_REMOTE.DML()``` works in the same way as a query, accepting an
+array of bind objects and connection information.
+
+The only real difference here is the example is creating and using local
+variables for ```HIVE_BINDS``` and the ```HIVE_BINDING``` types to show
+how it can be used in that manner.
+
+#### Final thought
+
 Note we have **not** changed any code in our application or in our
 PL/SQL procedure. Everything remains exactly as it was before, but
-our data exists only in Hadoop/Hive. So, you can go to your meeting
-now and be the hero.
+our data exists only in Hadoop/Hive. We can view the data, use it with 
+our PL/SQL and even manipulate it with DML. So, you can go to your
+meeting now and be the hero.
 
 # Guidelines
 ------------------------------
@@ -465,8 +574,8 @@ table and column levels as necessary.
 ```
 
 #### ORCFile
-Using ORCFile for Hadoop/Hive table should really be a matter of
-practice already because it is so extremely beneficial to get fast
+Using ORCFile for Hadoop/Hive table should already be a matter of
+practice because it is shown to be extremely beneficial in getting fast
 response times for queries.
 
 If existing tables are not already ORC then it would be prudent to
@@ -475,18 +584,19 @@ However, if possible the best case would be to modify the ingest
 process to use ORC up front.
 
 #### Apache Tez
-Whenever possible can use the Apache Tez execution engine instead of 
+Whenever possible use the Apache Tez execution engine instead of 
 a  Map-reduce engine. If it is not enabled by default in your
 environment, then use the following setting at the beginning of the
-query or enable it for the whole environment.
+query.
 ```
     set hive.execution.engine=tez;
 ```
 #### Vectorized queries
 Like scans, aggregations, filters and joins vectorized query execution
 improves performance of operations by splitting them into batches of
-1024 rows at a time instead of single row. Use the following setting 
-to enable.
+1024 rows at a time instead of single row. If not enabled for your
+environment then use the following setting to at the beginning of the
+query.
 ```
     set hive.vectorized.execution.enabled = true;
     set hive.vectorized.execution.reduce.enabled = true;
@@ -524,8 +634,8 @@ Finally, make sure you familiarize yourself and are comfortable with
 the Hive-ODCI API. I know reading documentation is boring (writing
 it even more so, trust me) but take the time and go through it as 
 many times as needed to get a firm understanding. This is
-particularly import for Developers, as they are the "real" users of
-the system.
+particularly important for Developers, as they are the "real" users
+of the system.
 
 Write some test scripts, see how it behaves in particular situations
 and make darn sure you know what's coming when you start inserting
@@ -542,7 +652,7 @@ manner of issues, they are the gatekeepers for security, performance,
 storage, new technologies, legacy systems, and a full onslaught of
 change management from every direction.
 
-Whether the systems is large or small, clustered or single instance
+Whether the systems are large or small, clustered or single instance
 the administrator's toolbox is typically a plethora of knowledge,
 scripts and documentation. Hive-ODCI attempts add to that toolbox,
 without being just "something else to learn" by leveraging common
@@ -562,14 +672,14 @@ hitting Hive-ODCI object simultaneously a wait event for Hive-ODCI
 will not float to the top of the wait percentages.
 
 A Hive-ODCI object having issue would still be in one of the more
-innocuous wait events or classes. Additionally, won't be in a blocking
+innocuous wait events or classes. Additionally, it won't be in a blocking
 state, so you have to recognize those events which may be indicating
 problems for the clients.
 
 #### WAIT_TIME and SECONDS_IN_WAIT
 In the ```GV$SESSION``` view the columns WAIT_TIME and SECONDS_IN_WAIT
 can easily be used to determine if Hive-ODCI is waiting on a remote
-call to respond ot complete.
+call to respond or complete.
 
 #### SQL*Net message to client
 This wait event can be observed while the Hive-ODCI is sending or
@@ -617,13 +727,13 @@ operation to Hadoop/Hive
 
 ```
 
-This produces the same end result, but with less wait activity
-in the Oracle RDBMS.
+This produces the same end result, but without local materialization
+and with less wait activity in the Oracle RDBMS.
 
 ### Storage
-Hive-ODCI is a zero storage object, like a ```VIEW```, for the
-majority of it is used. However certain aspects of Hive-ODCI will
-consume space, such as the Hive-ODCI Log and the Saved Filters
+Hive-ODCI is a zero storage object solution, like a ```VIEW```, for
+the majority of how its used. However certain aspects of Hive-ODCI
+will consume space, such as the Hive-ODCI Log and the Saved Filters
 (Binding).
 
 It is unlikely that your user community, no matter how large, or
@@ -631,10 +741,10 @@ how much Hive-ODCI is used will generate Filters that impact
 your storage, necessitating TS extents beyond what was allocated
 during the installation.
 
-The Hive Log data is another story. Depending on the ```log_level```
-set for the System, Hive-ODCI can generate a large amount of
-data. The ```log_level``` value is a bitmask, which allows
-log types to be turned on and off. The types are detailed below
+The Hive-ODCI Log data is another story. Depending on the
+```log_level``` set for the System, large amounts of data can be
+generated. The ```log_level``` value is a bitmask, which turns
+types on and off. The types are detailed below
 but also here
 ```
     create or replace package impl as
@@ -650,32 +760,32 @@ but also here
 
     end impl;
 ```
-Each level is progressively aggressive with what is written. The
+Each level is progressively verbose with what is written. The
 types should be obvious, but needless to say ```error``` writes only
 critical exceptions, while ```trace``` writes all operations. So a
 value of ```3``` would be ```error + warn``` and a value of ```31```
 would be ```error + warn + info + trace```.
 
 If you find that the Hive Log is filling up faster than expected,
-review the column ```VALUE``` in the ```DBA_HIVE_PARAMS``` view
-to determine the current value.
+review the column ```VALUE``` in the ```DBA_HIVE_PARAMS``` to
+determine the current value.
 ```
     select value 
       from dba_hive_params 
      where name = 'log_level';
 ```
 
-If you find that the ```log_level``` is set appropriately, as
-expected, then this means that the client has set the
+If you find that the ```log_level``` is set appropriately, or as
+you expected, then this means that the client has set the
 ```session_log_level()``` to something too high, which may need to
-be adjusted or justified.
+be changed or justified.
 
 The account which created the log data is stored in the column
-```NAME``` found in the ```DBA_HIVE_LOG``` view. use the following
+```NAME``` found in the ```DBA_HIVE_LOG``` view. Use the following
 to get counts of the name generating the most logging information.
 ```
     select name,
-            count(0) total
+           count(0) total
       from dba_hive_log
      group by name
      order by 2 desc;

@@ -16,6 +16,16 @@ https://oracle.rainfocus.com/scripts/catalog/oow16.jsp?search=%22Nicholas%20Van%
 ## Querying Oracle Table from Hadoop/Hive and Querying Hadoop/HDFS from PL/SQL
 [CON6359]
 --------------------------------------------------------------------------------
+This session explores the integration and offloading possibilities of an existing
+Oracle and Hadoop infrastructure, which are accessible today. It begins by
+describing Oracle Table Access for Hadoop, which turns Oracle Database tables
+into Hadoop data sources, allowing big data (facts) to be combined with master
+data (i.e., products, customers, in Oracle Database) using Hive SQL or
+Spark-SQL.  Moving large data sets to Hadoop complicates applications, SQL
+queries, and PL/SQL. The session then explains how to move Terabytes of cold
+data over to Hadoop/Hive but continue to access them as native Oracle RDBMS
+objects that can be queried through your current applications without code
+changes.
 
 ### Kuassi Mensah, Director, Product Management, Oracle
 Kuassi Mensah is Director of Product Management at Oracle; his scope includes:
@@ -29,18 +39,6 @@ https://www.linkedin.com/in/kmensah
 
 
 ### Nicholas Van Wyen, Programmer / Developer, Metasystems Technologies Inc.
-This session explores the integration and offloading possibilities of an existing
-Oracle and Hadoop infrastructure, which are accessible today. It begins by
-describing Oracle Table Access for Hadoop, which turns Oracle Database tables
-into Hadoop data sources, allowing big data (facts) to be combined with master
-data (i.e., products, customers, in Oracle Database) using Hive SQL or
-Spark-SQL.  Moving large data sets to Hadoop complicates applications, SQL
-queries, and PL/SQL. The session then explains how to move Terabytes of cold
-data over to Hadoop/Hive but continue to access them as native Oracle RDBMS
-objects that can be queried through your current applications without code
-changes.
-
-#### Bio
 Nick is a founding member of MTI, an IT consulting firm specializing in high
 performance and advanced security for the U.S. Government since 1996. A native
 of Washington D.C. Nick is a software advocate and Open Source proponent,

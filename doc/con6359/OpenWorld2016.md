@@ -9,7 +9,7 @@ Ask questions, become inspired. Learn and explore with our most successful
 customers.
 
 
-# Conference Session
+## Conference Session
 https://oracle.rainfocus.com/scripts/catalog/oow16.jsp?search=%22Nicholas%20Van%20Wyen%22&search.event=oracleopenworl://oracle.rainfocus.com/scripts/catalog/oow16.jsp?search=%22Nicholas%20Van%20Wyen%22&search.event=oracleopenworld
 
 

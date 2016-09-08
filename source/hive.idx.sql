@@ -45,11 +45,6 @@ create unique index param$name
 /
 
 --
-create index param$value
-    on param$ ( value )
-/
-
---
 create unique index filter$key
     on filter$ ( key, seq )
 /

@@ -75,6 +75,10 @@ grant execute on dbms_standard to hive;
 grant javasyspriv to hive;
 grant javadebugpriv to hive;
 
+-- online index rebuild (move_ts)
+grant create any index to hive;
+grant create any table to hive;
+
 --
 -- ... done!
 --

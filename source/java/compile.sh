@@ -117,13 +117,25 @@ function compile()
 #
 if [ ! -f ${javac} ] ; then
 
-    color_echo red "Cannot locate Java Compiler [${java}]!"
+    color_echo red "Cannot locate Java Compiler [${javac}]!"
     exit 1
 
 else
 
-    echo -n "Using Java compiler Version: " ; color_echo red "$(${javac} -version 2>&1 | ${awk} '{print $2}')" -n
-    echo ""
+    ver=$(${javac} -version 2>&1 | ${awk} '{print $2}')
+
+    if [ "${ver:0:3}" = "1.7" ] ; then
+
+        echo -n "Using Java compiler Version: " ; color_echo red "${ver}" -n
+        echo ""
+
+    else
+
+        echo -n "Java version " ; color_echo red "${ver}" -n ; echo " is incomptaible"
+        color_echo red "Must be 1.7_x"
+        exit 1
+
+    fi
 
 fi
 

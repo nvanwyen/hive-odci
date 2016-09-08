@@ -58,37 +58,13 @@ grant select on dba_tab_subpartitions to hive;
 grant select on dba_triggers          to hive;
 grant select on dba_role_privs        to hive;
 
---
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.net.SocketPermission', '*', 'connect, resolve' );
+grant select on dba_free_space        to hive;
+grant select on dba_data_files        to hive;
+grant select on dba_segments          to hive;
+grant select on dba_ts_quotas         to hive;
+grant select on dba_tables            to hive;
+grant select on dba_indexes           to hive;
 
---
-exec dbms_java.grant_policy_permission( 'HIVE', 'SYS', 'java.io.FilePermission', '*' );
-exec dbms_java.grant_policy_permission( 'HIVE', 'SYS', 'java.lang.RuntimePermission', '*' );
-
--- runtime, system and security properties
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', '*', null );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', '*', null );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.lang.RuntimePermission', '*', null );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.io.FilePermission', '*', null );
-
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', '*', '*' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', '*', '*' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.lang.RuntimePermission', '*', '*' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.io.FilePermission', '*', '*' );
-
--- specific
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.realm', 'write' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.kdc', 'write' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.krb5.conf', 'write' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.auth.login.index', 'write' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'java.security.auth.login.config', 'write' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.util.PropertyPermission', 'sun.security.krb5.debug', 'write' );
-
--- kerberos login
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'getSubject', '' );
-
---
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.JDBC_DRIVER_01', '' );
 
 --
 grant execute on dbms_sql      to hive;
@@ -98,37 +74,6 @@ grant execute on dbms_standard to hive;
 --
 grant javasyspriv to hive;
 grant javadebugpriv to hive;
-
---
-exec dbms_java.grant_permission( 'JAVA_ADMIN', 'SYS:oracle.aurora.rdbms.security.PolicyTablePermission', '0:javax.security.auth.kerberos.DelegationPermission#*', '');
-exec dbms_java.grant_permission( 'JAVA_ADMIN', 'SYS:oracle.aurora.rdbms.security.PolicyTablePermission', '0:javax.security.auth.PrivateCredentialPermission#*', '');
-
---
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'putProviderProperty.HiveSaslPlain', '' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:java.security.SecurityPermission', 'insertProvider.HiveSaslPlain', '' );
-
---
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.', '' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.other', '' );
-
--- kerberos deligation
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', '*', '' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.JDBC_DRIVER_01', '' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'createLoginContext.Client', '' );
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.AuthPermission', 'doAs', '' );
-
-exec dbms_java.grant_permission( 'HIVE', 'SYS:javax.security.auth.kerberos.ServicePermission', '*', 'initiate' );
-
-exec dbms_java.grant_permission( 'HIVE', -
-                                 'SYS:javax.security.auth.kerberos.DelegationPermission', -
-                                 '"hive/hive@MTIHQ.com" "krbtgt/kerberos@MTIHQ.com"', -
-                                 '' );
-
-exec dbms_java.grant_permission( 'HIVE', -
-                                 'SYS:javax.security.auth.PrivateCredentialPermission', -
-                                 'javax.security.auth.kerberos.KerberosTicket javax.security.auth.kerberos.KerberosPrincipal "*"', -
-                                 'read');
 
 --
 -- ... done!

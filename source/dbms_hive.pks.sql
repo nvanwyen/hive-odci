@@ -59,6 +59,31 @@ create or replace package dbms_hive as
     --
     procedure move_ts( ts in varchar2, obj in varchar2 default null );
 
+    ex_zero     exception;
+    es_zero     constant varchar2( 256 ) := 'Tablespace does not exist or has a size of zero (0)';
+    ec_zero     constant number := -20702;
+    pragma      exception_init( ex_zero, -20702 );
+
+    ex_segment  exception;
+    es_segment  constant varchar2( 256 ) := 'Table has non-existent segment';
+    ec_segment  constant number := -20703;
+    pragma      exception_init( ex_segment, -20703 );
+
+    ex_exists   exception;
+    es_exists   constant varchar2( 256 ) := 'Table does not exist';
+    ec_exists   constant number := -20704;
+    pragma      exception_init( ex_exists, -20704 );
+
+    ex_space    exception;
+    es_space    constant varchar2( 256 ) := 'Insufficient space found for move operation';
+    ec_space    constant number := -20705;
+    pragma      exception_init( ex_space, -20705 );
+
+    ex_quota    exception;
+    es_quota    constant varchar2( 256 ) := 'Insufficient quota granted for move operation';
+    ec_quota    constant number := -20706;
+    pragma      exception_init( ex_quota, -20706 );
+
 end dbms_hive;
 /
 

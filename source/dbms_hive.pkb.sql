@@ -279,9 +279,251 @@ create or replace package body dbms_hive as
 
     --
     procedure move_ts( ts in varchar2, obj in varchar2 default null ) is
+
+        tsz number := 0;
+        osz number := 0;
+        qsz number := 0;
+
+        tab varchar2( 256 );
+
+        unlimited_quota constant number := -1;
+
+        --
+        function ts_size_( t in varchar2 ) return number is
+
+            c number := 0;
+
+        begin
+
+            --
+            select a.bytes + b.bytes into c
+              from ( select bytes
+                       from dba_free_space
+                      where tablespace_name = t ) a,
+                   ( select bytes
+                       from dba_data_files
+                      where tablespace_name = t ) b;
+
+            --
+            return c;
+
+            --
+            exception
+                when no_data_found then
+                    return 0;
+
+                when others then
+                    raise;
+
+        end ts_size_;
+
+        --
+        function tab_size_( o in varchar2 ) return number is
+
+            c number := 0;
+
+        begin
+
+
+            select bytes into c
+              from dba_segments
+             where segment_name = o
+               and owner = 'HIVE';
+
+            --
+            return c;
+
+            --
+            exception
+                when no_data_found then
+                    return 0;
+
+                when others then
+                    raise;
+
+        end tab_size_;
+
+        --
+        function quota_( t in varchar2 ) return number is
+
+            c number := 0;
+
+        begin
+
+            --
+            select max_bytes into c
+              from dba_ts_quotas
+             where tablespace_name = t
+               and username = 'HIVE';
+
+            --
+            return c;
+
+            --
+            exception
+                when no_data_found then
+                    return 0;
+
+                when others then
+                    raise;
+
+        end quota_;
+
+        --
+        function tab_name_( o in varchar2 ) return varchar2 is
+
+            n varchar2( 256 );
+
+        begin
+
+            --
+            select table_name into n
+              from dba_tables
+             where owner = 'HIVE'
+               and ( table_name = o or table_name = o || '$' );
+
+            --
+            return n;
+
+            --
+            exception
+                when no_data_found then
+                    return null;
+
+                when others then
+                    raise;
+
+        end tab_name_;
+
+        --
+        procedure tab_move_( t in varchar2, o varchar2 ) is
+        begin
+
+            --
+            execute immediate 'alter table hive.' || o || ' move tablespace ' || t;
+
+        end tab_move_;
+
+        --
+        procedure idx_rebuild_( o varchar2 ) is
+        begin
+
+            --
+            for rec in ( select index_name
+                           from dba_indexes
+                          where owner = 'HIVE'
+                            and table_name = o ) loop
+
+                --
+                execute immediate 'alter index hive.' || rec.index_name || ' rebuild online';
+
+            end loop;
+
+        end idx_rebuild_;
+
     begin
 
-        null;
+        tsz := ts_size_( ts );
+
+        if ( tsz > 0 ) then
+
+            qsz := quota_( ts );
+
+            if ( ( qsz > 0 ) or ( qsz = unlimited_quota ) ) then
+
+                --
+                if ( obj is null ) then
+
+                    osz := osz + tab_size_( 'LOG$' );
+                    osz := osz + tab_size_( 'PRIV$' );
+                    osz := osz + tab_size_( 'FILTER$' );
+                    osz := osz + tab_size_( 'PARAM$' );
+
+
+                    if ( osz >= tsz ) then
+
+                        raise_application_error( ec_space, es_space );
+
+                    end if;
+
+                    if ( qsz = unlimited_quota ) then
+
+                        qsz := osz + 1;
+
+                    end if;
+
+                    if ( osz >= qsz ) then
+
+                        raise_application_error( ec_quota, es_quota );
+
+                    end if;
+
+                    tab_move_( ts, 'LOG$' );
+                    idx_rebuild_( 'LOG$' );
+
+                    tab_move_( ts, 'PRIV$' );
+                    idx_rebuild_( 'PRIV$' );
+
+                    tab_move_( ts, 'FILTER$' );
+                    idx_rebuild_( 'FILTER$' );
+
+                    tab_move_( ts, 'PARAM$' );
+                    idx_rebuild_( 'PARAM$' );
+
+                else
+
+                    tab := tab_name_( obj );
+
+                    if ( tab is not null ) then
+
+                        osz := tab_size_( tab );
+
+                        if ( qsz = unlimited_quota ) then
+
+                            qsz := osz + 1;
+
+                        end if;
+
+                        if ( osz = 0 ) then
+
+                            raise_application_error( ec_segment, es_segment );
+
+                        end if;
+
+                        if ( osz >= tsz ) then
+
+                            raise_application_error( ec_space, es_space );
+
+                        end if;
+
+                        if ( osz >= qsz ) then
+
+                            raise_application_error( ec_quota, es_quota );
+
+                        end if;
+
+                        tab_move_( ts, tab );
+                        idx_rebuild_( tab );
+
+                    else
+
+                        raise_application_error( ec_exists, es_exists );
+
+                    end if;
+
+                end if;
+
+            else
+
+                raise_application_error( ec_quota, es_quota );
+
+            end if;
+
+        else
+
+            raise_application_error( ec_zero, es_zero );
+
+        end if;
 
     end move_ts;
 

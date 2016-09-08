@@ -76,6 +76,7 @@ select current_timestamp "beginning installation"
 
 -- schema permissions
 @@hive.prm.sql
+@@hive.jva.sql
 
 -- tables
 @@hive.tbl.sql

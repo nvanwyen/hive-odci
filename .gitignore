@@ -21,6 +21,9 @@ archive
 depend
 taspo
 opatch
+ddtek
 
 # 
 *.pptx
+
+#

@@ -47,5 +47,5 @@ Oracle for over 20 years, Nick has designed and built several mission critical
 systems and services in support of national protection. Currently at USCS
 Customs and Border Protection (CBP) the Office of Information and Technology
 Nick is assigned to the Targeting and System Analysis Program Office where he
-is part of an elite Database Administration Team responsible for the worldi's
+is part of an elite Database Administration Team responsible for the world's
 largest production Exadata farm. Nick can be contacted at nvanwyen@mtihq.com.

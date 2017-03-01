@@ -1,0 +1,33 @@
+#!/bin/bash
+
+#
+if [[ -z $ORACLE_HOME ]] ; then
+
+    echo "\$ORACLE_HOME not set!"
+    exit 1
+
+fi
+
+#
+if [ ! -f $ORACLE_HOME/javavm/admin/version.log ] ; then
+
+    echo "Version data not found, might not be a 12c or higher \$ORACLE_HOME!"
+    exit 1
+
+fi
+
+#
+if [ ! -f $ORACLE_HOME/bin/oracle ] ; then
+
+    echo "Binary image not found, might not be a database home"
+    exit 1
+
+fi
+
+#
+echo -n "Set to use ... "
+[[ $(cat $ORACLE_HOME/javavm/admin/version.log) -eq 7 ]] && echo "JDK 7" || echo "JDK 6"
+
+#
+echo -n "Binary linked to ... "
+[[ $(strings $ORACLE_HOME/bin/oracle | egrep --color -i "invokedynamic" | wc -l) -gt 0 ]] && echo "JDK 7" || echo "JDK 6"

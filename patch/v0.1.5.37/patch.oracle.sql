@@ -132,6 +132,9 @@ drop type data;
 drop type attributes;
 drop type attribute;
 
+-- permissions
+@@../../source/hive.prm.sql
+
 -- views
 @@../../source/hive.vws.sql
 

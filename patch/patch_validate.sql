@@ -42,11 +42,9 @@ begin
         begin
 
             dbms_utility.validate( rec.id );
-            exception when others then dbms_output.put_line( 'Failed: ' || rec.name || ': ' || sqlerrm );
+            exception when others then null;
 
         end;
-
-        dbms_output.put_line( 'Validated: ' || rec.name );
 
     end loop;
 

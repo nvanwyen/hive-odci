@@ -108,6 +108,7 @@ create or replace package body dbms_hive as
     function param( name in varchar2 ) return varchar2 is
 
         val varchar2( 4000 );
+        n varchar2( 4000 ) := name;
 
     begin
 
@@ -116,7 +117,7 @@ create or replace package body dbms_hive as
         --
         select a.value into val
           from param$ a
-         where a.name = name;
+         where a.name = n;
 
         --
         log_trc_( 'param( ' || name || ' ) returns: ' || nvl( val, '{null}' ) );

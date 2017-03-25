@@ -1,0 +1,242 @@
+diff --git a/VERSION b/VERSION
+index 42aa7c7..c63870b 100644
+--- a/VERSION
++++ b/VERSION
+@@ -1 +1 @@
+-v0.1.5.28
++v0.1.5.37
+diff --git a/source/bind.typ.sql b/source/bind.typ.sql
+index 373c8d3..7440a1e 100644
+--- a/source/bind.typ.sql
++++ b/source/bind.typ.sql
+@@ -36,13 +36,50 @@ create or replace type bind as object
+ (
+     value   varchar2( 4000 ), -- value
+     type    number,           -- typeof (e.g. bool, string, ...)
+-    scope   number            -- reference (e.g. in, out, ... )
++    scope   number,           -- reference (e.g. in, out, ... )
++
++    -- default ctor: bind( v, t, s )
++    --
++    constructor function bind( v varchar2, t number ) return self as result,
++    constructor function bind( v varchar2 ) return self as result
+ );
+ /
+ 
+ show errors
+ 
+ --
++create or replace type body bind as
++
++    constructor function bind( v varchar2, t number ) return self as result is
++    begin
++
++        value := v;
++        type  := t;
++
++        scope := 1 /* binding.scope_in */;
++
++        return;
++
++    end bind;
++
++    constructor function bind( v varchar2 ) return self as result is
++    begin
++
++        value := v;
++
++        type  := 9 /* binding.type_string */;
++        scope := 1 /* binding.scope_in    */;
++
++        return;
++
++    end bind;
++
++end;
++/
++
++show errors
++
++--
+ create or replace type binds as table of bind;
+ /
+ 
+@@ -84,6 +121,14 @@ create or replace package binding as
+     type_url        constant typeof    := 12;
+ 
+     --
++    procedure env( name  in varchar2,
++                   value in varchar2 );
++    --
++    function  env( name in varchar2 ) return varchar2;
++    --
++    procedure env( clear in boolean );
++
++    --
+     function get( key in varchar2 ) return binds;
+     function get( idx in number, lst in binds ) return bind;
+ 
+@@ -171,7 +216,8 @@ show errors
+ create or replace package body binding as
+ 
+     --
+-    ctx constant varchar2( 7 ) := 'hivectx';
++    ctx_ constant varchar2( 7 ) := 'hivectx';
++    env_ constant varchar2( 7 ) := 'hiveenv';
+ 
+     --
+     procedure log_err_( txt varchar2 ) is
+@@ -267,7 +313,7 @@ create or replace package body binding as
+ 
+     begin
+ 
+-        v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
++        v := sys_context( ctx_, substr( n, 1, 30 ), 4000 );
+ 
+         if ( v is null ) then
+ 
+@@ -431,6 +477,36 @@ create or replace package body binding as
+     end allowed_;
+ 
+     --
++    procedure env( name  in varchar2,
++                   value in varchar2 ) is
++
++    begin
++
++        dbms_session.set_context( env_, substr( name, 1, 30 ), value );
++
++    end env;
++
++    --
++    function env( name in varchar2 ) return varchar2 is
++    begin
++
++        return sys_context( env_, substr( name, 1, 30 ), 4000 );
++
++    end env;
++
++    --
++    procedure env( clear in boolean ) is
++    begin
++
++        if ( clear ) then
++
++            dbms_session.clear_all_context( env_ );
++
++        end if;
++
++    end env;
++
++    --
+     function get( key in varchar2 ) return binds is
+ 
+         lst binds;
+diff --git a/source/dbms_hive.pkb.sql b/source/dbms_hive.pkb.sql
+index 23da2db..c155b54 100644
+--- a/source/dbms_hive.pkb.sql
++++ b/source/dbms_hive.pkb.sql
+@@ -108,6 +108,7 @@ create or replace package body dbms_hive as
+     function param( name in varchar2 ) return varchar2 is
+ 
+         val varchar2( 4000 );
++        n varchar2( 4000 ) := name;
+ 
+     begin
+ 
+@@ -116,7 +117,7 @@ create or replace package body dbms_hive as
+         --
+         select a.value into val
+           from param$ a
+-         where a.name = name;
++         where a.name = n;
+ 
+         --
+         log_trc_( 'param( ' || name || ' ) returns: ' || nvl( val, '{null}' ) );
+diff --git a/source/hive.ctx.sql b/source/hive.ctx.sql
+index 3fdf7cb..ea48afe 100644
+--- a/source/hive.ctx.sql
++++ b/source/hive.ctx.sql
+@@ -35,5 +35,8 @@ alter session set current_schema = hive;
+ create or replace context hivectx using impl;
+ 
+ --
++create or replace context hiveenv using binding;
++
++--
+ -- ... done!
+ --
+diff --git a/source/impl.pkb.sql b/source/impl.pkb.sql
+index 5e25303..450468b 100644
+--- a/source/impl.pkb.sql
++++ b/source/impl.pkb.sql
+@@ -35,7 +35,7 @@ alter session set current_schema = hive;
+ create or replace package body impl as
+ 
+     --
+-    ctx constant varchar2( 7 ) := 'hivectx';
++    ctx_ constant varchar2( 7 ) := 'hivectx';
+ 
+     --
+     log_     number     := -1;
+@@ -89,7 +89,7 @@ create or replace package body impl as
+ 
+         end if;
+ 
+-        v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
++        v := sys_context( ctx_, substr( n, 1, 30 ), 4000 );
+ 
+         if ( v is null ) then
+ 
+@@ -393,9 +393,9 @@ create or replace package body impl as
+ 
+     begin
+ 
+-        v := sys_context( ctx, n, 4000 );
++        v := sys_context( ctx_, n, 4000 );
+ 
+-        log_trace( 'impl::session_param( ' || n || ' ) context: ' || ctx || ', returns: ' || v );
++        log_trace( 'impl::session_param( ' || n || ' ) context: ' || ctx_ || ', returns: ' || v );
+         return v;
+ 
+         exception
+@@ -425,7 +425,7 @@ create or replace package body impl as
+         else
+ 
+             log_info( 'impl::session_param( ' || name || ' ) set: ' || nvl( value, '{null}' ) );
+-            dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
++            dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
+ 
+         end if;
+ 
+diff --git a/source/install_hive.sql b/source/install_hive.sql
+index dde4ec5..0ddd04f 100644
+--- a/source/install_hive.sql
++++ b/source/install_hive.sql
+@@ -110,7 +110,7 @@ select current_timestamp "beginning installation"
+ -- parameters
+ @@hive.par.sql
+ 
+--- -- obfuscation
++-- obfuscation
+ @@wrap.pls.sql
+ 
+ --
+@@ -125,11 +125,15 @@ set linesize 160
+ set pagesize 50000
+ 
+ --
+-col name for a30 head "name"
+-col text for a80 head "text" word_wrap
++col name for a20   head "name"
++col type for a16   head "type"
++col line for 9,990 head "line"
++col text for a60   head "text" word_wrap
+ 
+ --
+ select name,
++       type,
++       line,
+        text
+   from all_errors
+  where owner = 'HIVE'

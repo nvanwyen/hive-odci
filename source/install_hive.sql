@@ -110,7 +110,7 @@ select current_timestamp "beginning installation"
 -- parameters
 @@hive.par.sql
 
--- -- obfuscation
+-- obfuscation
 @@wrap.pls.sql
 
 --
@@ -125,11 +125,15 @@ set linesize 160
 set pagesize 50000
 
 --
-col name for a30 head "name"
-col text for a80 head "text" word_wrap
+col name for a20   head "name"
+col type for a16   head "type"
+col line for 9,990 head "line"
+col text for a60   head "text" word_wrap
 
 --
 select name,
+       type,
+       line,
        text
   from all_errors
  where owner = 'HIVE'

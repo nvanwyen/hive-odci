@@ -35,7 +35,7 @@ alter session set current_schema = hive;
 create or replace package body impl as
 
     --
-    ctx constant varchar2( 7 ) := 'hivectx';
+    ctx_ constant varchar2( 7 ) := 'hivectx';
 
     --
     log_     number     := -1;
@@ -89,7 +89,7 @@ create or replace package body impl as
 
         end if;
 
-        v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
+        v := sys_context( ctx_, substr( n, 1, 30 ), 4000 );
 
         if ( v is null ) then
 
@@ -393,9 +393,9 @@ create or replace package body impl as
 
     begin
 
-        v := sys_context( ctx, n, 4000 );
+        v := sys_context( ctx_, n, 4000 );
 
-        log_trace( 'impl::session_param( ' || n || ' ) context: ' || ctx || ', returns: ' || v );
+        log_trace( 'impl::session_param( ' || n || ' ) context: ' || ctx_ || ', returns: ' || v );
         return v;
 
         exception
@@ -425,7 +425,7 @@ create or replace package body impl as
         else
 
             log_info( 'impl::session_param( ' || name || ' ) set: ' || nvl( value, '{null}' ) );
-            dbms_session.set_context( ctx, substr( name, 1, 30 ), value );
+            dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
 
         end if;
 

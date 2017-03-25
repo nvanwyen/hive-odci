@@ -36,8 +36,45 @@ create or replace type bind as object
 (
     value   varchar2( 4000 ), -- value
     type    number,           -- typeof (e.g. bool, string, ...)
-    scope   number            -- reference (e.g. in, out, ... )
+    scope   number,           -- reference (e.g. in, out, ... )
+
+    -- default ctor: bind( v, t, s )
+    --
+    constructor function bind( v varchar2, t number ) return self as result,
+    constructor function bind( v varchar2 ) return self as result
 );
+/
+
+show errors
+
+--
+create or replace type body bind as
+
+    constructor function bind( v varchar2, t number ) return self as result is
+    begin
+
+        value := v;
+        type  := t;
+
+        scope := 1 /* binding.scope_in */;
+
+        return;
+
+    end bind;
+
+    constructor function bind( v varchar2 ) return self as result is
+    begin
+
+        value := v;
+
+        type  := 9 /* binding.type_string */;
+        scope := 1 /* binding.scope_in    */;
+
+        return;
+
+    end bind;
+
+end;
 /
 
 show errors
@@ -82,6 +119,14 @@ create or replace package binding as
     type_time       constant typeof    := 10;
     type_timestamp  constant typeof    := 11;
     type_url        constant typeof    := 12;
+
+    --
+    procedure env( name  in varchar2,
+                   value in varchar2 );
+    --
+    function  env( name in varchar2 ) return varchar2;
+    --
+    procedure env( clear in boolean );
 
     --
     function get( key in varchar2 ) return binds;
@@ -171,7 +216,8 @@ show errors
 create or replace package body binding as
 
     --
-    ctx constant varchar2( 7 ) := 'hivectx';
+    ctx_ constant varchar2( 7 ) := 'hivectx';
+    env_ constant varchar2( 7 ) := 'hiveenv';
 
     --
     procedure log_err_( txt varchar2 ) is
@@ -267,7 +313,7 @@ create or replace package body binding as
 
     begin
 
-        v := sys_context( ctx, substr( n, 1, 30 ), 4000 );
+        v := sys_context( ctx_, substr( n, 1, 30 ), 4000 );
 
         if ( v is null ) then
 
@@ -429,6 +475,36 @@ create or replace package body binding as
         return ( bitand( g, l ) > 0 );
 
     end allowed_;
+
+    --
+    procedure env( name  in varchar2,
+                   value in varchar2 ) is
+
+    begin
+
+        dbms_session.set_context( env_, substr( name, 1, 30 ), value );
+
+    end env;
+
+    --
+    function env( name in varchar2 ) return varchar2 is
+    begin
+
+        return sys_context( env_, substr( name, 1, 30 ), 4000 );
+
+    end env;
+
+    --
+    procedure env( clear in boolean ) is
+    begin
+
+        if ( clear ) then
+
+            dbms_session.clear_all_context( env_ );
+
+        end if;
+
+    end env;
 
     --
     function get( key in varchar2 ) return binds is

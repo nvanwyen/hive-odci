@@ -35,5 +35,8 @@ alter session set current_schema = hive;
 create or replace context hivectx using impl;
 
 --
+create or replace context hiveenv using binding;
+
+--
 -- ... done!
 --

@@ -351,6 +351,19 @@ begin
     begin
 
         --
+        wrap_( type_body_( 'HIVE', 'BIND' ) );
+        dbms_output.put_line( 'HIVE.BIND Type Body wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping type body [HIVE.BIND]: ' || sqlerrm );
+
+    end;
+
+    begin
+
+        --
         wrap_( type_body_( 'HIVE', 'HIVE_T' ) );
         dbms_output.put_line( 'HIVE.HIVE_T Type Body wrapped' );
 

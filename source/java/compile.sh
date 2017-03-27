@@ -290,7 +290,7 @@ rm -fR $bse
 cd $bin
 
 #
-echo -n "Building JAR " ; color_echo red "${out} " -n ; echo -n "... "
+echo -n "Building JAR " ; color_echo magenta "${out} " -n ; echo -n "... "
 rm -f ${out} 2>/dev/null
 ( cd ${bin} && ${jar} cvf ${out} *.class ) 2>&1 1>/dev/null
 chkerr ${out} $?

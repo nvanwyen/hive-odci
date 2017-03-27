@@ -1,0 +1,1269 @@
+diff --git a/VERSION b/VERSION
+index c63870b..cfa96f4 100644
+--- a/VERSION
++++ b/VERSION
+@@ -1 +1 @@
+-v0.1.5.37
++v0.1.5.42
+diff --git a/jdbc/load-jdbc.sh b/jdbc/load-jdbc.sh
+index 1d6a22f..d1baacb 100755
+--- a/jdbc/load-jdbc.sh
++++ b/jdbc/load-jdbc.sh
+@@ -96,8 +96,9 @@ if [ `ls ${dir}/*.jar | wc -l` -gt 0 ] ; then
+     for jar in `ls ${dir}/*.jar` ; do
+ 
+         #
+-        echo                       | tee --append ${dir}/load-jdbc.${dts}.log
+-        echo "Loading jar: ${jar}" | tee --append ${dir}/load-jdbc.${dts}.log
++        echo                                     | tee --append ${dir}/load-jdbc.${dts}.log
++        echo "Loading jar: ${jar}"               | tee --append ${dir}/load-jdbc.${dts}.log
++        echo "---------------------------------" | tee --append ${dir}/load-jdbc.${dts}.log
+ 
+         #
+         (
+@@ -114,7 +115,9 @@ if [ `ls ${dir}/*.jar | wc -l` -gt 0 ] ; then
+ ${p}
+ 
+ !
+-        ) 2>&1 | tee --append ${dir}/load-jdbc.${dts}.log
++        ) 2>&1 | tee --append ${dir}/load-jdbc.${dts}.log \
++               | egrep "^Classes|^Resources|^Sources|^Published|^Classes|^Classes|^Synonyms|^Errors"
++
+ 
+     done ;
+ 
+diff --git a/patch/v0.1.5.37/patch.oracle.sql b/patch/v0.1.5.37/patch.oracle.sql
+index fe333f6..338c5aa 100644
+--- a/patch/v0.1.5.37/patch.oracle.sql
++++ b/patch/v0.1.5.37/patch.oracle.sql
+@@ -171,6 +171,30 @@ drop type attribute;
+ -- (re)validate (e.g. compile) any invalid objects
+ @@../patch_validate.sql
+ 
++-- set version
++declare
++
++    ver varchar2( 4000 ) := 'v0.1.5.37';
++
++begin
++
++    --
++    update hive.param$
++       set value = ver
++     where name = 'version';
++
++    if ( sql%rowcount != 1 ) then
++
++        raise_application_error( -20901, 'Version data was not set correctly!' );
++
++    end if;
++
++    --
++    commit;
++
++end;
++/
++
+ --
+ select current_timestamp "completed patch"
+   from dual;
+@@ -211,7 +235,7 @@ begin
+ 
+     if ( c > 0 ) then
+ 
+-        raise_application_error( -20901, to_char( c ) || ' patch error(s) encountered, please review' );
++        raise_application_error( -20902, to_char( c ) || ' patch error(s) encountered, please review' );
+ 
+     else
+ 
+diff --git a/source/bind.typ.sql b/source/bind.typ.sql
+index 7440a1e..d9deff9 100644
+--- a/source/bind.typ.sql
++++ b/source/bind.typ.sql
+@@ -53,10 +53,10 @@ create or replace type body bind as
+     constructor function bind( v varchar2, t number ) return self as result is
+     begin
+ 
+-        value := v;
+-        type  := t;
++        self.value := v;
++        self.type  := t;
+ 
+-        scope := 1 /* binding.scope_in */;
++        self.scope := 1 /* binding.scope_in */;
+ 
+         return;
+ 
+@@ -65,10 +65,10 @@ create or replace type body bind as
+     constructor function bind( v varchar2 ) return self as result is
+     begin
+ 
+-        value := v;
++        self.value := v;
+ 
+-        type  := 9 /* binding.type_string */;
+-        scope := 1 /* binding.scope_in    */;
++        self.type  := 9 /* binding.type_string */;
++        self.scope := 1 /* binding.scope_in    */;
+ 
+         return;
+ 
+diff --git a/source/hive.fnc.sql b/source/hive.fnc.sql
+index 46ed623..4a3d44e 100644
+--- a/source/hive.fnc.sql
++++ b/source/hive.fnc.sql
+@@ -32,9 +32,9 @@ prompt ... running hive.fnc.sql
+ alter session set current_schema = hive;
+ 
+ --
+-create or replace function hive_q( stm varchar2,
+-                                   bnd in binds      := null,
+-                                   con in connection := null ) return anydataset pipelined using hive_t;
++create or replace function hive_q( stm in varchar2,
++                                   bnd in binds      default null,
++                                   con in connection default null ) return anydataset pipelined using hive_t;
+ /
+ 
+ show errors
+diff --git a/source/hive.par.sql.in b/source/hive.par.sql.in
+index ce63ea2..f85a91c 100644
+--- a/source/hive.par.sql.in
++++ b/source/hive.par.sql.in
+@@ -104,7 +104,6 @@ begin
+     param_( 'hive_jdbc_url.1', 'AuthenticationMethod=userIdPassword' );
+     param_( 'hive_jdbc_url.2', 'User=oracle' );
+     param_( 'hive_jdbc_url.3', 'Password=welcome1' );
+-    param_( 'hive_jdbc_url.4', 'url_extra=SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
+ 
+     -- URL paraemters are processed in the order 1 .. X, consecutively
+     -- until a value cannot be found. For example 1, 2, 3, 5, 6, ...
+diff --git a/source/hive.typ.sql b/source/hive.typ.sql
+index db903bb..5c6163e 100644
+--- a/source/hive.typ.sql
++++ b/source/hive.typ.sql
+@@ -38,25 +38,24 @@ create or replace type hive_t as object
+     key integer,
+     ref anytype,
+ 
+-
+     --
+     static function ODCITableDescribe( typ out anytype,
+                                        stm in  varchar2,
+-                                       bnd in  binds      := null,
+-                                       con in  connection := null ) return number,
++                                       bnd in  binds      default null,
++                                       con in  connection default null ) return number,
+ 
+     --
+     static function ODCITablePrepare( ctx out hive_t,
+                                       inf in  sys.ODCITabFuncInfo,
+                                       stm in  varchar2,
+-                                      bnd in  binds      := null,
+-                                      con in  connection := null ) return number,
++                                      bnd in  binds      default null,
++                                      con in  connection default null ) return number,
+ 
+     --
+     static function ODCITableStart( ctx in out hive_t,
+                                     stm in     varchar2,
+-                                    bnd in     binds      := null,
+-                                    con in     connection := null ) return number,
++                                    bnd in     binds      default null,
++                                    con in     connection default null ) return number,
+ 
+     --
+     member function ODCITableFetch( self in out hive_t,
+@@ -64,7 +63,12 @@ create or replace type hive_t as object
+                                     rws  out    anydataset ) return number,
+ 
+     --
+-    member function ODCITableClose( self in hive_t ) return number
++    member function ODCITableClose( self in hive_t ) return number,
++
++    --
++    static function do( stm in varchar2,
++                        bnd in binds      default null,
++                        con in connection default null ) return anydataset pipelined using hive_t
+ );
+ /
+ 
+@@ -76,8 +80,8 @@ create or replace type body hive_t as
+     --
+     static function ODCITableDescribe( typ out anytype,
+                                        stm in  varchar2,
+-                                       bnd in  binds      := null,
+-                                       con in  connection := null ) return number is
++                                       bnd in  binds      default null,
++                                       con in  connection default null ) return number is
+ 
+         --
+         procedure trc_( txt in varchar2 ) is
+@@ -102,12 +106,12 @@ create or replace type body hive_t as
+     begin 
+ 
+         --
+-        trc_( stm || ' -- called' );
++        trc_( 'hive_t::ODCITableDescribe - called: ' || stm  );
+         return impl.sql_describe( typ, stm, bnd, con );
+ 
+         exception
+             when others then
+-                err_( stm || ', error: ' || sqlerrm );
++                err_( 'hive_t::ODCITableDescribe [ ' || stm || '] error: ' || sqlerrm );
+                 raise;
+ 
+     end;
+@@ -116,8 +120,8 @@ create or replace type body hive_t as
+     static function ODCITablePrepare( ctx out hive_t,
+                                       inf in  sys.ODCITabFuncInfo,
+                                       stm in  varchar2,
+-                                      bnd in  binds      := null,
+-                                      con in  connection := null ) return number is
++                                      bnd in  binds      default null,
++                                      con in  connection default null ) return number is
+ 
+         key     number;
+         typ     anytype;
+@@ -153,7 +157,7 @@ create or replace type body hive_t as
+ 
+     begin
+ 
+-        trc_( stm || ' -- called' );
++        trc_( 'hive_t::ODCITablePrepare - called: ' || stm  );
+ 
+         ret := impl.sql_open( key, stm, bnd, con );
+ 
+@@ -162,21 +166,21 @@ create or replace type body hive_t as
+             ret := inf.rettype.getattreleminfo( 1, prec, scale, len, csid, csfrm, typ, name ); 
+             ctx := hive_t( key, typ );
+ 
+-            trc_( 'key: ' || to_char( key ) || ' context' );
++            trc_( 'hive_t::ODCITablePrepare key: ' || to_char( key ) );
+ 
+         else
+ 
+-            err_( 'Error encountered for: ' || stm );
++            err_( 'hive_t::ODCITablePrepare error: ' || stm );
+             return odciconst.error;
+ 
+         end if;
+ 
+-        trc_( 'Succeeded: ' || stm );
++        trc_( 'hive_t::ODCITablePrepare succeeded: ' || stm );
+         return odciconst.success; 
+ 
+         exception
+             when others then
+-                err_( 'key: ' || to_char( key ) || ', error: ' || sqlerrm );
++                err_( 'hive_t::ODCITablePrepare [' || to_char( key ) || '] error: ' || sqlerrm );
+                 raise;
+ 
+     end;
+@@ -184,8 +188,8 @@ create or replace type body hive_t as
+     --
+     static function ODCITableStart( ctx in out hive_t,
+                                     stm in     varchar2,
+-                                    bnd in     binds      := null,
+-                                    con in     connection := null ) return number is
++                                    bnd in     binds      default null,
++                                    con in     connection default null ) return number is
+ 
+         ret number := odciconst.success;
+ 
+@@ -214,12 +218,12 @@ create or replace type body hive_t as
+ 
+     begin
+ 
+-        trc_( stm || ' -- called' );
++        trc_( 'hive_t::ODCITableStart - called: ' || stm  );
+ 
+         --
+         ret := impl.sql_open( key, stm, bnd, con );
+ 
+-        trc_( to_char( key ) || ' -- identified' );
++        trc_( 'hive_t::ODCITableStart [' || to_char( key ) || '] identified' );
+ 
+         --
+         if ( ret = odciconst.success ) then
+@@ -230,12 +234,12 @@ create or replace type body hive_t as
+         end if;
+ 
+         --
+-        trc_( stm || ' -- returned: ' || to_char( ret ) );
++        trc_( 'hive_t::ODCITableStart [' || stm || ']: returned: ' || to_char( ret ) );
+         return ret;
+ 
+         exception
+             when others then
+-                err_( stm || ', error: ' || sqlerrm );
++                err_( 'hive_t::ODCITableStart [' || stm || '] error: ' || sqlerrm );
+                 raise;
+ 
+     end;
+@@ -280,12 +284,12 @@ create or replace type body hive_t as
+ 
+     begin
+ 
+-        trc_( to_char( self.key ) || ' -- called' );
++        trc_( 'hive_t::ODCITableFetch - called: ' || to_char( self.key )  );
+ 
+         -- retrieve the next "num" records
+         ret := impl.sql_fetch( self.key, num, rec );
+ 
+-        trc_( to_char( self.key ) || ' -- retrieve next: ' || to_char( num ) );
++        trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] retrieve next: ' || to_char( num ) );
+ 
+         --
+         if ( ret = odciconst.success ) then
+@@ -300,47 +304,47 @@ create or replace type body hive_t as
+                     rws.addinstance();
+                     rws.piecewise();
+ 
+-                    trc_( to_char( self.key ) || ' -- began piecewise recordset creation' );
++                    trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] began piecewise recordset creation' );
+ 
+                     --
+                     for i in 1 .. rec.count loop
+ 
+                         if ( rec( i ).code = dbms_types.typecode_varchar2 ) then
+ 
+-                            trc_( to_char( self.key ) || ' -- set typecode_varchar2' );
++                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_varchar2' );
+                             rws.setvarchar2( rec( i ).val_varchar2 );
+ 
+                         elsif ( rec( i ).code = dbms_types.typecode_number ) then
+ 
+-                            trc_( to_char( self.key ) || ' -- set typecode_number' );
++                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_number' );
+                             rws.setnumber( rec( i ).val_number );
+ 
+                         elsif ( rec( i ).code = dbms_types.typecode_date ) then
+ 
+-                            trc_( to_char( self.key ) || ' -- set typecode_date' );
++                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_date' );
+                             rws.setdate( rec( i ).val_date );
+ 
+                         elsif ( rec( i ).code = dbms_types.typecode_timestamp ) then
+ 
+-                            trc_( to_char( self.key ) || ' -- set typecode_timestamp' );
++                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_timestamp' );
+                             rws.settimestamp( rec( i ).val_timestamp );
+ 
+                         elsif ( rec( i ).code = dbms_types.typecode_clob ) then
+ 
+-                            trc_( to_char( self.key ) || ' -- set typecode_clob' );
++                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_clob' );
+                             rws.setclob( rec( i ).val_clob );
+ 
+                         elsif ( rec( i ).code = dbms_types.typecode_blob ) then
+ 
+-                            trc_( to_char( self.key ) || ' -- set typecode_blob' );
++                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_blob' );
+                             rws.setblob( rec( i ).val_blob );
+ 
+                         else
+ 
+-                            err_( to_char( self.key ) || ' -- Record type code ['
+-                                                      || to_char( rec( i ).code )
+-                                                      ||' ] not supported for column index ['
+-                                                      || to_char( i ) || ']' );
++                            err_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] record type code ['
++                                                             || to_char( rec( i ).code )
++                                                             ||' ] not supported for column index ['
++                                                             || to_char( i ) || ']' );
+ 
+                             raise_application_error( -20210, 'Record type code ['
+                                                            || to_char( rec( i ).code )
+@@ -354,7 +358,7 @@ create or replace type body hive_t as
+                     --
+                     rws.endcreate();
+ 
+-                    trc_( to_char( self.key ) || ' -- eneded recordset creation' );
++                    trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] eneded recordset creation' );
+ 
+                 else
+ 
+@@ -365,18 +369,18 @@ create or replace type body hive_t as
+ 
+             else
+ 
+-                trc_( to_char( self.key ) || ' -- Record set is null' );
++                trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] Record set is null' );
+ 
+             end if;
+ 
+         end if;
+ 
+-        trc_( to_char( self.key ) || ' -- returned: ' || to_char( ret ) );
++        trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] returned: ' || to_char( ret ) );
+         return ret;
+ 
+         exception
+             when others then
+-                err_( 'Key: ' || to_char( self.key ) || ', error: ' || sqlerrm );
++                err_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] error: ' || sqlerrm );
+                 raise;
+ 
+     end;
+@@ -406,12 +410,12 @@ create or replace type body hive_t as
+ 
+     begin
+ 
+-        trc_( to_char( self.key ) || ' -- closed' );
++        trc_( 'hive_t::ODCITableClose [' || to_char( self.key ) || '] closed' );
+         return impl.sql_close( self.key );
+ 
+         exception
+             when others then
+-                err_( 'Key: ' || to_char( self.key ) || ', error: ' || sqlerrm );
++                err_( 'hive_t::ODCITableClose [' || to_char( self.key ) || '] error: ' || sqlerrm );
+                 raise;
+ 
+     end;
+diff --git a/source/install_hive.sql b/source/install_hive.sql
+index 0ddd04f..bea9870 100644
+--- a/source/install_hive.sql
++++ b/source/install_hive.sql
+@@ -57,7 +57,9 @@ spool &&logfile append
+ prompt ... running install_hive.sql
+ 
+ --
+-select current_timestamp "beginning installation"
++col state for a36 head "beginning installation"
++--
++select current_timestamp state
+   from dual;
+ 
+ -- schema
+@@ -114,7 +116,9 @@ select current_timestamp "beginning installation"
+ @@wrap.pls.sql
+ 
+ --
+-select current_timestamp "completed installation"
++col state for a36 head "completed installation"
++--
++select current_timestamp state
+   from dual;
+ 
+ --
+diff --git a/source/java/compile.sh b/source/java/compile.sh
+index 3dd68dd..47c268a 100755
+--- a/source/java/compile.sh
++++ b/source/java/compile.sh
+@@ -290,7 +290,7 @@ rm -fR $bse
+ cd $bin
+ 
+ #
+-echo -n "Building JAR " ; color_echo red "${out} " -n ; echo -n "... "
++echo -n "Building JAR " ; color_echo magenta "${out} " -n ; echo -n "... "
+ rm -f ${out} 2>/dev/null
+ ( cd ${bin} && ${jar} cvf ${out} *.class ) 2>&1 1>/dev/null
+ chkerr ${out} $?
+diff --git a/source/java/hive.java b/source/java/hive.java
+index 9e696ad..338bade 100644
+--- a/source/java/hive.java
++++ b/source/java/hive.java
+@@ -54,7 +54,7 @@ public class hive implements SQLData
+     public String getSQLTypeName()
+         throws SQLException 
+     {
+-        log.trace( "getSQLTypeName called" );
++        log.trace( "hive::getSQLTypeName called" );
+         return sql_;
+     }
+ 
+@@ -62,7 +62,7 @@ public class hive implements SQLData
+     public void readSQL( SQLInput stream, String type )
+         throws SQLException 
+     {
+-        log.trace( "readSQL called" );
++        log.trace( "hive::readSQL called" );
+         sql_ = type;
+         key_ = stream.readBigDecimal();
+     }
+@@ -71,7 +71,7 @@ public class hive implements SQLData
+     public void writeSQL( SQLOutput stream )
+         throws SQLException 
+     {
+-        log.trace( "writeSQL called" );
++        log.trace( "hive::writeSQL called" );
+         stream.writeBigDecimal( key_ );
+     }
+ 
+@@ -82,18 +82,19 @@ public class hive implements SQLData
+                                       oracle.sql.STRUCT  conn )
+         throws SQLException, hive_exception
+     {
+-        log.trace( "SqlDesc called" );
++        log.trace( "hive::SqlDesc( attr, stmt, bnds, conn ) called" );
+ 
+         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
+         hive_context ctx = new hive_context( stmt, bnds, conn );
++        log.trace( "hive::SqlDesc( attr, stmt, bnds, conn ) - created: " + ctx.toString() );
+ 
+         if ( ctx == null )
+-            throw new hive_exception( "Context not created for SqlDesc" );
++            throw new hive_exception( "Context not created for SqlDesc( attr, stmt, bnds, conn )" );
+ 
+         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+ 
+         ResultSetMetaData rmd = ctx.descSql();
+-        log.trace( "SqlDesc: columns: " + rmd.getColumnCount() );
++        log.trace( "hive::SqlDesc( attr, stmt, bnds, conn ): columns: " + rmd.getColumnCount() );
+ 
+         if ( rmd.getColumnCount() > 0 )
+         {
+@@ -197,18 +198,19 @@ public class hive implements SQLData
+                                       BigDecimal         key )  // in
+         throws SQLException, hive_exception
+     {
+-        log.trace( "SqlDesc called" );
++        log.trace( "hive::SqlDesc( attr, key ) called" );
+ 
+         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
+         hive_context ctx = manager_.getContext( key );
++        log.trace( "hive::SqlDesc( attr, key ) - retrieved: " + ctx.toString() );
+ 
+         if ( ctx == null )
+-            throw new hive_exception( "Context not found for SqlDesc" );
++            throw new hive_exception( "Context not found for SqlDesc( attr, key )" );
+ 
+         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+ 
+         ResultSetMetaData rmd = ctx.descSql();
+-        log.trace( "SqlDesc: columns: " + rmd.getColumnCount() );
++        log.trace( "hive::SqlDesc( attr, key ): columns: " + rmd.getColumnCount() );
+ 
+         if ( rmd.getColumnCount() > 0 )
+         {
+@@ -284,18 +286,20 @@ public class hive implements SQLData
+                                       oracle.sql.STRUCT conn )
+         throws SQLException, hive_exception
+     {
+-        log.trace( "SqlOpen called [String]: " + stmt );
++        log.trace( "hive::SqlOpen( stmt, bnds, conn ) called [String]: " + stmt );
+ 
+         if ( manager_ == null )
+         {
+             manager_ = new hive_manager();
+-            log.trace( "SqlOpen created hive_manager" );
++            log.trace( "hive::SqlOpen( stmt, bnds, conn ) created hive_manager" );
+         }
+ 
+         hive_context ctx = new hive_context( stmt, bnds, conn );
++        log.trace( "hive::SqlOpen( stmt, bnds, conn ) - created: " + ctx.toString() );
++
+         key_ = manager_.createContext( ctx );
+ 
+-        log.trace( "SqlOpen returning key: " + key_ );
++        log.trace( "hive::SqlOpen( stmt, bnds, conn ) returning key: " + key_ );
+ 
+         return key_;
+     }
+@@ -307,7 +311,7 @@ public class hive implements SQLData
+                                       oracle.sql.STRUCT conn )
+         throws SQLException, hive_exception
+     {
+-        log.trace( "SqlOpen called [STRUCT]: " + sctx );
++        log.trace( "hive::SqlOpen( sctx, stmt, bnds, conn ) called [STRUCT]: " + sctx );
+         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+ 
+         //
+@@ -333,7 +337,7 @@ public class hive implements SQLData
+                                       oracle.sql.STRUCT conn )
+         throws SQLException, hive_exception
+     {
+-        log.trace( "SqlOpen called" );
++        log.trace( "hive::SqlOpen( key, stmt, bnds, conn ) called" );
+ 
+         key_ = SqlOpen( stmt, bnds, conn );
+ 
+@@ -350,7 +354,7 @@ public class hive implements SQLData
+                                        BigDecimal num )
+         throws SQLException, InvalidKeyException, hive_exception
+     {
+-        log.trace( "SqlFetch called: key_ = " + key );
++        log.trace( "hive::SqlFetch called: key_ = " + key );
+ 
+         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+ 
+@@ -358,6 +362,7 @@ public class hive implements SQLData
+             manager_ = new hive_manager();
+ 
+         hive_context ctx = manager_.getContext( key );
++        log.trace( "hive::SqlFetch - retrieved: " + ctx.toString() );
+ 
+         if ( ctx == null )
+             throw new hive_exception( "Context not found for SqlFetch" );
+@@ -413,15 +418,16 @@ public class hive implements SQLData
+     static public BigDecimal SqlClose( BigDecimal key )
+         throws SQLException, InvalidKeyException
+     {
+-        log.trace( "SqlClose called" );
++        log.trace( "hive::SqlClose( key ) called" );
+ 
+         if ( manager_ == null )
+         {
+             manager_ = new hive_manager();
+-            log.trace( "SqlClose created hive_manager" );
++            log.trace( "hive::SqlClose created hive_manager" );
+         }
+ 
+         hive_context ctx = manager_.removeContext( key );
++        log.trace( "hive::SqlClose - removed: " + ctx.toString() );
+ 
+         if ( ctx != null )
+             ctx.clear();
+@@ -433,10 +439,13 @@ public class hive implements SQLData
+     static public void SqlDml( String stmt, oracle.sql.ARRAY bnds, oracle.sql.STRUCT conn )
+         throws SQLException, hive_exception
+     {
++        log.trace( "hive::SqlDml( stmt, bnds, conn ) called" );
++
+         hive_context ctx = new hive_context( stmt, bnds, conn );
++        log.trace( "hive::SqlDml( stmt, bnds, conn ) - created: " + ctx.toString() );
+ 
+         if ( ctx == null )
+-            throw new hive_exception( "Context not created for SqlDml" );
++            throw new hive_exception( "Context not created for SqlDml( stmt, bnds, conn )" );
+ 
+         ctx.executeDML();
+     }
+@@ -445,10 +454,13 @@ public class hive implements SQLData
+     static public void SqlDdl( String stmt, oracle.sql.STRUCT conn )
+         throws SQLException, hive_exception
+     {
++        log.trace( "hive::SqlDdl( stmt, conn ) called" );
++
+         hive_context ctx = new hive_context( stmt, null, conn );
++        log.trace( "hive::SqlDdl( stmt, conn ) - created: " + ctx.toString() );
+ 
+         if ( ctx == null )
+-            throw new hive_exception( "Context not created for SqlDml" );
++            throw new hive_exception( "Context not created for SqlDml( stmt, conn ) " );
+ 
+         ctx.executeDDL();
+     }
+diff --git a/source/java/hive_bind.java b/source/java/hive_bind.java
+index 0b83d1c..3b5e963 100644
+--- a/source/java/hive_bind.java
++++ b/source/java/hive_bind.java
+@@ -125,9 +125,10 @@ public class hive_bind
+     {
+         String str = "";
+ 
+-        str += "value: " + value + "\n";
+-        str += "type:  " + type  + "\n";
+-        str += "scope: " + scope + "\n";
++        str +=                         "\n";
++        str += "... value: " + value + "\n";
++        str += "... type:  " + type  + "\n";
++        str += "... scope: " + scope + "\n";
+ 
+         return str;
+     }
+diff --git a/source/java/hive_connection.java b/source/java/hive_connection.java
+index 01062c9..460017b 100644
+--- a/source/java/hive_connection.java
++++ b/source/java/hive_connection.java
+@@ -97,7 +97,7 @@ public class hive_connection
+         }
+         catch ( ClassNotFoundException ex )
+         {
+-            log.error( "loadDriver error: " + ex.getMessage() );
++            log.error( "hive_connection::loadDriver error: " + ex.getMessage() );
+             throw new hive_exception( "Driver class not found: " + getDriverName() );
+         }
+     }
+@@ -109,7 +109,7 @@ public class hive_connection
+         if ( driver_ == null )
+         {
+             driver_ = hive_parameter.value( "hive_jdbc_driver" );
+-            log.trace( "Loaded hive_jdbc_driver: " + driver_ );
++            log.trace( "hive_connection - Loaded hive_jdbc_driver: " + driver_ );
+ 
+             if ( driver_ == null )
+                 throw new hive_exception( "Could not find parameter value for JDBC driver" );
+@@ -153,18 +153,18 @@ public class hive_connection
+                 {
+                     if ( val.trim().length() > 0 )
+                     {
+-                        log.trace( "Set URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]: " + val );
++                        log.trace( "hive_connection - Set URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]: " + val );
+                         session.url += ";" + val;
+                     }
+                     else
+-                        log.trace( "Ignored NULL URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]" );
++                        log.trace( "hive_connection - Ignored NULL URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]" );
+                 }
+                 else
+                     break;
+             }
+         }
+ 
+-        log.info( session.url );
++        log.info( "hive_connection::getUrl: " + session.url );
+         return session.url;
+     }
+ 
+@@ -190,7 +190,7 @@ public class hive_connection
+                 {
+                     val = hive_properties.value( "java_property." + Integer.toString( idx ) );
+ 
+-                    log.trace( "Found property [" + name + "] at index: " + Integer.toString( idx ) );
++                    log.trace( "hive_connection - Found property [" + name + "] at index: " + Integer.toString( idx ) );
+                     break;
+                 }
+             }
+@@ -198,7 +198,7 @@ public class hive_connection
+                 break;
+         }
+ 
+-        log.trace( "Get property [" + name + "]: " + val );
++        log.trace( "hive_connection - Get property [" + name + "]: " + val );
+         return val;
+     }
+ 
+@@ -215,7 +215,7 @@ public class hive_connection
+             {
+                 String v = hive_properties.value( "java_property." + Integer.toString( idx ) );
+ 
+-                log.trace( "Set system property [" + "java_property." + Integer.toString( idx ) + "]" +
++                log.trace( "hive_connection - Set system property [" + "java_property." + Integer.toString( idx ) + "]" +
+                            ", name: "  + n +
+                            ", value: " + v );
+ 
+@@ -225,7 +225,7 @@ public class hive_connection
+                 break;
+         }
+ 
+-        log.trace( "Set " + Integer.toString( idx ) + " system properties" );
++        log.trace( "hive_connection - Set " + Integer.toString( idx ) + " system properties" );
+         return ( idx > 1 ); // found at least 1 property to set
+     }
+ 
+@@ -240,24 +240,24 @@ public class hive_connection
+             {
+                 if ( setProperties() )
+                 {
+-                    log.trace( "createConnection mode: " + session.auth );
++                    log.trace( "hive_connection::createConnection mode: " + session.auth );
+ 
+                     // if no java properties are set, then kerberos cannot be used
+                     if ( session.auth.equals( "kerberos" ) )
+                         login();
+ 
+-                    log.trace( "createConnection URL: " + url );
++                    log.trace( "hive_connection::createConnection URL: " + url );
+                 }
+ 
+                 if ( ( session.name.trim().length() == 0 )
+                   && ( session.pass.trim().length() == 0 ) )
+                 {
+-                    log.trace( "DriverManager.getConnection( " + url + ")" );
++                    log.trace( "hive_connection - DriverManager.getConnection( " + url + ")" );
+                     conn_ = DriverManager.getConnection( url );
+                 }
+                 else
+                 {
+-                    log.trace( "DriverManager.getConnection( " + url 
++                    log.trace( "hive_connection - DriverManager.getConnection( " + url 
+                                                                + ", " + session.name.trim() 
+                                                                + ", " + session.pass.trim() 
+                                                                + ")" );
+@@ -281,7 +281,7 @@ public class hive_connection
+ 
+             if ( idx.length() > 0 )
+             {
+-                log.trace( "Usiing LoginContext index: " + idx );
++                log.trace( "hive_connection - Using LoginContext index: " + idx );
+ 
+                 Subject sub = new Subject();
+                 LoginContext lc = new LoginContext( idx, sub, new callback_handler() );
+@@ -289,23 +289,23 @@ public class hive_connection
+                 lc.login();
+                 ok = true;
+ 
+-                log.trace( "kerberos login successful" );
++                log.trace( "hive_connection - kerberos login successful" );
+             }
+             else
+             {
+                 ok = false;
+-                log.warn( "Property \"java.security.auth.login.index\" not specified in parameter list" );
++                log.warn( "hive_connection - Property \"java.security.auth.login.index\" not specified in parameter list" );
+                 throw new hive_exception( "Property \"java.security.auth.login.index\" not specified in parameter list" );
+             }
+         }
+         catch ( LoginException ex )
+         {
+             ok = false;
+-            log.error( "kerberos login failed: " + ex.getMessage() );
++            log.error( "hive_connection - kerberos login failed: " + ex.getMessage() );
+             throw new hive_exception( "Kerberos exception: " + ex.getMessage() );
+         }
+ 
+-        log.trace( "connection login() returns: " + ( ( ok ) ? "true" : "false" ) );
++        log.trace( "hive_connection::connection login() returns: " + ( ( ok ) ? "true" : "false" ) );
+         return ok;
+     }
+ 
+diff --git a/source/java/hive_context.java b/source/java/hive_context.java
+index ea9e5a3..68bbd41 100644
+--- a/source/java/hive_context.java
++++ b/source/java/hive_context.java
+@@ -55,7 +55,7 @@ public class hive_context
+     //
+     public hive_context( String sql, oracle.sql.ARRAY bnd, oracle.sql.STRUCT con ) throws SQLException, hive_exception
+     {
+-        log.trace( "hive_context ctor: " + sql );
++        log.trace( "hive_context::ctor: " + sql );
+         sql_ = sql;
+ 
+         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+@@ -77,17 +77,30 @@ public class hive_context
+         rec_ = 0;
+     }
+ 
++    public String toString()
++    {
++        String str = "";
++
++        str +=                                 "\n";
++        str += "... con: " + con_.toString() + "\n";
++        str += "... bnd: " + bnd_.toString() + "\n";
++        str += "... sql: " + sql_.toString() + "\n";
++        str += "... rec: " + String.format( "%d", rec_ ) + "\n";
++
++        return str;
++    }
++
+     //
+     public boolean ready()
+     {
+-        log.trace( "hive_context ready: " + ( ! ( rst_ == null ) ) );
++        log.trace( "hive_context::ready: " + ( ! ( rst_ == null ) ) );
+         return ( ! ( rst_ == null ) );
+     }
+ 
+     //
+     public void clear()
+     {
+-        log.trace( "hive_context clear" );
++        log.trace( "hive_context::clear" );
+         con_ = null;
+         sql_ = null;
+         stm_ = null;
+@@ -112,6 +125,8 @@ public class hive_context
+             {
+                 int idx = 0;
+ 
++                log.trace( "hive_context - Context binding data: " + bnd_.toString() );
++
+                 for ( hive_bind bnd : bnd_.binds )
+                 {
+                     idx += 1;
+@@ -121,7 +136,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_BOOL:
+ 
+-                            log.trace( "applyBindings: TYPE_BOOL" );
++                            log.trace( "hive_context::applyBindings: TYPE_BOOL" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -137,7 +152,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_DATE:
+ 
+-                            log.trace( "applyBindings: TYPE_DATE" );
++                            log.trace( "hive_context::applyBindings: TYPE_DATE" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -153,7 +168,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_FLOAT:
+ 
+-                            log.trace( "applyBindings: TYPE_FLOAT" );
++                            log.trace( "hive_context::applyBindings: TYPE_FLOAT" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -169,7 +184,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_INT:
+ 
+-                            log.trace( "applyBindings: TYPE_INT" );
++                            log.trace( "hive_context::applyBindings: TYPE_INT" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -185,7 +200,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_LONG:
+ 
+-                            log.trace( "applyBindings: TYPE_LONG" );
++                            log.trace( "hive_context::applyBindings: TYPE_LONG" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -201,7 +216,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_NULL:
+ 
+-                            log.trace( "applyBindings: TYPE_NULL" );
++                            log.trace( "hive_context::applyBindings: TYPE_NULL" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -216,7 +231,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_ROWID:
+ 
+-                            log.trace( "applyBindings: TYPE_ROWID" );
++                            log.trace( "hive_context::applyBindings: TYPE_ROWID" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -232,7 +247,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_SHORT:
+ 
+-                            log.trace( "applyBindings: TYPE_SHORT" );
++                            log.trace( "hive_context::applyBindings: TYPE_SHORT" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -248,7 +263,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_STRING:
+ 
+-                            log.trace( "applyBindings: TYPE_STRING" );
++                            log.trace( "hive_context::applyBindings: TYPE_STRING" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -264,7 +279,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_TIME:
+ 
+-                            log.trace( "applyBindings: TYPE_TIME" );
++                            log.trace( "hive_context::applyBindings: TYPE_TIME" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -280,7 +295,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_TIMESTAMP:
+ 
+-                            log.trace( "applyBindings: TYPE_TIMESTAMP" );
++                            log.trace( "hive_context::applyBindings: TYPE_TIMESTAMP" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -296,7 +311,7 @@ public class hive_context
+                         //
+                         case hive_bind.TYPE_URL:
+ 
+-                            log.trace( "applyBindings: TYPE_URL" );
++                            log.trace( "hive_context::applyBindings: TYPE_URL" );
+ 
+                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
+                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
+@@ -315,7 +330,11 @@ public class hive_context
+                     }
+                 }
+             }
++            else
++                log.info( "hive_context - Context binding size zero (0), nothing to apply" );
+         }
++        else
++            log.info( "hive_context - Context binding data is NULL, nothing can be applied" );
+ 
+         return stmt;
+     }
+@@ -350,7 +369,7 @@ public class hive_context
+             rmd_ = rst_.getMetaData();
+         }
+ 
+-        log.trace( "hive_context columnCount rmd_: " + rmd_ );
++        log.trace( "hive_context::columnCount rmd_: " + rmd_ );
+         return rmd_.getColumnCount();
+     }
+ 
+@@ -365,7 +384,7 @@ public class hive_context
+             rmd_ = rst_.getMetaData();
+         }
+ 
+-        log.trace( "hive_context columnType rmd_: " + rmd_ );
++        log.trace( "hive_context::columnType rmd_: " + rmd_ );
+         return rmd_.getColumnType( i );
+     }
+ 
+@@ -375,7 +394,7 @@ public class hive_context
+     {
+         ++rec_;
+ 
+-        log.trace( "hive_context next rst_: " + rst_ );
++        log.trace( "hive_context::next rst_: " + rst_ );
+         return rst_.next();
+     }
+ 
+@@ -504,14 +523,14 @@ public class hive_context
+     {
+         String limit = hive_parameter.value( "query_limit" );
+ 
+-        log.trace( "hive_context execute" );
++        log.trace( "hive_context::execute" );
+ 
+         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+             throw new hive_exception( "No SQL defined for hive context" );
+ 
+         if ( limit != null )
+         {
+-            log.trace( "execute query_limit: " + limit );
++            log.trace( "hive_context::execute query_limit: " + limit );
+ 
+             try
+             {
+@@ -519,7 +538,7 @@ public class hive_context
+             }
+             catch ( NumberFormatException ex )
+             {
+-                log.error( "execute NumberFormatException: " + ex.getMessage() );
++                log.error( "hive_context::execute NumberFormatException: " + ex.getMessage() );
+                 // ... do nothing
+             }
+         }
+@@ -532,7 +551,7 @@ public class hive_context
+     {
+         boolean ok = false;
+ 
+-        log.trace( "hive_context executeDML" );
++        log.trace( "hive_context::executeDML" );
+ 
+         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+             throw new hive_exception( "No DML defined for hive context" );
+@@ -544,11 +563,11 @@ public class hive_context
+             con_.getConnection().commit();
+             ok = true;
+ 
+-            log.info( "DML commited: " + sql_ + "\nBinding\n--------\n" + bnd_.toString() );
++            log.info( "hive_context::executeDML commited: " + sql_ + "\nBinding\n--------\n" + bnd_.toString() );
+         }
+         catch ( SQLException ex )
+         {
+-            log.error( "executeDML exception: " + ex.getMessage() );
++            log.error( "hive_context::executeDML exception: " + ex.getMessage() );
+ 
+             try
+             {
+@@ -556,12 +575,12 @@ public class hive_context
+             }
+             catch ( SQLException x ) 
+             {
+-                log.error( "executeDML rollbac failed: " + x.getMessage() );
++                log.error( "hive_context::executeDML rollback failed: " + x.getMessage() );
+             }
+ 
+             ok = false;
+ 
+-            log.info( "DML rollback: " + sql_ + "\nBinding\n--------\n" + bnd_.toString() );
++            log.info( "hive_context - DML rollback: " + sql_ + "\nBinding\n--------\n" + bnd_.toString() );
+         }
+ 
+         return ok;
+@@ -572,7 +591,7 @@ public class hive_context
+     {
+         boolean ok = false;
+ 
+-        log.trace( "hive_context executeDDL" );
++        log.trace( "hive_context::executeDDL" );
+ 
+         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
+             throw new hive_exception( "No DDL defined for hive context" );
+@@ -583,11 +602,11 @@ public class hive_context
+             stm.executeUpdate();
+             ok = true;
+ 
+-            log.info( "DDL executed: " + sql_ );
++            log.info( "hive_context::execute ran: " + sql_ );
+         }
+         catch ( SQLException ex )
+         {
+-            log.error( "executeDML exception: " + ex.getMessage() );
++            log.error( "hive_context::executeDML exception: " + ex.getMessage() );
+             ok = false;
+         }
+ 
+@@ -604,7 +623,7 @@ public class hive_context
+ 
+         if ( rst_ == null )
+         {
+-            log.trace( "describing sql: " + sql_ );
++            log.trace( "hive_context::descSql: " + sql_ );
+             PreparedStatement stm = applyBindings( con_.getConnection().prepareStatement( limitSql( sql_ ) ) );
+             ResultSet rst = stm.executeQuery();
+             rmd = rst.getMetaData();
+@@ -629,7 +648,7 @@ public class hive_context
+         if ( stm_ == null )
+             stm_ = applyBindings( con_.getConnection().prepareStatement( sql_ ) );
+ 
+-        log.trace( "hive_context setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
++        log.trace( "hive_context::setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
+         return ( ! ( stm_ == null ) );
+     }
+ 
+@@ -645,7 +664,7 @@ public class hive_context
+                 rst_ = stm_.executeQuery();
+         }
+ 
+-        log.trace( "hive_context setResultSet returns: " + ( ! ( rst_ == null ) ) );
++        log.trace( "hive_context::setResultSet returns: " + ( ! ( rst_ == null ) ) );
+         return ( ! ( rst_ == null ) );
+     }
+ 
+@@ -661,7 +680,7 @@ public class hive_context
+                 rmd_ = rst_.getMetaData();
+         }
+ 
+-        log.trace( "hive_context setResultSetMetaData returns: " + ( ! ( rmd_ == null ) ) );
++        log.trace( "hive_context::setResultSetMetaData returns: " + ( ! ( rmd_ == null ) ) );
+         return ( ! ( rmd_ == null ) );
+     }
+ 
+@@ -694,7 +713,7 @@ public class hive_context
+                 qry += " limit 0";
+         }
+ 
+-        log.trace( "limitSql (zero): " + qry );
++        log.trace( "hive_context::limitSql (zero): " + qry );
+         return qry;
+     }
+ 
+@@ -728,7 +747,7 @@ public class hive_context
+                     int lim = 0;
+ 
+                     lim = Integer.parseInt( qry.substring( reg.start() + 5 ).trim() );
+-                    log.trace( "limitSql extsing limit: " + Integer.toString( lim ) );
++                    log.trace( "hive_context::limitSql extsing limit: " + Integer.toString( lim ) );
+ 
+                     if ( lim > rsz )
+                     {
+@@ -745,7 +764,7 @@ public class hive_context
+             }
+         }
+ 
+-        log.trace( "limitSql (" + Integer.toString( rsz ) + "): " + qry );
++        log.trace( "hive_context::limitSql (" + Integer.toString( rsz ) + "): " + qry );
+         return qry;
+     }
+ 
+diff --git a/source/java/hive_session.java b/source/java/hive_session.java
+index d088a0f..63e045f 100644
+--- a/source/java/hive_session.java
++++ b/source/java/hive_session.java
+@@ -64,7 +64,7 @@ public class hive_session
+         name = "";
+         pass = "";
+ 
+-        log.trace( "hive_session default ctor" );
++        log.trace( "hive_session::ctor default" );
+     }
+ 
+     //
+@@ -79,7 +79,7 @@ public class hive_session
+         name = "";
+         pass = "";
+ 
+-        log.trace( "hive_session ctor - url: " + u );
++        log.trace( "hive_session::ctor - url: " + u );
+     }
+ 
+     //
+@@ -94,7 +94,7 @@ public class hive_session
+         name = n;
+         pass = p;
+ 
+-        log.trace( "hive_session ctor - url: " + u + " , name: " + n + ", pass: " + p );
++        log.trace( "hive_session::ctor - url: " + u + " , name: " + n + ", pass: " + p );
+     }
+ 
+     //
+@@ -115,7 +115,7 @@ public class hive_session
+                 auth = a;
+         }
+ 
+-        log.trace( "hive_session ctor - url: " + u + " , name: " + n + ", pass: " + p );
++        log.trace( "hive_session::ctor - url: " + u + " , name: " + n + ", pass: " + p );
+     }
+ 
+     //
+@@ -169,10 +169,10 @@ public class hive_session
+                     auth = "normal";
+             }
+ 
+-            log.trace( "hive_session ctor - oracle.sql.STRUCT: " + obj.toString() );
++            log.trace( "hive_session::ctor - oracle.sql.STRUCT: " + obj.toString() );
+         }
+         else
+-            log.info( "hive_session ctor - oracle.sql.STRUCT: NULL" );
++            log.info( "hive_session::ctor - oracle.sql.STRUCT: NULL" );
+     }
+ 
+     //
+@@ -180,12 +180,13 @@ public class hive_session
+     {
+         String str = "";
+ 
+-        str += "url:  " + url + "\n";
+-        str += "name: " + name + "\n";
+-        str += "pass: " + pass + "\n";
+-        str += "auth: " + auth + "\n";
++        str +=                      "\n";
++        str += "... url:  " + url + "\n";
++        str += "... name: " + name + "\n";
++        str += "... pass: " + pass + "\n";
++        str += "... auth: " + auth + "\n";
+ 
+-        log.trace( "hive_session toString: " + str );
++        log.trace( "hive_session::toString: " + str );
+         return str;
+     }
+ 
+@@ -203,7 +204,7 @@ public class hive_session
+                 eq = true;
+         }
+ 
+-        log.trace( "hive_session equals: " + ( ( eq ) ? "TRUE" : "FALSE" ) );
++        log.trace( "hive_session::equals: " + ( ( eq ) ? "TRUE" : "FALSE" ) );
+         return eq;
+     }
+ };
+diff --git a/source/remove_hive.sql b/source/remove_hive.sql
+index 14910b8..8933a4d 100644
+--- a/source/remove_hive.sql
++++ b/source/remove_hive.sql
+@@ -49,7 +49,9 @@ spool &&logfile
+ prompt ... running remove_hive.sql
+ 
+ --
+-select current_timestamp "beginning removal"
++col state for a36 head "beginning removal"
++--
++select current_timestamp state
+   from dual;
+ 
+ --
+@@ -81,7 +83,9 @@ drop role hive_user;
+ drop role hive_admin;
+ 
+ --
+-select current_timestamp "completed removal"
++col state for a36 head "completed removal"
++--
++select current_timestamp state
+   from dual;
+ 
+ --

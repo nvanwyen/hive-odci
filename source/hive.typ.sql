@@ -38,25 +38,24 @@ create or replace type hive_t as object
     key integer,
     ref anytype,
 
-
     --
     static function ODCITableDescribe( typ out anytype,
                                        stm in  varchar2,
-                                       bnd in  binds      := null,
-                                       con in  connection := null ) return number,
+                                       bnd in  binds      default null,
+                                       con in  connection default null ) return number,
 
     --
     static function ODCITablePrepare( ctx out hive_t,
                                       inf in  sys.ODCITabFuncInfo,
                                       stm in  varchar2,
-                                      bnd in  binds      := null,
-                                      con in  connection := null ) return number,
+                                      bnd in  binds      default null,
+                                      con in  connection default null ) return number,
 
     --
     static function ODCITableStart( ctx in out hive_t,
                                     stm in     varchar2,
-                                    bnd in     binds      := null,
-                                    con in     connection := null ) return number,
+                                    bnd in     binds      default null,
+                                    con in     connection default null ) return number,
 
     --
     member function ODCITableFetch( self in out hive_t,
@@ -64,7 +63,12 @@ create or replace type hive_t as object
                                     rws  out    anydataset ) return number,
 
     --
-    member function ODCITableClose( self in hive_t ) return number
+    member function ODCITableClose( self in hive_t ) return number,
+
+    --
+    static function do( stm in varchar2,
+                        bnd in binds      default null,
+                        con in connection default null ) return anydataset pipelined using hive_t
 );
 /
 
@@ -76,8 +80,8 @@ create or replace type body hive_t as
     --
     static function ODCITableDescribe( typ out anytype,
                                        stm in  varchar2,
-                                       bnd in  binds      := null,
-                                       con in  connection := null ) return number is
+                                       bnd in  binds      default null,
+                                       con in  connection default null ) return number is
 
         --
         procedure trc_( txt in varchar2 ) is
@@ -102,12 +106,12 @@ create or replace type body hive_t as
     begin 
 
         --
-        trc_( stm || ' -- called' );
+        trc_( 'hive_t::ODCITableDescribe - called: ' || stm  );
         return impl.sql_describe( typ, stm, bnd, con );
 
         exception
             when others then
-                err_( stm || ', error: ' || sqlerrm );
+                err_( 'hive_t::ODCITableDescribe [ ' || stm || '] error: ' || sqlerrm );
                 raise;
 
     end;
@@ -116,8 +120,8 @@ create or replace type body hive_t as
     static function ODCITablePrepare( ctx out hive_t,
                                       inf in  sys.ODCITabFuncInfo,
                                       stm in  varchar2,
-                                      bnd in  binds      := null,
-                                      con in  connection := null ) return number is
+                                      bnd in  binds      default null,
+                                      con in  connection default null ) return number is
 
         key     number;
         typ     anytype;
@@ -153,7 +157,7 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( stm || ' -- called' );
+        trc_( 'hive_t::ODCITablePrepare - called: ' || stm  );
 
         ret := impl.sql_open( key, stm, bnd, con );
 
@@ -162,21 +166,21 @@ create or replace type body hive_t as
             ret := inf.rettype.getattreleminfo( 1, prec, scale, len, csid, csfrm, typ, name ); 
             ctx := hive_t( key, typ );
 
-            trc_( 'key: ' || to_char( key ) || ' context' );
+            trc_( 'hive_t::ODCITablePrepare key: ' || to_char( key ) );
 
         else
 
-            err_( 'Error encountered for: ' || stm );
+            err_( 'hive_t::ODCITablePrepare error: ' || stm );
             return odciconst.error;
 
         end if;
 
-        trc_( 'Succeeded: ' || stm );
+        trc_( 'hive_t::ODCITablePrepare succeeded: ' || stm );
         return odciconst.success; 
 
         exception
             when others then
-                err_( 'key: ' || to_char( key ) || ', error: ' || sqlerrm );
+                err_( 'hive_t::ODCITablePrepare [' || to_char( key ) || '] error: ' || sqlerrm );
                 raise;
 
     end;
@@ -184,8 +188,8 @@ create or replace type body hive_t as
     --
     static function ODCITableStart( ctx in out hive_t,
                                     stm in     varchar2,
-                                    bnd in     binds      := null,
-                                    con in     connection := null ) return number is
+                                    bnd in     binds      default null,
+                                    con in     connection default null ) return number is
 
         ret number := odciconst.success;
 
@@ -214,12 +218,12 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( stm || ' -- called' );
+        trc_( 'hive_t::ODCITableStart - called: ' || stm  );
 
         --
         ret := impl.sql_open( key, stm, bnd, con );
 
-        trc_( to_char( key ) || ' -- identified' );
+        trc_( 'hive_t::ODCITableStart [' || to_char( key ) || '] identified' );
 
         --
         if ( ret = odciconst.success ) then
@@ -230,12 +234,12 @@ create or replace type body hive_t as
         end if;
 
         --
-        trc_( stm || ' -- returned: ' || to_char( ret ) );
+        trc_( 'hive_t::ODCITableStart [' || stm || ']: returned: ' || to_char( ret ) );
         return ret;
 
         exception
             when others then
-                err_( stm || ', error: ' || sqlerrm );
+                err_( 'hive_t::ODCITableStart [' || stm || '] error: ' || sqlerrm );
                 raise;
 
     end;
@@ -280,12 +284,12 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( to_char( self.key ) || ' -- called' );
+        trc_( 'hive_t::ODCITableFetch - called: ' || to_char( self.key )  );
 
         -- retrieve the next "num" records
         ret := impl.sql_fetch( self.key, num, rec );
 
-        trc_( to_char( self.key ) || ' -- retrieve next: ' || to_char( num ) );
+        trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] retrieve next: ' || to_char( num ) );
 
         --
         if ( ret = odciconst.success ) then
@@ -300,47 +304,47 @@ create or replace type body hive_t as
                     rws.addinstance();
                     rws.piecewise();
 
-                    trc_( to_char( self.key ) || ' -- began piecewise recordset creation' );
+                    trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] began piecewise recordset creation' );
 
                     --
                     for i in 1 .. rec.count loop
 
                         if ( rec( i ).code = dbms_types.typecode_varchar2 ) then
 
-                            trc_( to_char( self.key ) || ' -- set typecode_varchar2' );
+                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_varchar2' );
                             rws.setvarchar2( rec( i ).val_varchar2 );
 
                         elsif ( rec( i ).code = dbms_types.typecode_number ) then
 
-                            trc_( to_char( self.key ) || ' -- set typecode_number' );
+                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_number' );
                             rws.setnumber( rec( i ).val_number );
 
                         elsif ( rec( i ).code = dbms_types.typecode_date ) then
 
-                            trc_( to_char( self.key ) || ' -- set typecode_date' );
+                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_date' );
                             rws.setdate( rec( i ).val_date );
 
                         elsif ( rec( i ).code = dbms_types.typecode_timestamp ) then
 
-                            trc_( to_char( self.key ) || ' -- set typecode_timestamp' );
+                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_timestamp' );
                             rws.settimestamp( rec( i ).val_timestamp );
 
                         elsif ( rec( i ).code = dbms_types.typecode_clob ) then
 
-                            trc_( to_char( self.key ) || ' -- set typecode_clob' );
+                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_clob' );
                             rws.setclob( rec( i ).val_clob );
 
                         elsif ( rec( i ).code = dbms_types.typecode_blob ) then
 
-                            trc_( to_char( self.key ) || ' -- set typecode_blob' );
+                            trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_blob' );
                             rws.setblob( rec( i ).val_blob );
 
                         else
 
-                            err_( to_char( self.key ) || ' -- Record type code ['
-                                                      || to_char( rec( i ).code )
-                                                      ||' ] not supported for column index ['
-                                                      || to_char( i ) || ']' );
+                            err_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] record type code ['
+                                                             || to_char( rec( i ).code )
+                                                             ||' ] not supported for column index ['
+                                                             || to_char( i ) || ']' );
 
                             raise_application_error( -20210, 'Record type code ['
                                                            || to_char( rec( i ).code )
@@ -354,7 +358,7 @@ create or replace type body hive_t as
                     --
                     rws.endcreate();
 
-                    trc_( to_char( self.key ) || ' -- eneded recordset creation' );
+                    trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] eneded recordset creation' );
 
                 else
 
@@ -365,18 +369,18 @@ create or replace type body hive_t as
 
             else
 
-                trc_( to_char( self.key ) || ' -- Record set is null' );
+                trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] Record set is null' );
 
             end if;
 
         end if;
 
-        trc_( to_char( self.key ) || ' -- returned: ' || to_char( ret ) );
+        trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] returned: ' || to_char( ret ) );
         return ret;
 
         exception
             when others then
-                err_( 'Key: ' || to_char( self.key ) || ', error: ' || sqlerrm );
+                err_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] error: ' || sqlerrm );
                 raise;
 
     end;
@@ -406,12 +410,12 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( to_char( self.key ) || ' -- closed' );
+        trc_( 'hive_t::ODCITableClose [' || to_char( self.key ) || '] closed' );
         return impl.sql_close( self.key );
 
         exception
             when others then
-                err_( 'Key: ' || to_char( self.key ) || ', error: ' || sqlerrm );
+                err_( 'hive_t::ODCITableClose [' || to_char( self.key ) || '] error: ' || sqlerrm );
                 raise;
 
     end;

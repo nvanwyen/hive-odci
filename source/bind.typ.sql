@@ -53,10 +53,10 @@ create or replace type body bind as
     constructor function bind( v varchar2, t number ) return self as result is
     begin
 
-        value := v;
-        type  := t;
+        self.value := v;
+        self.type  := t;
 
-        scope := 1 /* binding.scope_in */;
+        self.scope := 1 /* binding.scope_in */;
 
         return;
 
@@ -65,10 +65,10 @@ create or replace type body bind as
     constructor function bind( v varchar2 ) return self as result is
     begin
 
-        value := v;
+        self.value := v;
 
-        type  := 9 /* binding.type_string */;
-        scope := 1 /* binding.scope_in    */;
+        self.type  := 9 /* binding.type_string */;
+        self.scope := 1 /* binding.scope_in    */;
 
         return;
 

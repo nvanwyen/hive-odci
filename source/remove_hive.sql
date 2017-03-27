@@ -49,7 +49,9 @@ spool &&logfile
 prompt ... running remove_hive.sql
 
 --
-select current_timestamp "beginning removal"
+col state for a36 head "beginning removal"
+--
+select current_timestamp state
   from dual;
 
 --
@@ -81,7 +83,9 @@ drop role hive_user;
 drop role hive_admin;
 
 --
-select current_timestamp "completed removal"
+col state for a36 head "completed removal"
+--
+select current_timestamp state
   from dual;
 
 --

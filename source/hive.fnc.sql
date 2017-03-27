@@ -32,9 +32,9 @@ prompt ... running hive.fnc.sql
 alter session set current_schema = hive;
 
 --
-create or replace function hive_q( stm varchar2,
-                                   bnd in binds      := null,
-                                   con in connection := null ) return anydataset pipelined using hive_t;
+create or replace function hive_q( stm in varchar2,
+                                   bnd in binds      default null,
+                                   con in connection default null ) return anydataset pipelined using hive_t;
 /
 
 show errors

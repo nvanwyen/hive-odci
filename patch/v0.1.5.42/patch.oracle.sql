@@ -1,6 +1,6 @@
 --------------------------------------------------------------------------------
 --
--- 2017-03-24, NV - patch.oracle.v0.1.5.37
+-- 2017-03-24, NV - patch.oracle.v0.1.5.42
 --
 
 /*
@@ -26,7 +26,7 @@
 */
 
 --
--- This script patches a version v0.1.5.28 of Hive-ODCI up to v0.1.5.37
+-- This script patches a version v0.1.5.28 of Hive-ODCI up to v0.1.5.42
 -- the significant changes are:
 --
 --      1) Adding BIND() constructors for ease of use
@@ -42,7 +42,7 @@ column log new_value log noprint;
 --
 set termout off;
 select sys_context( 'userenv', 'db_name' )
-    || '_patch.oracle.v0.1.5.37.'
+    || '_patch.oracle.v0.1.5.42.'
     || to_char( sysdate, 'YYYYMMDDHH24MISS' )
     || '.log' log
   from dual;
@@ -52,7 +52,7 @@ set termout on;
 spool &&log append
 
 --
-prompt ... running patch.oracle.v0.1.5.37
+prompt ... running patch.oracle.v0.1.5.42
 
 --
 whenever oserror  exit 9;
@@ -71,6 +71,7 @@ set serveroutput on
 --
 declare
 
+    chk varchar2( 4000 ) := 'v0.1.5.37';
     ver varchar2( 4000 );
 
 begin
@@ -82,9 +83,9 @@ begin
       from hive.param$ a
      where a.name = 'version';
 
-    if ( ver != 'v0.1.5.28' ) then
+    if ( ver != chk ) then
 
-        raise_application_error( -20900, 'This patch requires version v0.1.5.28, enountered: '
+        raise_application_error( -20900, 'This patch requires version ' || chk || ', enountered: '
                                       || nvl( ver, 'NULL' ) );
 
     else
@@ -174,7 +175,7 @@ drop type attribute;
 -- set version
 declare
 
-    ver varchar2( 4000 ) := 'v0.1.5.37';
+    ver varchar2( 4000 ) := 'v0.1.5.42';
 
 begin
 

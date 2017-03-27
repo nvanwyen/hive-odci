@@ -97,7 +97,7 @@ public class hive_connection
         }
         catch ( ClassNotFoundException ex )
         {
-            log.error( "loadDriver error: " + ex.getMessage() );
+            log.error( "hive_connection::loadDriver error: " + ex.getMessage() );
             throw new hive_exception( "Driver class not found: " + getDriverName() );
         }
     }
@@ -109,7 +109,7 @@ public class hive_connection
         if ( driver_ == null )
         {
             driver_ = hive_parameter.value( "hive_jdbc_driver" );
-            log.trace( "Loaded hive_jdbc_driver: " + driver_ );
+            log.trace( "hive_connection - Loaded hive_jdbc_driver: " + driver_ );
 
             if ( driver_ == null )
                 throw new hive_exception( "Could not find parameter value for JDBC driver" );
@@ -153,18 +153,18 @@ public class hive_connection
                 {
                     if ( val.trim().length() > 0 )
                     {
-                        log.trace( "Set URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]: " + val );
+                        log.trace( "hive_connection - Set URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]: " + val );
                         session.url += ";" + val;
                     }
                     else
-                        log.trace( "Ignored NULL URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]" );
+                        log.trace( "hive_connection - Ignored NULL URL paraemter [" + "hive_jdbc_url." + Integer.toString( idx ) + "]" );
                 }
                 else
                     break;
             }
         }
 
-        log.info( session.url );
+        log.info( "hive_connection::getUrl: " + session.url );
         return session.url;
     }
 
@@ -190,7 +190,7 @@ public class hive_connection
                 {
                     val = hive_properties.value( "java_property." + Integer.toString( idx ) );
 
-                    log.trace( "Found property [" + name + "] at index: " + Integer.toString( idx ) );
+                    log.trace( "hive_connection - Found property [" + name + "] at index: " + Integer.toString( idx ) );
                     break;
                 }
             }
@@ -198,7 +198,7 @@ public class hive_connection
                 break;
         }
 
-        log.trace( "Get property [" + name + "]: " + val );
+        log.trace( "hive_connection - Get property [" + name + "]: " + val );
         return val;
     }
 
@@ -215,7 +215,7 @@ public class hive_connection
             {
                 String v = hive_properties.value( "java_property." + Integer.toString( idx ) );
 
-                log.trace( "Set system property [" + "java_property." + Integer.toString( idx ) + "]" +
+                log.trace( "hive_connection - Set system property [" + "java_property." + Integer.toString( idx ) + "]" +
                            ", name: "  + n +
                            ", value: " + v );
 
@@ -225,7 +225,7 @@ public class hive_connection
                 break;
         }
 
-        log.trace( "Set " + Integer.toString( idx ) + " system properties" );
+        log.trace( "hive_connection - Set " + Integer.toString( idx ) + " system properties" );
         return ( idx > 1 ); // found at least 1 property to set
     }
 
@@ -240,24 +240,24 @@ public class hive_connection
             {
                 if ( setProperties() )
                 {
-                    log.trace( "createConnection mode: " + session.auth );
+                    log.trace( "hive_connection::createConnection mode: " + session.auth );
 
                     // if no java properties are set, then kerberos cannot be used
                     if ( session.auth.equals( "kerberos" ) )
                         login();
 
-                    log.trace( "createConnection URL: " + url );
+                    log.trace( "hive_connection::createConnection URL: " + url );
                 }
 
                 if ( ( session.name.trim().length() == 0 )
                   && ( session.pass.trim().length() == 0 ) )
                 {
-                    log.trace( "DriverManager.getConnection( " + url + ")" );
+                    log.trace( "hive_connection - DriverManager.getConnection( " + url + ")" );
                     conn_ = DriverManager.getConnection( url );
                 }
                 else
                 {
-                    log.trace( "DriverManager.getConnection( " + url 
+                    log.trace( "hive_connection - DriverManager.getConnection( " + url 
                                                                + ", " + session.name.trim() 
                                                                + ", " + session.pass.trim() 
                                                                + ")" );
@@ -281,7 +281,7 @@ public class hive_connection
 
             if ( idx.length() > 0 )
             {
-                log.trace( "Usiing LoginContext index: " + idx );
+                log.trace( "hive_connection - Using LoginContext index: " + idx );
 
                 Subject sub = new Subject();
                 LoginContext lc = new LoginContext( idx, sub, new callback_handler() );
@@ -289,23 +289,23 @@ public class hive_connection
                 lc.login();
                 ok = true;
 
-                log.trace( "kerberos login successful" );
+                log.trace( "hive_connection - kerberos login successful" );
             }
             else
             {
                 ok = false;
-                log.warn( "Property \"java.security.auth.login.index\" not specified in parameter list" );
+                log.warn( "hive_connection - Property \"java.security.auth.login.index\" not specified in parameter list" );
                 throw new hive_exception( "Property \"java.security.auth.login.index\" not specified in parameter list" );
             }
         }
         catch ( LoginException ex )
         {
             ok = false;
-            log.error( "kerberos login failed: " + ex.getMessage() );
+            log.error( "hive_connection - kerberos login failed: " + ex.getMessage() );
             throw new hive_exception( "Kerberos exception: " + ex.getMessage() );
         }
 
-        log.trace( "connection login() returns: " + ( ( ok ) ? "true" : "false" ) );
+        log.trace( "hive_connection::connection login() returns: " + ( ( ok ) ? "true" : "false" ) );
         return ok;
     }
 

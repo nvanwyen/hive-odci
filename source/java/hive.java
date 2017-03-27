@@ -54,7 +54,7 @@ public class hive implements SQLData
     public String getSQLTypeName()
         throws SQLException 
     {
-        log.trace( "getSQLTypeName called" );
+        log.trace( "hive::getSQLTypeName called" );
         return sql_;
     }
 
@@ -62,7 +62,7 @@ public class hive implements SQLData
     public void readSQL( SQLInput stream, String type )
         throws SQLException 
     {
-        log.trace( "readSQL called" );
+        log.trace( "hive::readSQL called" );
         sql_ = type;
         key_ = stream.readBigDecimal();
     }
@@ -71,7 +71,7 @@ public class hive implements SQLData
     public void writeSQL( SQLOutput stream )
         throws SQLException 
     {
-        log.trace( "writeSQL called" );
+        log.trace( "hive::writeSQL called" );
         stream.writeBigDecimal( key_ );
     }
 
@@ -82,18 +82,19 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT  conn )
         throws SQLException, hive_exception
     {
-        log.trace( "SqlDesc called" );
+        log.trace( "hive::SqlDesc( attr, stmt, bnds, conn ) called" );
 
         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = new hive_context( stmt, bnds, conn );
+        log.trace( "hive::SqlDesc( attr, stmt, bnds, conn ) - created: " + ctx.toString() );
 
         if ( ctx == null )
-            throw new hive_exception( "Context not created for SqlDesc" );
+            throw new hive_exception( "Context not created for SqlDesc( attr, stmt, bnds, conn )" );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         ResultSetMetaData rmd = ctx.descSql();
-        log.trace( "SqlDesc: columns: " + rmd.getColumnCount() );
+        log.trace( "hive::SqlDesc( attr, stmt, bnds, conn ): columns: " + rmd.getColumnCount() );
 
         if ( rmd.getColumnCount() > 0 )
         {
@@ -197,18 +198,19 @@ public class hive implements SQLData
                                       BigDecimal         key )  // in
         throws SQLException, hive_exception
     {
-        log.trace( "SqlDesc called" );
+        log.trace( "hive::SqlDesc( attr, key ) called" );
 
         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = manager_.getContext( key );
+        log.trace( "hive::SqlDesc( attr, key ) - retrieved: " + ctx.toString() );
 
         if ( ctx == null )
-            throw new hive_exception( "Context not found for SqlDesc" );
+            throw new hive_exception( "Context not found for SqlDesc( attr, key )" );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         ResultSetMetaData rmd = ctx.descSql();
-        log.trace( "SqlDesc: columns: " + rmd.getColumnCount() );
+        log.trace( "hive::SqlDesc( attr, key ): columns: " + rmd.getColumnCount() );
 
         if ( rmd.getColumnCount() > 0 )
         {
@@ -284,18 +286,20 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        log.trace( "SqlOpen called [String]: " + stmt );
+        log.trace( "hive::SqlOpen( stmt, bnds, conn ) called [String]: " + stmt );
 
         if ( manager_ == null )
         {
             manager_ = new hive_manager();
-            log.trace( "SqlOpen created hive_manager" );
+            log.trace( "hive::SqlOpen( stmt, bnds, conn ) created hive_manager" );
         }
 
         hive_context ctx = new hive_context( stmt, bnds, conn );
+        log.trace( "hive::SqlOpen( stmt, bnds, conn ) - created: " + ctx.toString() );
+
         key_ = manager_.createContext( ctx );
 
-        log.trace( "SqlOpen returning key: " + key_ );
+        log.trace( "hive::SqlOpen( stmt, bnds, conn ) returning key: " + key_ );
 
         return key_;
     }
@@ -307,7 +311,7 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        log.trace( "SqlOpen called [STRUCT]: " + sctx );
+        log.trace( "hive::SqlOpen( sctx, stmt, bnds, conn ) called [STRUCT]: " + sctx );
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
         //
@@ -333,7 +337,7 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        log.trace( "SqlOpen called" );
+        log.trace( "hive::SqlOpen( key, stmt, bnds, conn ) called" );
 
         key_ = SqlOpen( stmt, bnds, conn );
 
@@ -350,7 +354,7 @@ public class hive implements SQLData
                                        BigDecimal num )
         throws SQLException, InvalidKeyException, hive_exception
     {
-        log.trace( "SqlFetch called: key_ = " + key );
+        log.trace( "hive::SqlFetch called: key_ = " + key );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
@@ -358,6 +362,7 @@ public class hive implements SQLData
             manager_ = new hive_manager();
 
         hive_context ctx = manager_.getContext( key );
+        log.trace( "hive::SqlFetch - retrieved: " + ctx.toString() );
 
         if ( ctx == null )
             throw new hive_exception( "Context not found for SqlFetch" );
@@ -413,15 +418,16 @@ public class hive implements SQLData
     static public BigDecimal SqlClose( BigDecimal key )
         throws SQLException, InvalidKeyException
     {
-        log.trace( "SqlClose called" );
+        log.trace( "hive::SqlClose( key ) called" );
 
         if ( manager_ == null )
         {
             manager_ = new hive_manager();
-            log.trace( "SqlClose created hive_manager" );
+            log.trace( "hive::SqlClose created hive_manager" );
         }
 
         hive_context ctx = manager_.removeContext( key );
+        log.trace( "hive::SqlClose - removed: " + ctx.toString() );
 
         if ( ctx != null )
             ctx.clear();
@@ -433,10 +439,13 @@ public class hive implements SQLData
     static public void SqlDml( String stmt, oracle.sql.ARRAY bnds, oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
+        log.trace( "hive::SqlDml( stmt, bnds, conn ) called" );
+
         hive_context ctx = new hive_context( stmt, bnds, conn );
+        log.trace( "hive::SqlDml( stmt, bnds, conn ) - created: " + ctx.toString() );
 
         if ( ctx == null )
-            throw new hive_exception( "Context not created for SqlDml" );
+            throw new hive_exception( "Context not created for SqlDml( stmt, bnds, conn )" );
 
         ctx.executeDML();
     }
@@ -445,10 +454,13 @@ public class hive implements SQLData
     static public void SqlDdl( String stmt, oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
+        log.trace( "hive::SqlDdl( stmt, conn ) called" );
+
         hive_context ctx = new hive_context( stmt, null, conn );
+        log.trace( "hive::SqlDdl( stmt, conn ) - created: " + ctx.toString() );
 
         if ( ctx == null )
-            throw new hive_exception( "Context not created for SqlDml" );
+            throw new hive_exception( "Context not created for SqlDml( stmt, conn ) " );
 
         ctx.executeDDL();
     }

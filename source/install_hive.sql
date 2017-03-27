@@ -57,7 +57,9 @@ spool &&logfile append
 prompt ... running install_hive.sql
 
 --
-select current_timestamp "beginning installation"
+col state for a36 head "beginning installation"
+--
+select current_timestamp state
   from dual;
 
 -- schema
@@ -114,7 +116,9 @@ select current_timestamp "beginning installation"
 @@wrap.pls.sql
 
 --
-select current_timestamp "completed installation"
+col state for a36 head "completed installation"
+--
+select current_timestamp state
   from dual;
 
 --

@@ -104,7 +104,6 @@ begin
     param_( 'hive_jdbc_url.1', 'AuthenticationMethod=userIdPassword' );
     param_( 'hive_jdbc_url.2', 'User=oracle' );
     param_( 'hive_jdbc_url.3', 'Password=welcome1' );
-    param_( 'hive_jdbc_url.4', 'url_extra=SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
 
     -- URL paraemters are processed in the order 1 .. X, consecutively
     -- until a value cannot be found. For example 1, 2, 3, 5, 6, ...

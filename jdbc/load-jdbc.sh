@@ -96,8 +96,9 @@ if [ `ls ${dir}/*.jar | wc -l` -gt 0 ] ; then
     for jar in `ls ${dir}/*.jar` ; do
 
         #
-        echo                       | tee --append ${dir}/load-jdbc.${dts}.log
-        echo "Loading jar: ${jar}" | tee --append ${dir}/load-jdbc.${dts}.log
+        echo                                     | tee --append ${dir}/load-jdbc.${dts}.log
+        echo "Loading jar: ${jar}"               | tee --append ${dir}/load-jdbc.${dts}.log
+        echo "---------------------------------" | tee --append ${dir}/load-jdbc.${dts}.log
 
         #
         (
@@ -114,7 +115,9 @@ if [ `ls ${dir}/*.jar | wc -l` -gt 0 ] ; then
 ${p}
 
 !
-        ) 2>&1 | tee --append ${dir}/load-jdbc.${dts}.log
+        ) 2>&1 | tee --append ${dir}/load-jdbc.${dts}.log \
+               | egrep "^Classes|^Resources|^Sources|^Published|^Classes|^Classes|^Synonyms|^Errors"
+
 
     done ;
 

@@ -1,0 +1,180 @@
+SQL*Plus: Release 12.1.0.2.0 Production on Sat Mar 25 12:52:34 2017
+
+Copyright (c) 1982, 2014, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 12c Enterprise Edition Release 12.1.0.2.0 - 64bit Production
+With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options
+
+SQL> set linesize 160
+SQL> set pagesize 50000
+SQL> 
+SQL> --
+SQL> alter session set current_schema = hive;
+
+Session altered.
+
+SQL> 
+SQL> --
+SQL> set serveroutput on
+SQL> exec dbms_java.set_output( 1000000 );
+
+PL/SQL procedure successfully completed.
+
+SQL> 
+SQL> exec dbms_hive.purge_log;
+
+PL/SQL procedure successfully completed.
+
+SQL> exec hive_remote.session_param( 'log_level', 31 );
+
+PL/SQL procedure successfully completed.
+
+SQL> 
+SQL> --
+SQL> set linesize 160
+SQL> set pagesize 50000
+SQL> 
+SQL> --
+SQL> col name  for a32 word_wrap
+SQL> col value for a95 word_wrap
+SQL> 
+SQL> --
+SQL> select name,
+  2         value
+  3    from user_hive_params
+  4   where name not in ( 'application', 'license' )
+  5  /
+
+NAME                             VALUE
+-------------------------------- -----------------------------------------------------------------------------------------------
+version                          v0.1.5.37
+log_level                        31
+encrypted_values                 hive_pass
+hive_users                       hive_user, hive_admin
+hive_admin                       hive_admin
+hive_jdbc_driver                 com.ddtek.jdbc.hive.HiveDriver
+hive_jdbc_url                    jdbc:datadirect:hive://hive.mtihq.com:10000
+hive_jdbc_url.1                  AuthenticationMethod=userIdPassword
+hive_jdbc_url.2                  User=oracle
+hive_jdbc_url.3                  Password=welcome1
+hive_jdbc_url.4                  url_extra=SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)
+hive_user
+hive_pass
+hive_auth                        normal
+java_property.1                  java.security.krb5.realm=MTI.COM
+java_property.2                  java.security.krb5.kdc=kdc.mti.com
+java_property.3                  java.security.krb5.conf=/etc/krb5.conf
+java_property.4                  java.security.auth.login.index=Client
+java_property.5                  java.security.auth.login.config=/etc/jdbc.conf
+java_property.6                  sun.security.krb5.debug=true
+default_bind_access              public:1, %user%:3
+query_limit                      1000
+
+22 rows selected.
+
+SQL> 
+SQL> --
+SQL> col id_nbr for a30
+SQL> 
+SQL> -- this one is broken ... get stack trace
+SQL> --
+SQL> select count(0) from table( hive_q( 'select * from cust where last_name like ?', hive_binds( hive_bind( '%A%' ) ) ) );
+select count(0) from table( hive_q( 'select * from cust where last_name like ?', hive_binds( hive_bind( '%A%' ) ) ) )
+*
+ERROR at line 1:
+ORA-29532: Java call terminated by uncaught Java exception: java.sql.SQLException: [DataDirect][Hive JDBC Driver]Invalid parameter binding(s).
+ORA-06512: at "HIVE.HIVE_T", line 38
+ORA-06512: at line 4
+
+
+Exception in thread "Root Thread" java.sql.SQLException: [DataDirect][Hive JDBC Driver]Invalid parameter binding(s).
+        at com.ddtek.jdbc.hivebase.ddcp.b(Unknown Source)
+        at com.ddtek.jdbc.hivebase.ddcp.a(Unknown Source)
+        at com.ddtek.jdbc.hivebase.ddco.b(Unknown Source)
+        at com.ddtek.jdbc.hivebase.ddco.a(Unknown Source)
+        at com.ddtek.jdbc.hivebase.dddw.a(Unknown Source)
+        at com.ddtek.jdbc.hivebase.dddw.s(Unknown Source)
+        at com.ddtek.jdbc.hivebase.dddw.a(Unknown Source)
+        at com.ddtek.jdbc.hivebase.dde0.y(Unknown Source)
+        at com.ddtek.jdbc.hivebase.dde0.x(Unknown Source)
+        at com.ddtek.jdbc.hivebase.dddw.executeQuery(Unknown Source)
+        at oracle.mti.odci.hive_context.descSql(hive_context.java:609)
+        at oracle.mti.odci.hive.SqlDesc(hive.java)
+SQL> 
+SQL> --
+SQL> col stamp for a28
+SQL> col type  for a12
+SQL> col text  for a95 word_wrap
+SQL> 
+SQL> --
+SQL> select stamp,
+  2         decode( type, 0, 'none',
+  3                       1, 'error',
+  4                       2, 'warn',
+  5                       4, 'info',
+  6                       8, 'trace',
+  7                          'unknown' ) type,
+  8         text
+  9    from dba_hive_log
+ 10   order by stamp
+ 11  /
+
+STAMP                        TYPE         TEXT
+---------------------------- ------------ -----------------------------------------------------------------------------------------------
+25-MAR-17 12.52.34.503737 PM warn         dbms_hive:purge_log removed 14 row(s)
+25-MAR-17 12.52.34.533181 PM trace        hive_t::ODCITableDescribe: select * from cust where last_name like ? -- called
+25-MAR-17 12.52.34.533954 PM trace        impl::sql_describe( <typ>, select * from cust where last_name like ?, <bnd>, <con> ) called
+25-MAR-17 12.52.34.534413 PM trace        impl::param_( hive_jdbc_url ) called
+25-MAR-17 12.52.34.534941 PM trace        impl::param_( hive_jdbc_url ) not found at session level
+25-MAR-17 12.52.34.535227 PM trace        impl::param_( hive_jdbc_url ) returns: jdbc:datadirect:hive://hive.mtihq.com:10000
+25-MAR-17 12.52.34.535436 PM trace        impl::url_ called
+25-MAR-17 12.52.34.535589 PM trace        impl::param_( hive_jdbc_url.1 ) called
+25-MAR-17 12.52.34.535752 PM trace        impl::param_( hive_jdbc_url.1 ) not found at session level
+25-MAR-17 12.52.34.536149 PM trace        impl::param_( hive_jdbc_url.1 ) returns: AuthenticationMethod=userIdPassword
+25-MAR-17 12.52.34.536307 PM trace        impl::url_ found hive_jdbc_url.1: AuthenticationMethod=userIdPassword
+25-MAR-17 12.52.34.536430 PM trace        impl::param_( hive_jdbc_url.2 ) called
+25-MAR-17 12.52.34.536587 PM trace        impl::param_( hive_jdbc_url.2 ) not found at session level
+25-MAR-17 12.52.34.536701 PM trace        impl::param_( hive_jdbc_url.2 ) returns: User=oracle
+25-MAR-17 12.52.34.536813 PM trace        impl::url_ found hive_jdbc_url.2: User=oracle
+25-MAR-17 12.52.34.536927 PM trace        impl::param_( hive_jdbc_url.3 ) called
+25-MAR-17 12.52.34.537099 PM trace        impl::param_( hive_jdbc_url.3 ) not found at session level
+25-MAR-17 12.52.34.537218 PM trace        impl::param_( hive_jdbc_url.3 ) returns: Password=welcome1
+25-MAR-17 12.52.34.537333 PM trace        impl::url_ found hive_jdbc_url.3: Password=welcome1
+25-MAR-17 12.52.34.537465 PM trace        impl::param_( hive_jdbc_url.4 ) called
+25-MAR-17 12.52.34.537641 PM trace        impl::param_( hive_jdbc_url.4 ) not found at session level
+25-MAR-17 12.52.34.537788 PM trace        impl::param_( hive_jdbc_url.4 ) returns:
+                                          url_extra=SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)
+
+25-MAR-17 12.52.34.538355 PM trace        impl::url_ found hive_jdbc_url.4:
+                                          url_extra=SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)
+
+25-MAR-17 12.52.34.538491 PM trace        impl::param_( hive_jdbc_url.5 ) called
+25-MAR-17 12.52.34.538767 PM trace        impl::param_( hive_jdbc_url.5 ) no data found
+25-MAR-17 12.52.34.539142 PM trace        impl::url_ hive_jdbc_url.4 is last parameter
+25-MAR-17 12.52.34.539270 PM trace        impl::param_( hive_user ) called
+25-MAR-17 12.52.34.539426 PM trace        impl::param_( hive_user ) not found at session level
+25-MAR-17 12.52.34.539574 PM trace        impl::param_( hive_user ) returns:
+25-MAR-17 12.52.34.539681 PM trace        impl::param_( hive_pass ) called
+25-MAR-17 12.52.34.539845 PM trace        impl::param_( hive_pass ) not found at session level
+25-MAR-17 12.52.34.539951 PM trace        impl::param_( hive_pass ) returns:
+25-MAR-17 12.52.34.540079 PM trace        impl::param_( hive_auth ) called
+25-MAR-17 12.52.34.540219 PM trace        impl::param_( hive_auth ) not found at session level
+25-MAR-17 12.52.34.540341 PM trace        impl::param_( hive_auth ) returns: normal
+25-MAR-17 12.52.34.918606 PM error        impl::sql_describe select * from cust where last_name like ?, error: ORA-29532: Java call
+                                          terminated by uncaught Java exception: java.sql.SQLException: [DataDirect][Hive JDBC
+                                          Driver]Invalid parameter binding(s).
+
+25-MAR-17 12.52.34.920697 PM error        hive_t::ODCITableDescribe: select * from cust where last_name like ?, error: ORA-29532: Java
+                                          call terminated by uncaught Java exception: java.sql.SQLException: [DataDirect][Hive JDBC
+                                          Driver]Invalid parameter binding(s).
+
+
+37 rows selected.
+
+SQL>
+SQL> --
+SQL> exit
+Disconnected from Oracle Database 12c Enterprise Edition Release 12.1.0.2.0 - 64bit Production
+With the Partitioning, OLAP, Advanced Analytics and Real Application Testing options

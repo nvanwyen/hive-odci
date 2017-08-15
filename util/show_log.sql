@@ -12,7 +12,7 @@ set pagesize 50000
 col stamp for a28
 col name  for a16 trunc
 col type  for a12
-col text  for a60 word_wrap
+col text  for a75 word_wrap
 
 --
 select stamp,

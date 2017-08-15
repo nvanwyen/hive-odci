@@ -1,29 +1,25 @@
 #!/bin/bash
 
-# Hive-ODCI - Copyright (C) 2006-2016 Metasystems Technologies Inc. (MTI)
+# Copyright (c) 2017, Metasystems Technologies Inc.
 # Nicholas Van Wyen
-# 
-# This library is free software; you can redistribute it and/or modify it 
-# under the terms of the GNU Lesser General Public License as published by 
-# the Free Software Foundation; either version 2.1 of the License, or (at 
-# your option) any later version.
-# 
-# This library is distributed in the hope that it will be useful, but 
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
-# or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public 
-# License for more details.
-# 
-# You should have received a copy of the GNU Lesser General Public License 
-# along with this library; if not, write to the
-# 
-#                 Free Software Foundation, Inc.
-#                 59 Temple Place, Suite 330,
-#                 Boston, MA 02111-1307 USA
+#
+# This library is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 3 of the License, or (at your option) any later version.
+# See the file COPYING included with this distribution for more
+# information.
 
+#
 cat=`which cat`
 sed=`which sed`
 head=`which head`
 date=`which date`
+
+dir=$(dirname $0)
+inf="hive.par.sql.in"
+out="hive.par.sql"
+tag="%version%"
 
 if [[ -z ${cat} ]] ; then
 
@@ -89,25 +85,16 @@ else
 
 fi
 
-if [ -f hive.par.sql.in ] ; then
+if [ -f ${dir}/${inf} ] ; then
 
-    if [ -f ../VERSION ] ; then
+    if [ -f ${dir}/../VERSION ] ; then
 
-        ver=`${cat} ../VERSION | ${head} -n 1`
+        ver=`${cat} ${dir}/../VERSION | ${head} -n 1`
 
-        if [[ ! -z {ver} ]] ; then
-
-            if [ -f hive.par.sql ] ; then
-
-                dts=`${date} +%Y%m%d%H%M%S`
-                echo -n "Found previous hive.par.sql, backing up to hive.par.sql.${dts} ... "
-                cp hive.par.sql hive.par.sql.${dts}
-                echo
-
-            fi
+        if [[ ! -z ${ver} ]] ; then
 
             echo -n "Setting version data ${ver} ... "
-            ${sed} s/%version%/${ver}/g hive.par.sql.in > hive.par.sql
+            ${sed} s/${tag}/${ver}/g ${dir}/${inf} > ${dir}/${out}
 
             if [ "$?" -eq 0 ] ; then
 
@@ -129,14 +116,14 @@ if [ -f hive.par.sql.in ] ; then
 
     else
 
-        echo "Hive ODCI VERSION file not found!"
+        echo "Xcp VERSION file not found!"
         exit 2
 
     fi
 
 else
 
-    echo "Hive ODCI Parameter IN file not found!"
+    echo "Version Parameter IN file not found!"
     exit 2
 
 fi

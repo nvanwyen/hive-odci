@@ -739,10 +739,20 @@ create or replace package body impl as
                        stm in  varchar2,
                        bnd in  binds      default null,
                        con in  connection default null ) return number is
+
+        rc number := 0;
+        ky number := 0;
+
     begin
 
         log_trace( 'impl::sql_open( <key>, ' || stm || ', <bnd>, <con> ) called' );
-        return open_( key, stm, bnd, nvl( con, current_ ) );
+
+        rc := open_( ky, stm, bnd, nvl( con, current_ ) );
+        log_trace( 'impl::sql_open setting key: ' || to_char( ky ) );
+        key := ky;
+
+        log_trace( 'impl::sql_open returns: ' || to_char( rc ) );
+        return rc;
 
         exception
             when others then

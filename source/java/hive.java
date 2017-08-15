@@ -198,7 +198,7 @@ public class hive implements SQLData
                                       BigDecimal         key )  // in
         throws SQLException, hive_exception
     {
-        log.trace( "hive::SqlDesc( attr, key ) called" );
+        log.trace( "hive::SqlDesc( attr, key ) called key: " + key.toString() );
 
         ArrayList<STRUCT> col = new ArrayList<STRUCT>();
         hive_context ctx = manager_.getContext( key );
@@ -300,7 +300,6 @@ public class hive implements SQLData
         key_ = manager_.createContext( ctx );
 
         log.trace( "hive::SqlOpen( stmt, bnds, conn ) returning key: " + key_ );
-
         return key_;
     }
 
@@ -416,7 +415,7 @@ public class hive implements SQLData
 
     //
     static public BigDecimal SqlClose( BigDecimal key )
-        throws SQLException, InvalidKeyException
+        throws SQLException, InvalidKeyException, hive_exception
     {
         log.trace( "hive::SqlClose( key ) called" );
 
@@ -426,8 +425,8 @@ public class hive implements SQLData
             log.trace( "hive::SqlClose created hive_manager" );
         }
 
-        hive_context ctx = manager_.removeContext( key );
-        log.trace( "hive::SqlClose - removed: " + ctx.toString() );
+        hive_context ctx = manager_.getContext( key );
+        log.trace( "hive::SqlClose - retrieved: " + ctx.toString() );
 
         if ( ctx != null )
             ctx.clear();

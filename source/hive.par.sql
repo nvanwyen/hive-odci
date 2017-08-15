@@ -1,0 +1,155 @@
+--------------------------------------------------------------------------------
+--
+-- 2016-04-30, NV - hive.par.sql
+--
+
+/*
+  Hive-ODCI - Copyright (C) 2006-2016 Metasystems Technologies Inc. (MTI)
+  Nicholas Van Wyen
+  
+  This library is free software; you can redistribute it and/or modify it 
+  under the terms of the GNU Lesser General Public License as published by 
+  the Free Software Foundation; either version 2.1 of the License, or (at 
+  your option) any later version.
+  
+  This library is distributed in the hope that it will be useful, but 
+  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+  or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public 
+  License for more details.
+  
+  You should have received a copy of the GNU Lesser General Public License 
+  along with this library; if not, write to the
+  
+                  Free Software Foundation, Inc.
+                  59 Temple Place, Suite 330,
+                  Boston, MA 02111-1307 USA
+*/
+
+--
+prompt ... running hive.par.sql
+
+--
+alter session set current_schema = hive;
+
+--
+set serveroutput on
+
+--
+declare
+
+    --
+    procedure param_( n in varchar2, v in varchar2 ) is
+    begin
+
+        --
+        dbms_hive.param( n, v );
+
+        --
+        if ( n not in ( 'application',
+                        'version',
+                        'license' ) ) then
+
+            dbms_output.put_line( '* ' || rpad( n, 21, ' ' ) || ': ' || v );
+
+        end if;
+
+    end param_;
+
+begin
+
+    --
+    dbms_output.put_line( 'Hive Paraemters' );
+    dbms_output.put_line( rpad( '-', 80, '-' ) );
+
+    --
+    param_( 'application', 'Hive ODCI' );
+    param_( 'version', 'v0.1.5.46' );
+    param_( 'license', 'Hive-ODCI - Copyright (C) 2006-2016 Metasystems Technologies Inc. (MTI)'    || chr( 13 )
+                    || 'Nicholas Van Wyen'                                                          || chr( 13 )
+                    ||                                                                                 chr( 13 )
+                    || 'This library is free software; you can redistribute it and/or modify it'    || chr( 13 )
+                    || 'under the terms of the GNU Lesser General Public License as published by'   || chr( 13 )
+                    || 'the Free Software Foundation; either version 2.1 of the License, or (at'    || chr( 13 )
+                    || 'your option) any later version.'                                            || chr( 13 )
+                    ||                                                                                 chr( 13 )
+                    || 'This library is distributed in the hope that it will be useful, but'        || chr( 13 )
+                    || 'WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY' || chr( 13 )
+                    || 'or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public'     || chr( 13 )
+                    || 'License for more details.'                                                  || chr( 13 )
+                    ||                                                                                 chr( 13 )
+                    || 'You should have received a copy of the GNU Lesser General Public License'   || chr( 13 )
+                    || 'along with this library; if not, write to the'                              || chr( 13 )
+                    ||                                                                                 chr( 13 )
+                    || '                Free Software Foundation, Inc.'                             || chr( 13 )
+                    || '                59 Temple Place, Suite 330,'                                || chr( 13 )
+                    || '                Boston, MA 02111-1307 USA'                                  || chr( 13 ) );
+
+    --
+    param_( 'log_level', '3' );
+
+    --
+    param_( 'encrypted_values', 'hive_pass' );
+
+    --
+    param_( 'hive_users', 'hive_user, hive_admin' );
+    param_( 'hive_admin', 'hive_admin' );
+
+    --
+    param_( 'hive_jdbc_driver', 'com.ddtek.jdbc.hive.HiveDriver' );
+
+    --
+    param_( 'hive_jdbc_url',   'jdbc:datadirect:hive://hive.mtihq.com:10000' );
+
+    -- URL paraemters, each represents a ";" delineated option
+    param_( 'hive_jdbc_url.1', 'AuthenticationMethod=userIdPassword' );
+    param_( 'hive_jdbc_url.2', 'User=oracle' );
+    param_( 'hive_jdbc_url.3', 'Password=welcome1' );
+
+    -- URL paraemters are processed in the order 1 .. X, consecutively
+    -- until a value cannot be found. For example 1, 2, 3, 5, 6, ...
+    --                                                  ^
+    --                                                  stops reading here
+
+    -- extra, debugging (ddtek)
+    -- param_( 'hive_jdbc_url.4', 'SpyAttributes=(log=(file)/tmp/ddtek.log;timestamp=yes)' );
+
+    -- connection parameters, use NULL to ignore
+    param_( 'hive_user', null );
+    param_( 'hive_pass', null );
+    param_( 'hive_auth', 'normal' );    -- type can be 'normal', 'kerberos', ...
+                                        -- use "kerberos", for pre-authentication
+                                        -- of session before loading driver
+
+    -- Java system properties (e.g. System.setProperty( name, value ) )
+    param_( 'java_property.1', 'java.security.krb5.realm=MTI.COM' );
+    param_( 'java_property.2', 'java.security.krb5.kdc=kdc.mti.com' );
+    param_( 'java_property.3', 'java.security.krb5.conf=/etc/krb5.conf' );
+    param_( 'java_property.4', 'java.security.auth.login.index=Client' );
+    param_( 'java_property.5', 'java.security.auth.login.config=/etc/jdbc.conf' );
+
+    -- when 'true" enable java output ... SQL> exec dbms_java.set_output( 1000000 );
+    param_( 'java_property.6', 'sun.security.krb5.debug=true' );
+
+    -- Java system properties are processed in the order 1 .. X, consecutively
+    -- until a value cannot be found. For example 1, 2, 3, 4, 5, 6, 10, 11 ...
+    --                                                           ^
+    --                                          stops reading here
+
+    -- some Java propertiers require dbms_java permissions to be granted ahead of time
+    -- so the use of SQL> exec dbms_java.grant_permission( 'HIVE', 'SYS:<property>', '...', '...' );
+    -- may be needed before the property can be used (see hive.prm.sql for examples).
+
+    -- default bind access (upon creation) can be "public", schema, role or "%user%", ...
+    -- each comma delineated item is access seperated as by a colon e.g. <account>:<access>
+    -- if no access is provided (e.g. no colon) then priv_read is given
+    param_( 'default_bind_access', 'public:1, %user%:3' );
+
+    --
+    param_( 'query_limit', 1000 );
+
+end;
+/
+
+--
+-- ... done!
+--

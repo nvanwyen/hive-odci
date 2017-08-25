@@ -77,7 +77,7 @@ public class hive implements SQLData
 
     //
     static public BigDecimal SqlDesc( oracle.sql.ARRAY[] attr,  // out
-                                      String             stmt,  // on
+                                      String             stmt,  // in
                                       oracle.sql.ARRAY   bnds, 
                                       oracle.sql.STRUCT  conn )
         throws SQLException, hive_exception
@@ -98,77 +98,95 @@ public class hive implements SQLData
 
         if ( rmd.getColumnCount() > 0 )
         {
-            int cset = dbms_types.nls_charset_id();
-            int cfrm = dbms_types.nls_charset_format();
+            int cset = hive_types.nls_charset_id();
+            int cfrm = hive_types.nls_charset_format();
 
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
                 hive_attribute atr = new hive_attribute();
 
                 atr.name = rmd.getColumnName( i );
-                atr.code = dbms_types.to_dbms_type( rmd.getColumnType( i ) );
 
-                switch ( atr.code )
+                // if the column is "mapped", then get the type, precision, scale, etc...
+                // from the context, and not the resulting metadata
+                //
+                if ( ctx.isRuleMapped( atr.name ) )
                 {
-                    case dbms_types.TYPECODE_VARCHAR2:
-                        {
-                            if ( rmd.getPrecision( i ) > 4000 )
-                                atr.len = 4000;
-                            else
+                    // get mapping data ...
+                    atr.code  = ctx.colRuleType( atr.name );
+                    atr.len   = ctx.colRuleLength( atr.name );
+                    atr.prec  = ctx.colRulePrecision( atr.name );
+                    atr.scale = ctx.colRuleScale( atr.name );
+
+                    atr.csid = cset;
+                    atr.csfrm = cfrm;
+                }
+                else
+                {
+                    atr.code = hive_types.to_dbms_type( rmd.getColumnType( i ) );
+
+                    switch ( atr.code )
+                    {
+                        case hive_types.TYPECODE_VARCHAR2:
                             {
-                                if ( rmd.getPrecision( i ) > 0 )
-                                    atr.len = rmd.getPrecision( i );
+                                if ( rmd.getPrecision( i ) > 4000 )
+                                    atr.len = 4000;
                                 else
-                                    atr.len = -1;
+                                {
+                                    if ( rmd.getPrecision( i ) > 0 )
+                                        atr.len = rmd.getPrecision( i );
+                                    else
+                                        atr.len = -1;
+                                }
                             }
-                        }
-                        atr.csid = cset;
-                        atr.csfrm = cfrm;
-                        atr.prec = -1;
-                        atr.scale = -1;
-                        break;
+                            atr.csid = cset;
+                            atr.csfrm = cfrm;
+                            atr.prec = -1;
+                            atr.scale = -1;
+                            break;
 
-                    case dbms_types.TYPECODE_NUMBER:
-                        atr.prec = rmd.getPrecision( i );
-                        atr.scale = rmd.getScale( i );
+                        case hive_types.TYPECODE_NUMBER:
+                            atr.prec = rmd.getPrecision( i );
+                            atr.scale = rmd.getScale( i );
 
-                        if ( ( atr.prec == 0 ) && ( atr.scale == 0 ) )
-                            atr.scale = -127;
+                            if ( ( atr.prec == 0 ) && ( atr.scale == 0 ) )
+                                atr.scale = -127;
 
-                        if ( atr.prec == -1 ) 
-                        {
+                            if ( atr.prec == -1 ) 
+                            {
+                                atr.prec = 0;
+                                atr.scale = -127;
+                            }
+
+                            if ( atr.scale == -1 )
+                                atr.scale = -127;
+
+                            break;
+
+                        case hive_types.TYPECODE_CLOB:
+                            atr.len = rmd.getPrecision( i );
+                            atr.csid = cset;
+                            atr.csfrm = cfrm;
+                            break;
+
+                        case hive_types.TYPECODE_BLOB:
+                            atr.len = rmd.getPrecision( i );
+                            break;
+
+                        case hive_types.TYPECODE_DATE:
+                            break;
+
+                        case hive_types.TYPECODE_TIMESTAMP:
+                        case hive_types.TYPECODE_TIMESTAMP_TZ:
+                        case hive_types.TYPECODE_TIMESTAMP_LTZ:
                             atr.prec = 0;
-                            atr.scale = -127;
-                        }
+                            atr.scale = 6;
+                            break;
 
-                        if ( atr.scale == -1 )
-                            atr.scale = -127;
-
-                        break;
-
-                    case dbms_types.TYPECODE_CLOB:
-                        atr.len = rmd.getPrecision( i );
-                        atr.csid = cset;
-                        atr.csfrm = cfrm;
-                        break;
-
-                    case dbms_types.TYPECODE_BLOB:
-                        atr.len = rmd.getPrecision( i );
-                        break;
-
-                    case dbms_types.TYPECODE_DATE:
-                        break;
-
-                    case dbms_types.TYPECODE_TIMESTAMP:
-                    case dbms_types.TYPECODE_TIMESTAMP_TZ:
-                    case dbms_types.TYPECODE_TIMESTAMP_LTZ:
-                        atr.prec = 0;
-                        atr.scale = 6;
-                        break;
-
-                    case dbms_types.TYPECODE_OBJECT:
-                    default:
-                        break;
+                        case hive_types.TYPECODE_OBJECT:
+                        default:
+                            break;
+                    }
                 }
 
                 Object[] obj = new Object[] { new String( atr.name ),
@@ -214,48 +232,69 @@ public class hive implements SQLData
 
         if ( rmd.getColumnCount() > 0 )
         {
+            int cset = hive_types.nls_charset_id();
+            int cfrm = hive_types.nls_charset_format();
+
             for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
             {
                 hive_attribute atr = new hive_attribute();
 
                 atr.name = rmd.getColumnName( i );
-                atr.code = dbms_types.to_dbms_type( rmd.getColumnType( i ) );
 
-                switch ( atr.code )
+                // if the column is "mapped", then get the type, precision, scale, etc...
+                // from the context, and not the resulting metadata
+                //
+                if ( ctx.isRuleMapped( atr.name ) )
                 {
-                    case dbms_types.TYPECODE_VARCHAR2:
-                        {
-                            if ( rmd.getPrecision( i ) > 4000 )
-                                atr.len = 4000;
-                            else
+                    // get mapping data ...
+                    atr.code  = ctx.colRuleType( atr.name );
+                    atr.len   = ctx.colRuleLength( atr.name );
+                    atr.prec  = ctx.colRulePrecision( atr.name );
+                    atr.scale = ctx.colRuleScale( atr.name );
+
+                    atr.csid = cset;
+                    atr.csfrm = cfrm;
+                }
+                else
+                {
+                    atr.code = hive_types.to_dbms_type( rmd.getColumnType( i ) );
+
+                    switch ( atr.code )
+                    {
+                        case hive_types.TYPECODE_VARCHAR2:
                             {
-                                if ( rmd.getPrecision( i ) > 0 )
-                                    atr.len = rmd.getPrecision( i );
+                                if ( rmd.getPrecision( i ) > 4000 )
+                                    atr.len = 4000;
                                 else
-                                    atr.len = -1;
+                                {
+                                    if ( rmd.getPrecision( i ) > 0 )
+                                        atr.len = rmd.getPrecision( i );
+                                    else
+                                        atr.len = -1;
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case dbms_types.TYPECODE_NUMBER:
-                        atr.prec = rmd.getPrecision( i );
-                        atr.scale = rmd.getScale( i );
-                        break;
+                        case hive_types.TYPECODE_NUMBER:
+                            atr.prec = rmd.getPrecision( i );
+                            atr.scale = rmd.getScale( i );
+                            break;
 
-                    case dbms_types.TYPECODE_CLOB:
-                        atr.len = rmd.getPrecision( i );
-                        break;
+                        case hive_types.TYPECODE_CLOB:
+                            atr.len = rmd.getPrecision( i );
+                            break;
 
-                    case dbms_types.TYPECODE_BLOB:
-                        atr.len = rmd.getPrecision( i );
-                        break;
+                        case hive_types.TYPECODE_BLOB:
+                            atr.len = rmd.getPrecision( i );
+                            break;
 
-                    case dbms_types.TYPECODE_DATE:
-                        break;
+                        case hive_types.TYPECODE_DATE:
+                            break;
 
-                    case dbms_types.TYPECODE_OBJECT:
-                    default:
-                        break;
+                        case hive_types.TYPECODE_OBJECT:
+                        default:
+                            break;
+                    }
                 }
 
                 Object[] obj = new Object[] { new String( atr.name ),
@@ -384,17 +423,17 @@ public class hive implements SQLData
             for ( int c = 1; c <= cnt; ++c )
             {
                 Object col = ctx.getObject( c );
-                int typ = dbms_types.to_dbms_type( ctx.columnType( c ) );
+                int typ = hive_types.to_dbms_type( ctx.columnType( c ) );
 
                 Object[] atr =
                 {
                     new BigDecimal( typ ),                                  // type code
-                    ( typ == dbms_types.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
-                    ( typ == dbms_types.TYPECODE_NUMBER )    ? col : null,  // val_number
-                    ( typ == dbms_types.TYPECODE_DATE )      ? col : null,  // val_date
-                    ( typ == dbms_types.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
-                    ( typ == dbms_types.TYPECODE_CLOB )      ? col : null,  // val_clob
-                    ( typ == dbms_types.TYPECODE_BLOB )      ? col : null   // val_blob
+                    ( typ == hive_types.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
+                    ( typ == hive_types.TYPECODE_NUMBER )    ? col : null,  // val_number
+                    ( typ == hive_types.TYPECODE_DATE )      ? col : null,  // val_date
+                    ( typ == hive_types.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
+                    ( typ == hive_types.TYPECODE_CLOB )      ? col : null,  // val_clob
+                    ( typ == hive_types.TYPECODE_BLOB )      ? col : null   // val_blob
                 };
 
                 //

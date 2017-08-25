@@ -344,6 +344,19 @@ begin
 
     end;
 
+    --
+    begin
+
+        wrap_( func_( 'HIVE', 'HIVE_GENERATE_HINT' ) );
+        dbms_output.put_line( 'HIVE.HIVE_GENERATE_HINT Function wrapped' );
+
+        --
+        exception
+            when others then
+                dbms_output.put_line( 'Error wrapping function [HIVE.HIVE_GENERATE_HINT]: ' || sqlerrm );
+
+    end;
+
     -- type specifications
     -- none
 

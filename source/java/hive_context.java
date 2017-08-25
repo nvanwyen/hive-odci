@@ -39,11 +39,15 @@ import oracle.jdbc.*;
 public class hive_context
 {
     //
+    private static final String HINT_USE_MAP = hive_rule.SUPPORTED[ 0 ];
+
+    //
     private hive_connection   con_;
     private hive_bindings     bnd_;
 
     //
     private String            sql_;
+    private hive_rule         rul_;
     private PreparedStatement stm_;
     private ResultSet         rst_;
     private ResultSetMetaData rmd_;
@@ -56,7 +60,9 @@ public class hive_context
     public hive_context( String sql, oracle.sql.ARRAY bnd, oracle.sql.STRUCT con ) throws SQLException, hive_exception
     {
         log.trace( "hive_context::ctor: " + sql );
-        sql_ = sql;
+
+        rul_ = new hive_rule();
+        sql_ = rul_.add( sql );
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
@@ -85,6 +91,7 @@ public class hive_context
         str += "... con: " + con_.toString() + "\n";
         str += "... bnd: " + bnd_.toString() + "\n";
         str += "... sql: " + sql_.toString() + "\n";
+        str += "... rul: " + rul_.toString() + "\n";
         str += "... rec: " + String.format( "%d", rec_ ) + "\n";
 
         return str;
@@ -102,7 +109,7 @@ public class hive_context
     {
         log.trace( "hive_context::clear" );
 
-        // don't clear the connection, bindings or sql ... only JDBC classes
+        // don't clear the connection, bindings, rules or sql ... only JDBC classes
         stm_ = null;
         rst_ = null;
         rmd_ = null;
@@ -799,6 +806,159 @@ public class hive_context
         }
 
         return eq;
+    }
+
+    //
+    public boolean isRuleMapped( String col )
+    {
+        boolean ok = false;
+
+        if ( rul_.size() > 0 )
+        {
+            String val = rul_.value( HINT_USE_MAP, col );
+
+            if ( ( val != null ) && ( val.length() > 0 ) )
+                ok = true;
+        }
+
+        return ok;
+    }
+
+    //
+    public int colRuleType( String col )
+    {
+        int val = 0;
+        String dat = rul_.value( HINT_USE_MAP, col );
+
+        if ( ( dat != null ) && ( dat.length() > 0 ) )
+        {
+            hive_tuple<String, String> par = rul_.pair( dat );
+
+            if ( par != null )
+            {
+                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                {
+                    hive_tuple<String, String> typ = rul_.part( par.y );
+
+                    if ( typ != null )
+                    {
+                        if ( typ.x != null )
+                            val = hive_types.to_typecode( typ.x );
+                    }
+                }
+            }
+        }
+
+        return val;
+    }
+
+    //
+    public int colRuleLength( String col )
+    {
+        // length and precision are the same
+        return colRulePrecision( col );
+    }
+
+    //
+    public int colRulePrecision( String col )
+    {
+        int val = 0;
+        String dat = rul_.value( HINT_USE_MAP, col );
+
+        if ( ( dat != null ) && ( dat.length() > 0 ) )
+        {
+            hive_tuple<String, String> par = rul_.pair( dat );
+
+            if ( par != null )
+            {
+                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                {
+                    hive_tuple<String, String> typ = rul_.part( par.y );
+
+                    if ( typ != null )
+                    {
+                        if ( typ.x != null )
+                        {
+                            int tcd = hive_types.to_typecode( typ.x );
+
+                            if ( typ.y != null )
+                            {
+                                hive_tuple<String, String> tup = rul_.vals( typ.y );
+
+                                if ( ( tup.x != null ) && ( tup.x.length() > 0 ) )
+                                {
+                                    try
+                                    {
+                                        val = Integer.parseInt( tup.x );
+                                    }
+                                    catch ( NumberFormatException ex )
+                                    {
+                                        val = hive_types.default_precision_typecode( tcd );
+                                    }
+                                }
+                                else
+                                    val = hive_types.default_precision_typecode( tcd );
+                            }
+                            else
+                                val = hive_types.default_precision_typecode( tcd );
+                        }
+                    }
+                }
+            }
+        }
+
+        return val;
+    }
+
+    //
+    public int colRuleScale( String col )
+    {
+        int val = 0;
+        String dat = rul_.value( HINT_USE_MAP, col );
+
+        if ( ( dat != null ) && ( dat.length() > 0 ) )
+        {
+            hive_tuple<String, String> par = rul_.pair( dat );
+
+            if ( par != null )
+            {
+                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                {
+                    hive_tuple<String, String> typ = rul_.part( par.y );
+
+                    if ( typ != null )
+                    {
+                        if ( typ.x != null )
+                        {
+                            int tcd = hive_types.to_typecode( typ.x );
+
+                            if ( typ.y != null )
+                            {
+                                hive_tuple<String, String> tup = rul_.vals( typ.y );
+
+                                if ( ( tup.y != null ) && ( tup.y.length() > 0 ) )
+                                {
+                                    try
+                                    {
+                                        val = Integer.parseInt( tup.y );
+                                    }
+                                    catch ( NumberFormatException ex )
+                                    {
+                                        val = hive_types.default_scale_typecode( tcd );
+                                    }
+                                }
+                                else
+                                    val = hive_types.default_scale_typecode( tcd );
+                            }
+                            else
+                                val = hive_types.default_scale_typecode( tcd );
+                        }
+                    }
+                }
+            }
+        }
+
+        return val;
     }
 };
 

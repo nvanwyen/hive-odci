@@ -52,6 +52,9 @@ create or replace public synonym hive_records for hive.records;
 create or replace public synonym hive_connection for hive.connection;
 
 --
+create or replace public synonym hive_generate_hint for hive_generate_hint;
+
+--
 create or replace public synonym dbms_hive for hive.dbms_hive;
 
 --

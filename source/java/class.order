@@ -1,9 +1,11 @@
 log.java
-dbms_types.java
+hive_types.java
 hive_exception.java
 hive_parameter.java
 hive_properties.java
 callback_handler.java
+hive_tuple.java
+hive_rule.java
 hive_session.java
 hive_bind.java
 hive_bindings.java

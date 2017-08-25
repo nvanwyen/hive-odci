@@ -624,23 +624,23 @@ create or replace package body impl as
 
     begin
 
-        log_trace( 'impl::sql_describe( ' || stm || ', <bnd>, <con> ) called' );
+        log_trace( 'impl::sql_describe( ' || nvl( stm, '{null}' ) || ', <bnd>, <con> ) called' );
 
         ret := sql_describe( typ, stm, bnd, nvl( con, current_ ) );
 
         if ( ret = odciconst.success ) then
 
-            log_trace( 'impl::sql_describe success for: ' || stm );
+            log_trace( 'impl::sql_describe success for: ' || nvl( stm, '{null}' ) );
             return typ;
 
         end if;
 
-        log_warn( 'impl::sql_describe failed for: ' || stm );
+        log_warn( 'impl::sql_describe failed for: ' || nvl( stm, '{null}' ) );
         return null;
 
         exception
             when others then
-                log_error( 'impl::sql_describe ' || stm || ', error: ' || sqlerrm );
+                log_error( 'impl::sql_describe ' || nvl( stm, '{null}' ) || ', error: ' || sqlerrm );
                 raise;
 
     end sql_describe;
@@ -656,13 +656,13 @@ create or replace package body impl as
 
     begin
 
-        log_trace( 'impl::sql_describe( <typ>, ' || stm || ', <bnd>, <con> ) called' );
+        log_trace( 'impl::sql_describe( <typ>, ' || nvl( stm, '{null}' ) || ', <bnd>, <con> ) called' );
 
         ret := describe_( att, stm, bnd, nvl( con, current_ ) );
 
         if ( ret = odciconst.success ) then
 
-            log_trace( 'impl::sql_describe success for: ' || stm );
+            log_trace( 'impl::sql_describe success for: ' || nvl( stm, '{null}' ) );
 
             if ( att.count > 0 ) then
 
@@ -671,7 +671,7 @@ create or replace package body impl as
 
             else
 
-                log_warn( 'impl::sql_describe failed (no attributes) for: ' || stm );
+                log_warn( 'impl::sql_describe failed (no attributes) for: ' || nvl( stm, '{null}' ) );
                 ret := odciconst.error;
 
             end if;
@@ -683,7 +683,7 @@ create or replace package body impl as
 
         exception
             when others then
-                log_error( 'impl::sql_describe ' || stm || ', error: ' || sqlerrm );
+                log_error( 'impl::sql_describe ' || nvl( stm, '{null}' ) || ', error: ' || sqlerrm );
                 raise;
 
     end sql_describe;
@@ -745,7 +745,7 @@ create or replace package body impl as
 
     begin
 
-        log_trace( 'impl::sql_open( <key>, ' || stm || ', <bnd>, <con> ) called' );
+        log_trace( 'impl::sql_open( <key>, ' || nvl( stm, '{null}' ) || ', <bnd>, <con> ) called' );
 
         rc := open_( ky, stm, bnd, nvl( con, current_ ) );
         log_trace( 'impl::sql_open setting key: ' || to_char( ky ) );
@@ -756,7 +756,7 @@ create or replace package body impl as
 
         exception
             when others then
-                log_error( 'impl::sql_open ' || stm || ', error: ' || sqlerrm );
+                log_error( 'impl::sql_open ' || nvl( stm, '{null}' ) || ', error: ' || sqlerrm );
                 raise;
 
     end sql_open;
@@ -800,12 +800,12 @@ create or replace package body impl as
                        con in  connection default null ) is
     begin
 
-        log_trace( 'impl::sql_dml( ' || stm || ', <bnd>, <con> ) called' );
+        log_trace( 'impl::sql_dml( ' || nvl( stm, '{null}' ) || ', <bnd>, <con> ) called' );
         dml_( stm, bnd, con );
 
         exception
             when others then
-                log_error( 'impl::sql_dml ' || stm || ', error: ' || sqlerrm );
+                log_error( 'impl::sql_dml ' || nvl( stm, '{null}' ) || ', error: ' || sqlerrm );
                 raise;
 
     end sql_dml;
@@ -815,12 +815,12 @@ create or replace package body impl as
                        con in  connection default null ) is
     begin
 
-        log_trace( 'impl::sql_ddl( ' || stm || ', <con> ) called' );
+        log_trace( 'impl::sql_ddl( ' || nvl( stm, '{null}' ) || ', <con> ) called' );
         ddl_( stm, con );
 
         exception
             when others then
-                log_error( 'impl::sql_ddl ' || stm || ', error: ' || sqlerrm );
+                log_error( 'impl::sql_ddl ' || nvl( stm, '{null}' ) || ', error: ' || sqlerrm );
                 raise;
 
     end sql_ddl;

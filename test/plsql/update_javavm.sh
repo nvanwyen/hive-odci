@@ -1,1 +1,1 @@
-../../util/update_javavm.sh
+../../jdbc/update_javavm.sh

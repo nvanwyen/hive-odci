@@ -38,6 +38,13 @@ import oracle.jdbc.OracleTypes;
 public class hive_types
 {
     /*
+        offset values, adjust TYPECODE/TYPJDBC constants
+        only as needed to avoid overlap in values
+    */
+    public static final int TYPECODE_OFFSET = 10000;
+    public static final int TYPEJDBC_OFFSET = 50000;
+
+    /*
         This java class duplicates the PL/SQL SYS.DBMS_TYPES
         package specification type codes for convenience
         as of 12c (may not be applicable in later version)
@@ -64,7 +71,7 @@ public class hive_types
     public static final int TYPECODE_VARRAY            = 247;            /* COLLECTION TYPE */
     public static final int TYPECODE_TABLE             = 248;            /* COLLECTION TYPE */
     public static final int TYPECODE_NAMEDCOLLECTION   = 122;
-    public static final int TYPECODE_OPAQUE            = 58;             /* OPAQUE TYPE */
+    public static final int TYPECODE_OPAQUE            =  58;            /* OPAQUE TYPE */
 
     /* 
         These typecodes are for use in AnyData api only and are short forms
@@ -80,67 +87,57 @@ public class hive_types
     public static final int TYPECODE_UROWID            = 104;
 
     /*
-        added support for oracle.jdbc.OracleTypes, which overlaps SYS.DBMS_TYPES
-        constants used to identify SQL types, XOPEN equivalent
-        ref: https://docs.oracle.com/cd/E16338_01/appdev.112/e13995/oracle/jdbc/OracleTypes.html
+        Java SQL type support
     */
-    public static final int TYPEJDBC_ARRAY             = OracleTypes.ARRAY;
-    public static final int TYPEJDBC_BFILE             = OracleTypes.BFILE;
-    public static final int TYPEJDBC_BIGINT            = OracleTypes.BIGINT;
-    public static final int TYPEJDBC_BINARY            = OracleTypes.BINARY;
-    public static final int TYPEJDBC_BINARY_DOUBLE     = OracleTypes.BINARY_DOUBLE;
-    public static final int TYPEJDBC_BINARY_FLOAT      = OracleTypes.BINARY_FLOAT;
-    public static final int TYPEJDBC_BIT               = OracleTypes.BIT;
-    public static final int TYPEJDBC_BLOB              = OracleTypes.BLOB;
-    public static final int TYPEJDBC_BOOLEAN           = OracleTypes.BOOLEAN;           // identifies generic SQL type BOOLEAN.
-    public static final int TYPEJDBC_CHAR              = OracleTypes.CHAR;
-    public static final int TYPEJDBC_CLOB              = OracleTypes.CLOB;
-    public static final int TYPEJDBC_CURSOR            = OracleTypes.CURSOR;
-    public static final int TYPEJDBC_DATALINK          = OracleTypes.DATALINK;          // identifies generic SQL type DATALINK
-    public static final int TYPEJDBC_DATE              = OracleTypes.DATE;
-    public static final int TYPEJDBC_DECIMAL           = OracleTypes.DECIMAL;
-    public static final int TYPEJDBC_DOUBLE            = OracleTypes.DOUBLE;
-    public static final int TYPEJDBC_FIXED_CHAR        = OracleTypes.FIXED_CHAR;        // Used when binding to CHAR in where clause
-    public static final int TYPEJDBC_FLOAT             = OracleTypes.FLOAT;
-    public static final int TYPEJDBC_INTEGER           = OracleTypes.INTEGER;
-    public static final int TYPEJDBC_INTERVALDS        = OracleTypes.INTERVALDS;
-    public static final int TYPEJDBC_INTERVALYM        = OracleTypes.INTERVALYM;
-    public static final int TYPEJDBC_JAVA_OBJECT       = OracleTypes.JAVA_OBJECT;
-    public static final int TYPEJDBC_JAVA_STRUCT       = OracleTypes.JAVA_STRUCT;
-    public static final int TYPEJDBC_LONGVARBINARY     = OracleTypes.LONGVARBINARY;
-    public static final int TYPEJDBC_LONGVARCHAR       = OracleTypes.LONGVARCHAR;
-    public static final int TYPEJDBC_NULL              = OracleTypes.NULL;
-    public static final int TYPEJDBC_NUMBER            = OracleTypes.NUMBER;            // shares value with NUMERIC as synonym
-    public static final int TYPEJDBC_NUMERIC           = OracleTypes.NUMERIC;
-    public static final int TYPEJDBC_OPAQUE            = OracleTypes.OPAQUE;
-    public static final int TYPEJDBC_OTHER             = OracleTypes.OTHER;             // indicates SQL type for Java [get|set]Object
-    public static final int TYPEJDBC_PLSQL_INDEX_TABLE = OracleTypes.PLSQL_INDEX_TABLE;
-    public static final int TYPEJDBC_RAW               = OracleTypes.RAW;               // shares value with BINARY as synonym
-    public static final int TYPEJDBC_REAL              = OracleTypes.REAL;
-    public static final int TYPEJDBC_REF               = OracleTypes.REF;
-    public static final int TYPEJDBC_ROWID             = OracleTypes.ROWID;
-    public static final int TYPEJDBC_SMALLINT          = OracleTypes.SMALLINT;
-    public static final int TYPEJDBC_STRUCT            = OracleTypes.STRUCT;
-    public static final int TYPEJDBC_TIME              = OracleTypes.TIME;
-    public static final int TYPEJDBC_TIMESTAMP         = OracleTypes.TIMESTAMP;
-    public static final int TYPEJDBC_TIMESTAMPLTZ      = OracleTypes.TIMESTAMPLTZ;
-    public static final int TYPEJDBC_TIMESTAMPNS       = OracleTypes.TIMESTAMPNS;       // Deprecated. since 9.2.0, use TIMESTAMP instead
-    public static final int TYPEJDBC_TIMESTAMPTZ       = OracleTypes.TIMESTAMPTZ;
-    public static final int TYPEJDBC_TINYINT           = OracleTypes.TINYINT;
- // public static final int TYPEJDBC_TRACE             = OracleTypes.TRACE;             // obsoleted, removed from oracle.jdbc.OracleTypes
-    public static final int TYPEJDBC_VARBINARY         = OracleTypes.VARBINARY;
-    public static final int TYPEJDBC_VARCHAR           = OracleTypes.VARCHAR;
+    public static final int TYPEJDBC_ARRAY            = java.sql.Types.ARRAY;
+    public static final int TYPEJDBC_BIGINT           = java.sql.Types.BIGINT;
+    public static final int TYPEJDBC_BINARY           = java.sql.Types.BINARY;
+    public static final int TYPEJDBC_BIT              = java.sql.Types.BIT;
+    public static final int TYPEJDBC_BLOB             = java.sql.Types.BLOB;
+    public static final int TYPEJDBC_BOOLEAN          = java.sql.Types.BOOLEAN;
+    public static final int TYPEJDBC_CHAR             = java.sql.Types.CHAR            + TYPEJDBC_OFFSET;
+    public static final int TYPEJDBC_CLOB             = java.sql.Types.CLOB;
+    public static final int TYPEJDBC_DATALINK         = java.sql.Types.DATALINK;
+    public static final int TYPEJDBC_DATE             = java.sql.Types.DATE;
+    public static final int TYPEJDBC_DECIMAL          = java.sql.Types.DECIMAL;
+    public static final int TYPEJDBC_DISTINCT         = java.sql.Types.DISTINCT;
+    public static final int TYPEJDBC_DOUBLE           = java.sql.Types.DOUBLE;
+    public static final int TYPEJDBC_FLOAT            = java.sql.Types.FLOAT;
+    public static final int TYPEJDBC_INTEGER          = java.sql.Types.INTEGER;
+    public static final int TYPEJDBC_JAVA_OBJECT      = java.sql.Types.JAVA_OBJECT;
+    public static final int TYPEJDBC_LONGNVARCHAR     = java.sql.Types.LONGNVARCHAR;
+    public static final int TYPEJDBC_LONGVARBINARY    = java.sql.Types.LONGVARBINARY;
+    public static final int TYPEJDBC_LONGVARCHAR      = java.sql.Types.LONGVARCHAR;
+    public static final int TYPEJDBC_NCHAR            = java.sql.Types.NCHAR;
+    public static final int TYPEJDBC_NCLOB            = java.sql.Types.NCLOB;
+    public static final int TYPEJDBC_NULL             = java.sql.Types.NULL;
+    public static final int TYPEJDBC_NUMERIC          = java.sql.Types.NUMERIC         + TYPEJDBC_OFFSET;
+    public static final int TYPEJDBC_NVARCHAR         = java.sql.Types.NVARCHAR;
+    public static final int TYPEJDBC_OTHER            = java.sql.Types.OTHER;
+    public static final int TYPEJDBC_REAL             = java.sql.Types.REAL;
+    public static final int TYPEJDBC_REF              = java.sql.Types.REF;
+    public static final int TYPEJDBC_ROWID            = java.sql.Types.ROWID;
+    public static final int TYPEJDBC_SMALLINT         = java.sql.Types.SMALLINT;
+    public static final int TYPEJDBC_SQLXML           = java.sql.Types.SQLXML;
+    public static final int TYPEJDBC_STRUCT           = java.sql.Types.STRUCT;
+    public static final int TYPEJDBC_TIME             = java.sql.Types.TIME;
+    public static final int TYPEJDBC_TIMESTAMP        = java.sql.Types.TIMESTAMP;
+    public static final int TYPEJDBC_TINYINT          = java.sql.Types.TINYINT;
+    public static final int TYPEJDBC_VARBINARY        = java.sql.Types.VARBINARY;
+    public static final int TYPEJDBC_VARCHAR          = java.sql.Types.VARCHAR         + TYPEJDBC_OFFSET;
 
     /*
         ODCI return 
     */
-    public static final int SUCCESS                    = 0;
+    public static final int SUCCESS                    =   0;
     public static final int NO_DATA                    = 100;
 
     //
     static public int to_jdbc_type( int typ )
     {
         int ret = 0;
+
+        log.trace( "hive_types::to_jdbc_type typ: " + typ );
 
         //
         switch ( typ )
@@ -167,11 +164,13 @@ public class hive_types
 
             case TYPECODE_OBJECT:
             default:
+                log.trace( "hive_types::to_jdbc_type using default" );
                 ret = java.sql.Types.STRUCT;
                 break;
         }
 
         //
+        log.trace( "hive_types::to_jdbc_type returns: " + ret );
         return ret;
     }
 
@@ -180,68 +179,73 @@ public class hive_types
     {
         int ret = 0;
 
+        log.trace( "hive_types::to_dbms_type typ: " + typ + " [" + to_typejdbc( typ ) + "]" );
+
         //
         switch ( typ )
         {
-            case java.sql.Types.VARCHAR:
-            case java.sql.Types.CHAR:
-            case java.sql.Types.NVARCHAR:
-            case java.sql.Types.NCHAR:
+            case TYPEJDBC_VARCHAR:
+            case TYPEJDBC_CHAR:
+            case TYPEJDBC_NVARCHAR:
+            case TYPEJDBC_NCHAR:
                 ret = TYPECODE_VARCHAR2;
                 break;
 
-            case java.sql.Types.BIGINT:
-            case java.sql.Types.DOUBLE:
-            case java.sql.Types.FLOAT:
-            case java.sql.Types.INTEGER:
-            case java.sql.Types.NUMERIC:
-            case java.sql.Types.REAL:
-            case java.sql.Types.SMALLINT:
-            case java.sql.Types.TINYINT:
-            case java.sql.Types.DECIMAL:
-            case java.sql.Types.BOOLEAN:
+            case TYPEJDBC_BIGINT:
+            case TYPEJDBC_DOUBLE:
+            case TYPEJDBC_FLOAT:
+            case TYPEJDBC_INTEGER:
+            case TYPEJDBC_NUMERIC:
+            case TYPEJDBC_REAL:
+            case TYPEJDBC_SMALLINT:
+            case TYPEJDBC_TINYINT:
+            case TYPEJDBC_DECIMAL:
+            case TYPEJDBC_BOOLEAN:
                 ret = TYPECODE_NUMBER;
                 break;
 
-            case java.sql.Types.CLOB:
-            case java.sql.Types.NCLOB:
+            case TYPEJDBC_CLOB:
+            case TYPEJDBC_NCLOB:
                 ret = TYPECODE_CLOB;
                 break;
 
-            case java.sql.Types.BLOB:
+            case TYPEJDBC_BLOB:
                 ret = TYPECODE_BLOB;
                 break;
 
-            case java.sql.Types.DATE:
+            case TYPEJDBC_DATE:
                 ret = TYPECODE_DATE;
                 break;
 
-            case java.sql.Types.TIMESTAMP:
+            case TYPEJDBC_TIME:
+            case TYPEJDBC_TIMESTAMP:
                 ret = TYPECODE_TIMESTAMP;
                 break;
 
-            case java.sql.Types.LONGNVARCHAR:
-            case java.sql.Types.LONGVARBINARY:
-            case java.sql.Types.LONGVARCHAR:
-            case java.sql.Types.ARRAY:
-            case java.sql.Types.BINARY:
-            case java.sql.Types.BIT:
-            case java.sql.Types.DATALINK:
-            case java.sql.Types.DISTINCT:
-            case java.sql.Types.JAVA_OBJECT:
-            case java.sql.Types.NULL:
-            case java.sql.Types.OTHER:
-            case java.sql.Types.REF:
-            case java.sql.Types.ROWID:
-            case java.sql.Types.SQLXML:
-            case java.sql.Types.STRUCT:
-            case java.sql.Types.VARBINARY:
+            case TYPEJDBC_LONGNVARCHAR:
+            case TYPEJDBC_LONGVARBINARY:
+            case TYPEJDBC_LONGVARCHAR:
+            case TYPEJDBC_ARRAY:
+            case TYPEJDBC_BINARY:
+            case TYPEJDBC_BIT:
+            case TYPEJDBC_DATALINK:
+            case TYPEJDBC_DISTINCT:
+            case TYPEJDBC_JAVA_OBJECT:
+            case TYPEJDBC_NULL:
+            case TYPEJDBC_OTHER:
+            case TYPEJDBC_REF:
+            case TYPEJDBC_ROWID:
+            case TYPEJDBC_SQLXML:
+            case TYPEJDBC_STRUCT:
+            case TYPEJDBC_VARBINARY:
             default:
-                ret = TYPECODE_OBJECT; // ? unknown ?
+                log.trace( "hive_types::to_dbms_type using default" );
+                ret = typ; // ? unknown ?
                 break;
         }
 
         //
+        log.trace( "hive_types::to_dbms_type returns: " + ret + " [" + to_typecode( ret ) + "]" );
         return ret;
     }
 
@@ -317,167 +321,475 @@ public class hive_types
     //
     public static int to_typecode( String str )
     {
+        int typ = 0;
+
+        log.trace( "hive_types::to_typecode: " + str );
+
         if ( str.trim().equalsIgnoreCase( "DATE" ) )
-            return TYPECODE_DATE;
+            typ = TYPECODE_DATE;
         else if ( str.trim().equalsIgnoreCase( "NUMBER" ) )
-            return TYPECODE_NUMBER;
+            typ = TYPECODE_NUMBER;
         else if ( str.trim().equalsIgnoreCase( "RAW" ) )
-            return TYPECODE_RAW;
+            typ = TYPECODE_RAW;
         else if ( str.trim().equalsIgnoreCase( "CHAR" ) )
-            return TYPECODE_CHAR;
+            typ = TYPECODE_CHAR;
         else if ( str.trim().equalsIgnoreCase( "VARCHAR2" ) )
-            return TYPECODE_VARCHAR2;
+            typ = TYPECODE_VARCHAR2;
         else if ( str.trim().equalsIgnoreCase( "VARCHAR" ) )
-            return TYPECODE_VARCHAR;
+            typ = TYPECODE_VARCHAR;
         else if ( str.trim().equalsIgnoreCase( "MLSLABEL" ) )
-            return TYPECODE_MLSLABEL;
+            typ = TYPECODE_MLSLABEL;
         else if ( str.trim().equalsIgnoreCase( "BLOB" ) )
-            return TYPECODE_BLOB;
+            typ = TYPECODE_BLOB;
         else if ( str.trim().equalsIgnoreCase( "BFILE" ) )
-            return TYPECODE_BFILE;
+            typ = TYPECODE_BFILE;
         else if ( str.trim().equalsIgnoreCase( "CLOB" ) )
-            return TYPECODE_CLOB;
+            typ = TYPECODE_CLOB;
         else if ( str.trim().equalsIgnoreCase( "CFILE" ) )
-            return TYPECODE_CFILE;
+            typ = TYPECODE_CFILE;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMP" ) )
-            return TYPECODE_TIMESTAMP;
+            typ = TYPECODE_TIMESTAMP;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMP_TZ" ) )
-            return TYPECODE_TIMESTAMP_TZ;
+            typ = TYPECODE_TIMESTAMP_TZ;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMP_LTZ" ) )
-            return TYPECODE_TIMESTAMP_LTZ;
+            typ = TYPECODE_TIMESTAMP_LTZ;
         else if ( str.trim().equalsIgnoreCase( "INTERVAL_YM" ) )
-            return TYPECODE_INTERVAL_YM;
+            typ = TYPECODE_INTERVAL_YM;
         else if ( str.trim().equalsIgnoreCase( "INTERVAL_DS" ) )
-            return TYPECODE_INTERVAL_DS;
+            typ = TYPECODE_INTERVAL_DS;
         else if ( str.trim().equalsIgnoreCase( "REF" ) )
-            return TYPECODE_REF;
+            typ = TYPECODE_REF;
         else if ( str.trim().equalsIgnoreCase( "OBJECT" ) )
-            return TYPECODE_OBJECT;
+            typ = TYPECODE_OBJECT;
         else if ( str.trim().equalsIgnoreCase( "VARRAY" ) )
-            return TYPECODE_VARRAY;
+            typ = TYPECODE_VARRAY;
         else if ( str.trim().equalsIgnoreCase( "TABLE" ) )
-            return TYPECODE_TABLE;
+            typ = TYPECODE_TABLE;
         else if ( str.trim().equalsIgnoreCase( "NAMEDCOLLECTION" ) )
-            return TYPECODE_NAMEDCOLLECTION;
+            typ = TYPECODE_NAMEDCOLLECTION;
         else if ( str.trim().equalsIgnoreCase( "OPAQUE" ) )
-            return TYPECODE_OPAQUE;
+            typ = TYPECODE_OPAQUE;
         else if ( str.trim().equalsIgnoreCase( "NCHAR" ) )
-            return TYPECODE_NCHAR;
+            typ = TYPECODE_NCHAR;
         else if ( str.trim().equalsIgnoreCase( "NVARCHAR2" ) )
-            return TYPECODE_NVARCHAR2;
+            typ = TYPECODE_NVARCHAR2;
         else if ( str.trim().equalsIgnoreCase( "NCLOB" ) )
-            return TYPECODE_NCLOB;
+            typ = TYPECODE_NCLOB;
         else if ( str.trim().equalsIgnoreCase( "BFLOAT" ) )
-            return TYPECODE_BFLOAT;
+            typ = TYPECODE_BFLOAT;
         else if ( str.trim().equalsIgnoreCase( "BDOUBLE" ) )
-            return TYPECODE_BDOUBLE;
+            typ = TYPECODE_BDOUBLE;
         else if ( str.trim().equalsIgnoreCase( "UROWID" ) )
-            return TYPECODE_UROWID;
+            typ = TYPECODE_UROWID;
         else 
-            return 0;
+            typ = 0;
+
+        log.trace( "hive_types::to_typecode: returns " + typ );
+        return typ;
     }
 
     //
-    public static int to_typejbdc( String str )
+    public static int to_typejdbc( String str )
     {
+        int typ = 0;
+
+        log.trace( "hive_types::to_typejdbc: " + str );
+
         if ( str.trim().equalsIgnoreCase( "ARRAY" ) )
-            return TYPEJDBC_ARRAY;
+            typ = TYPEJDBC_ARRAY;
         else if ( str.trim().equalsIgnoreCase( "BFILE" ) )
-            return TYPEJDBC_BFILE;
+            typ = TYPEJDBC_BLOB;
         else if ( str.trim().equalsIgnoreCase( "BIGINT" ) )
-            return TYPEJDBC_BIGINT;
+            typ = TYPEJDBC_BIGINT;
         else if ( str.trim().equalsIgnoreCase( "BINARY" ) )
-            return TYPEJDBC_BINARY;
+            typ = TYPEJDBC_BINARY;
         else if ( str.trim().equalsIgnoreCase( "BINARY_DOUBLE" ) )
-            return TYPEJDBC_BINARY_DOUBLE;
+            typ = TYPEJDBC_DOUBLE;
         else if ( str.trim().equalsIgnoreCase( "BINARY_FLOAT" ) )
-            return TYPEJDBC_BINARY_FLOAT;
+            typ = TYPEJDBC_FLOAT;
         else if ( str.trim().equalsIgnoreCase( "BIT" ) )
-            return TYPEJDBC_BIT;
+            typ = TYPEJDBC_BIT;
         else if ( str.trim().equalsIgnoreCase( "BLOB" ) )
-            return TYPEJDBC_BLOB;
+            typ = TYPEJDBC_BLOB;
         else if ( str.trim().equalsIgnoreCase( "BOOLEAN" ) )
-            return TYPEJDBC_BOOLEAN;
+            typ = TYPEJDBC_BOOLEAN;
         else if ( str.trim().equalsIgnoreCase( "CHAR" ) )
-            return TYPEJDBC_CHAR;
+            typ = TYPEJDBC_CHAR;
         else if ( str.trim().equalsIgnoreCase( "CLOB" ) )
-            return TYPEJDBC_CLOB;
+            typ = TYPEJDBC_CLOB;
         else if ( str.trim().equalsIgnoreCase( "CURSOR" ) )
-            return TYPEJDBC_CURSOR;
+            typ = TYPEJDBC_STRUCT;
         else if ( str.trim().equalsIgnoreCase( "DATALINK" ) )
-            return TYPEJDBC_DATALINK;
+            typ = TYPEJDBC_DATALINK;
         else if ( str.trim().equalsIgnoreCase( "DATE" ) )
-            return TYPEJDBC_DATE;
+            typ = TYPEJDBC_DATE;
         else if ( str.trim().equalsIgnoreCase( "DECIMAL" ) )
-            return TYPEJDBC_DECIMAL;
+            typ = TYPEJDBC_DECIMAL;
         else if ( str.trim().equalsIgnoreCase( "DOUBLE" ) )
-            return TYPEJDBC_DOUBLE;
+            typ = TYPEJDBC_DOUBLE;
         else if ( str.trim().equalsIgnoreCase( "FIXED_CHAR" ) )
-            return TYPEJDBC_FIXED_CHAR;
+            typ = TYPEJDBC_CHAR;
         else if ( str.trim().equalsIgnoreCase( "FLOAT" ) )
-            return TYPEJDBC_FLOAT;
+            typ = TYPEJDBC_FLOAT;
         else if ( str.trim().equalsIgnoreCase( "INTEGER" ) )
-            return TYPEJDBC_INTEGER;
+            typ = TYPEJDBC_INTEGER;
         else if ( str.trim().equalsIgnoreCase( "INTERVAL_DS" ) )
-            return TYPEJDBC_INTERVALDS;
+            typ = TYPEJDBC_TIME;
         else if ( str.trim().equalsIgnoreCase( "INTERVAL_YM" ) )
-            return TYPEJDBC_INTERVALYM;
+            typ = TYPEJDBC_TIME;
         else if ( str.trim().equalsIgnoreCase( "JAVA_OBJECT" ) )
-            return TYPEJDBC_JAVA_OBJECT;
-        else if ( str.trim().equalsIgnoreCase( "JAVA_STRUCT" ) )
-            return TYPEJDBC_JAVA_STRUCT;
+            typ = TYPEJDBC_OTHER;
         else if ( str.trim().equalsIgnoreCase( "LONGVARBINARY" ) )
-            return TYPEJDBC_LONGVARBINARY;
+            typ = TYPEJDBC_LONGVARBINARY;
         else if ( str.trim().equalsIgnoreCase( "LONGVARCHAR" ) )
-            return TYPEJDBC_LONGVARCHAR;
+            typ = TYPEJDBC_LONGVARCHAR;
         else if ( str.trim().equalsIgnoreCase( "NULL" ) )
-            return TYPEJDBC_NULL;
+            typ = TYPEJDBC_NULL;
         else if ( str.trim().equalsIgnoreCase( "NUMBER" ) )
-            return TYPEJDBC_NUMBER;
+            typ = TYPEJDBC_NUMERIC;
         else if ( str.trim().equalsIgnoreCase( "NUMERIC" ) )
-            return TYPEJDBC_NUMERIC;
+            typ = TYPEJDBC_NUMERIC;
         else if ( str.trim().equalsIgnoreCase( "OPAQUE" ) )
-            return TYPEJDBC_OPAQUE;
+            typ = TYPEJDBC_OTHER;
         else if ( str.trim().equalsIgnoreCase( "OTHER" ) )
-            return TYPEJDBC_OTHER;
+            typ = TYPEJDBC_OTHER;
         else if ( str.trim().equalsIgnoreCase( "PLSQL_INDEX_TABLE" ) )
-            return TYPEJDBC_PLSQL_INDEX_TABLE;
+            typ = TYPEJDBC_STRUCT;
         else if ( str.trim().equalsIgnoreCase( "RAW" ) )
-            return TYPEJDBC_RAW;
+            typ = TYPEJDBC_BLOB;
         else if ( str.trim().equalsIgnoreCase( "REAL" ) )
-            return TYPEJDBC_REAL;
+            typ = TYPEJDBC_REAL;
         else if ( str.trim().equalsIgnoreCase( "REF" ) )
-            return TYPEJDBC_REF;
+            typ = TYPEJDBC_REF;
         else if ( str.trim().equalsIgnoreCase( "ROWID" ) )
-            return TYPEJDBC_ROWID;
+            typ = TYPEJDBC_ROWID;
         else if ( str.trim().equalsIgnoreCase( "SMALLINT" ) )
-            return TYPEJDBC_SMALLINT;
+            typ = TYPEJDBC_SMALLINT;
         else if ( str.trim().equalsIgnoreCase( "STRUCT" ) )
-            return TYPEJDBC_STRUCT;
+            typ = TYPEJDBC_STRUCT;
         else if ( str.trim().equalsIgnoreCase( "TIME" ) )
-            return TYPEJDBC_TIME;
+            typ = TYPEJDBC_TIME;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMP" ) )
-            return TYPEJDBC_TIMESTAMP;
+            typ = TYPEJDBC_TIMESTAMP;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMPLTZ" ) )
-            return TYPEJDBC_TIMESTAMPLTZ;
+            typ = TYPEJDBC_TIMESTAMP;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMPNS" ) )
-            return TYPEJDBC_TIMESTAMPNS;
+            typ = TYPEJDBC_TIMESTAMP;
         else if ( str.trim().equalsIgnoreCase( "TIMESTAMPTZ" ) )
-            return TYPEJDBC_TIMESTAMPTZ;
+            typ = TYPEJDBC_TIMESTAMP;
         else if ( str.trim().equalsIgnoreCase( "TINYINT" ) )
-            return TYPEJDBC_TINYINT;
+            typ = TYPEJDBC_TINYINT;
         else if ( str.trim().equalsIgnoreCase( "VARBINARY" ) )
-            return TYPEJDBC_VARBINARY;
+            typ = TYPEJDBC_VARBINARY;
         else if ( str.trim().equalsIgnoreCase( "VARCHAR" ) )
-            return TYPEJDBC_VARCHAR;
+            typ = TYPEJDBC_VARCHAR;
+        else if ( str.trim().equalsIgnoreCase( "VARCHAR2" ) )
+            typ = TYPEJDBC_VARCHAR;
         else 
-            return 0;
+            typ = 0;
+
+        log.trace( "hive_types::to_typejdbc: returns " + typ );
+        return typ;
+    }
+
+    //
+    public static String to_typecode( int typ )
+    {
+        String val = "";
+
+        log.trace( "hive_types::to_typecode: " + typ );
+
+        switch ( typ )
+        {
+            case TYPECODE_BDOUBLE:
+                val = "TYPECODE_BDOUBLE";
+                break;
+
+            case TYPECODE_BFLOAT:
+                val = "TYPECODE_BFLOAT";
+                break;
+
+            case TYPECODE_NUMBER:            
+                val = "TYPECODE_NUMBER";
+                break;
+
+            case TYPECODE_TIMESTAMP:
+                val = "TYPECODE_TIMESTAMP";
+                break;
+
+            case TYPECODE_TIMESTAMP_LTZ:
+                val = "TYPECODE_TIMESTAMP_LTZ";
+                break;
+
+            case TYPECODE_TIMESTAMP_TZ:
+                val = "TYPECODE_TIMESTAMP_TZ";
+                break;
+
+            case TYPECODE_BFILE:
+                val = "TYPECODE_BFILE";
+                break;
+
+            case TYPECODE_BLOB:
+                val = "TYPECODE_BLOB";
+                break;
+
+            case TYPECODE_CFILE:
+                val = "TYPECODE_CFILE";
+                break;
+
+            case TYPECODE_CHAR:
+                val = "TYPECODE_CHAR";
+                break;
+
+            case TYPECODE_CLOB:
+                val = "TYPECODE_CLOB";
+                break;
+
+            case TYPECODE_DATE:
+                val = "TYPECODE_DATE";
+                break;
+
+            case TYPECODE_INTERVAL_DS:
+                val = "TYPECODE_INTERVAL_DS";
+                break;
+
+            case TYPECODE_INTERVAL_YM:
+                val = "TYPECODE_INTERVAL_YM";
+                break;
+
+            case TYPECODE_MLSLABEL:
+                val = "TYPECODE_MLSLABEL";
+                break;
+
+            case TYPECODE_NAMEDCOLLECTION:
+                val = "TYPECODE_NAMEDCOLLECTION";
+                break;
+
+            case TYPECODE_NCHAR:
+                val = "TYPECODE_NCHAR";
+                break;
+
+            case TYPECODE_NCLOB:
+                val = "TYPECODE_NCLOB";
+                break;
+
+            case TYPECODE_NVARCHAR2:
+                val = "TYPECODE_NVARCHAR2";
+                break;
+
+            case TYPECODE_OBJECT:
+                val = "TYPECODE_OBJECT";
+                break;
+
+            case TYPECODE_OPAQUE:
+                val = "TYPECODE_OPAQUE";
+                break;
+
+            case TYPECODE_RAW:
+                val = "TYPECODE_RAW";
+                break;
+
+            case TYPECODE_REF:
+                val = "TYPECODE_REF";
+                break;
+
+            case TYPECODE_TABLE:
+                val = "TYPECODE_TABLE";
+                break;
+
+            case TYPECODE_UROWID:
+                val = "TYPECODE_UROWID";
+                break;
+
+            case TYPECODE_VARCHAR:
+                val = "TYPECODE_VARCHAR";
+                break;
+
+            case TYPECODE_VARCHAR2:
+                val = "TYPECODE_VARCHAR2";
+                break;
+
+            case TYPECODE_VARRAY:
+                val = "TYPECODE_VARRAY";
+                break;
+
+            default:
+                log.trace( "hive_types::to_typecode using default" );
+                break;
+        }
+
+        log.trace( "hive_types::to_typecode: returns " + val );
+        return val;
+    }
+
+    //
+    public static String to_typejdbc( int typ )
+    {
+        String val = "";
+
+        log.trace( "hive_types::to_typejdbc: " + typ );
+
+        switch ( typ )
+        {
+            case TYPEJDBC_ARRAY:
+                val = "TYPEJDBC_ARRAY";
+                break;
+
+            case TYPEJDBC_BIGINT:
+                val = "TYPEJDBC_BIGINT";
+                break;
+
+            case TYPEJDBC_BINARY:
+                val = "TYPEJDBC_BINARY";
+                break;
+
+            case TYPEJDBC_BIT:
+                val = "TYPEJDBC_BIT";
+                break;
+
+            case TYPEJDBC_BLOB:
+                val = "TYPEJDBC_BLOB";
+                break;
+
+            case TYPEJDBC_BOOLEAN:
+                val = "TYPEJDBC_BOOLEAN";
+                break;
+
+            case TYPEJDBC_CHAR:
+                val = "TYPEJDBC_CHAR";
+                break;
+
+            case TYPEJDBC_CLOB:
+                val = "TYPEJDBC_CLOB";
+                break;
+
+            case TYPEJDBC_DATALINK:
+                val = "TYPEJDBC_DATALINK";
+                break;
+
+            case TYPEJDBC_DATE:
+                val = "TYPEJDBC_DATE";
+                break;
+
+            case TYPEJDBC_DECIMAL:
+                val = "TYPEJDBC_DECIMAL";
+                break;
+
+            case TYPEJDBC_DISTINCT:
+                val = "TYPEJDBC_DISTINCT";
+                break;
+
+            case TYPEJDBC_DOUBLE:
+                val = "TYPEJDBC_DOUBLE";
+                break;
+
+            case TYPEJDBC_FLOAT:
+                val = "TYPEJDBC_FLOAT";
+                break;
+
+            case TYPEJDBC_INTEGER:
+                val = "TYPEJDBC_INTEGER";
+                break;
+
+            case TYPEJDBC_JAVA_OBJECT:
+                val = "TYPEJDBC_JAVA_OBJECT";
+                break;
+
+            case TYPEJDBC_LONGNVARCHAR:
+                val = "TYPEJDBC_LONGNVARCHAR";
+                break;
+
+            case TYPEJDBC_LONGVARBINARY:
+                val = "TYPEJDBC_LONGVARBINARY";
+                break;
+
+            case TYPEJDBC_LONGVARCHAR:
+                val = "TYPEJDBC_LONGVARCHAR";
+                break;
+
+            case TYPEJDBC_NCHAR:
+                val = "TYPEJDBC_NCHAR";
+                break;
+
+            case TYPEJDBC_NCLOB:
+                val = "TYPEJDBC_NCLOB";
+                break;
+
+            case TYPEJDBC_NULL:
+                val = "TYPEJDBC_NULL";
+                break;
+
+            case TYPEJDBC_NUMERIC:
+                val = "TYPEJDBC_NUMERIC";
+                break;
+
+            case TYPEJDBC_NVARCHAR:
+                val = "TYPEJDBC_NVARCHAR";
+                break;
+
+            case TYPEJDBC_OTHER:
+                val = "TYPEJDBC_OTHER";
+                break;
+
+            case TYPEJDBC_REAL:
+                val = "TYPEJDBC_REAL";
+                break;
+
+            case TYPEJDBC_REF:
+                val = "TYPEJDBC_REF";
+                break;
+
+            case TYPEJDBC_ROWID:
+                val = "TYPEJDBC_ROWID";
+                break;
+
+            case TYPEJDBC_SMALLINT:
+                val = "TYPEJDBC_SMALLINT";
+                break;
+
+            case TYPEJDBC_SQLXML:
+                val = "TYPEJDBC_SQLXML";
+                break;
+
+            case TYPEJDBC_STRUCT:
+                val = "TYPEJDBC_STRUCT";
+                break;
+
+            case TYPEJDBC_TIME:
+                val = "TYPEJDBC_TIME";
+                break;
+
+            case TYPEJDBC_TIMESTAMP:
+                val = "TYPEJDBC_TIMESTAMP";
+                break;
+
+            case TYPEJDBC_TINYINT:
+                val = "TYPEJDBC_TINYINT";
+                break;
+
+            case TYPEJDBC_VARBINARY:
+                val = "TYPEJDBC_VARBINARY";
+                break;
+
+            case TYPEJDBC_VARCHAR:
+                val = "TYPEJDBC_VARCHAR";
+                break;
+
+            default:
+                log.trace( "hive_types::to_typejdbc using default" );
+                break;
+        }
+
+        log.trace( "hive_types::to_typejdbc: returns " + val );
+        return val;
     }
 
     //
     public static int default_precision_typecode( int typ )
     {
         int def = 0;
+
+        log.trace( "hive_types::default_precision_typecode: " + typ );
 
         switch ( typ )
         {
@@ -519,10 +831,12 @@ public class hive_types
             case TYPECODE_TIMESTAMP_TZ:
             case TYPECODE_UROWID:
             default:
+                log.trace( "hive_types::default_precision_typecode using default" );
                 def = 0;
                 break;
         }
 
+        log.trace( "hive_types::default_precision_typecode: returns " + def );
         return def;
     }
 
@@ -531,42 +845,39 @@ public class hive_types
     {
         int def = 0;
 
+        log.trace( "hive_types::default_precision_typejdbc: " + typ );
+
         switch ( typ )
         {
             case TYPEJDBC_ARRAY:
             case TYPEJDBC_CHAR:
-            case TYPEJDBC_FIXED_CHAR:
             case TYPEJDBC_LONGVARBINARY:
             case TYPEJDBC_LONGVARCHAR:
-            case TYPEJDBC_PLSQL_INDEX_TABLE:
-            case TYPEJDBC_RAW:
+            case TYPEJDBC_NCHAR:
+            case TYPEJDBC_NVARCHAR:
             case TYPEJDBC_VARBINARY:
             case TYPEJDBC_VARCHAR:
                 def = 1;
                 break;
 
-            case TYPEJDBC_BFILE:
+            case TYPEJDBC_BINARY:
             case TYPEJDBC_BLOB:
             case TYPEJDBC_CLOB:
-            case TYPEJDBC_CURSOR:
             case TYPEJDBC_DATALINK:
-            case TYPEJDBC_OPAQUE:
-            case TYPEJDBC_OTHER:
             case TYPEJDBC_JAVA_OBJECT:
-            case TYPEJDBC_JAVA_STRUCT:
+            case TYPEJDBC_OTHER:
             case TYPEJDBC_REF:
+            case TYPEJDBC_SQLXML:
             case TYPEJDBC_STRUCT:
                 def = -1;
                 break;
 
-            case TYPEJDBC_INTERVALDS:
-            case TYPEJDBC_INTERVALYM:
+            case TYPEJDBC_TIME:
+            case TYPEJDBC_TIMESTAMP:
                 def = 2;
                 break;
 
             case TYPEJDBC_BIGINT:
-            case TYPEJDBC_BINARY_DOUBLE:
-            case TYPEJDBC_BINARY_FLOAT:
             case TYPEJDBC_BIT:
             case TYPEJDBC_BOOLEAN:
             case TYPEJDBC_DATE:
@@ -575,21 +886,18 @@ public class hive_types
             case TYPEJDBC_FLOAT:
             case TYPEJDBC_INTEGER:
             case TYPEJDBC_NULL:
-            case TYPEJDBC_NUMBER:
+            case TYPEJDBC_NUMERIC:
             case TYPEJDBC_REAL:
             case TYPEJDBC_ROWID:
             case TYPEJDBC_SMALLINT:
-            case TYPEJDBC_TIME:
-            case TYPEJDBC_TIMESTAMP:
-            case TYPEJDBC_TIMESTAMPLTZ:
-            case TYPEJDBC_TIMESTAMPNS:
-            case TYPEJDBC_TIMESTAMPTZ:
             case TYPEJDBC_TINYINT:
             default:
+                log.trace( "hive_types::default_scale_typecode using default" );
                 def = 0;
                 break;
         }
 
+        log.trace( "hive_types::default_scale_typecode: returns " + def );
         return def;
     }
 
@@ -597,6 +905,8 @@ public class hive_types
     public static int default_scale_typecode( int typ )
     {
         int def = 0;
+
+        log.trace( "hive_types::default_scale_typecode: " + typ );
 
         switch ( typ )
         {
@@ -635,10 +945,12 @@ public class hive_types
             case TYPECODE_VARCHAR2:
             case TYPECODE_VARRAY:
             default:
+                log.trace( "hive_types::default_scale_typejdbc using default" );
                 def = 0;
                 break;
         }
 
+        log.trace( "hive_types::default_scale_typejdbc: returns " + def );
         return def;
     }
 
@@ -647,17 +959,19 @@ public class hive_types
     {
         int def = 0;
 
+        log.trace( "hive_types::default_scale_typejdbc: " + typ );
+
         switch ( typ )
         {
             case TYPEJDBC_BIGINT:
-            case TYPEJDBC_BINARY_DOUBLE:
-            case TYPEJDBC_BINARY_FLOAT:
+            case TYPEJDBC_BINARY:
+            case TYPEJDBC_BIT:
+            case TYPEJDBC_BOOLEAN:
             case TYPEJDBC_DECIMAL:
             case TYPEJDBC_DOUBLE:
             case TYPEJDBC_FLOAT:
             case TYPEJDBC_INTEGER:
-            case TYPEJDBC_NUMBER:
-            case TYPEJDBC_REAL:
+            case TYPEJDBC_NUMERIC:
             case TYPEJDBC_SMALLINT:
             case TYPEJDBC_TINYINT:
                 def = -127;
@@ -665,44 +979,148 @@ public class hive_types
 
             case TYPEJDBC_TIME:
             case TYPEJDBC_TIMESTAMP:
-            case TYPEJDBC_TIMESTAMPLTZ:
-            case TYPEJDBC_TIMESTAMPNS:
-            case TYPEJDBC_TIMESTAMPTZ:
                 def = 6;
                 break;
 
             case TYPEJDBC_ARRAY:
-            case TYPEJDBC_BFILE:
-            case TYPEJDBC_BINARY:
-            case TYPEJDBC_BIT:
             case TYPEJDBC_BLOB:
-            case TYPEJDBC_BOOLEAN:
             case TYPEJDBC_CHAR:
             case TYPEJDBC_CLOB:
-            case TYPEJDBC_CURSOR:
             case TYPEJDBC_DATALINK:
             case TYPEJDBC_DATE:
-            case TYPEJDBC_FIXED_CHAR:
-            case TYPEJDBC_INTERVALDS:
-            case TYPEJDBC_INTERVALYM:
+            case TYPEJDBC_DISTINCT:
             case TYPEJDBC_JAVA_OBJECT:
-            case TYPEJDBC_JAVA_STRUCT:
+            case TYPEJDBC_LONGNVARCHAR:
             case TYPEJDBC_LONGVARBINARY:
             case TYPEJDBC_LONGVARCHAR:
+            case TYPEJDBC_NCHAR:
+            case TYPEJDBC_NCLOB:
             case TYPEJDBC_NULL:
-            case TYPEJDBC_OPAQUE:
+            case TYPEJDBC_NVARCHAR:
             case TYPEJDBC_OTHER:
-            case TYPEJDBC_PLSQL_INDEX_TABLE:
+            case TYPEJDBC_REAL:
             case TYPEJDBC_REF:
             case TYPEJDBC_ROWID:
+            case TYPEJDBC_SQLXML:
             case TYPEJDBC_STRUCT:
             case TYPEJDBC_VARBINARY:
             case TYPEJDBC_VARCHAR:
             default:
+                log.trace( "hive_types::default_scale_typejdbc using default" );
                 def = 0;
                 break;
         }
 
+        log.trace( "hive_types::default_scale_typejdbc: returns " + def );
         return def;
+    }
+
+    //
+    static public Clob to_clob( String val ) throws SQLException, Exception
+    {
+        //
+        Clob clob = null;
+        Connection con = null;
+
+        //
+        log.trace( "hive_types::to_clob val: " + val );
+
+        try
+        {
+            //
+            con = DriverManager.getConnection( "jdbc:default:connection:" );
+
+            //
+            clob = con.createClob();
+
+            if ( ( val != null ) && ( val.length() > 0 ) )
+            {
+                log.trace( "hive_types::to_clob setting CLOB value" );
+                clob.setString( 1, val );
+            }
+            else
+            {
+                log.trace( "hive_types::to_clob setting empty CLOB" );
+                clob.setString( 1, "" );
+            }
+        }
+        catch ( SQLException ex )
+        {
+            //
+            log.error( "hive_types::to_clob SQLException: " + ex.getMessage() );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive_types::to_clob Exception: " + ex.getMessage() );
+            throw ex;
+        }
+        finally
+        {
+            // ... nothing to do
+        }
+
+        //
+        log.trace( "hive_types::to_clob returns: " + clob );
+        return clob;
+    }
+
+    //
+    static public Blob to_blob( Object val ) throws SQLException, Exception
+    {
+        //
+        Blob blob = null;
+        Connection con = null;
+
+        //
+        log.trace( "hive_types::to_blob val: " + val );
+
+        try
+        {
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            ObjectOutputStream os = new ObjectOutputStream( out );
+            os.writeObject( val );
+            
+            //
+            con = DriverManager.getConnection( "jdbc:default:connection:" );
+
+            //
+            blob = con.createBlob();
+
+            if ( val != null )
+            {
+                log.trace( "hive_types::to_blob getting BLOB data" );
+                byte[] data = out.toByteArray();
+
+                log.trace( "hive_types::to_blob setting BLOB value length: " + data.length );
+                blob.setBytes( 1, data );
+            }
+            else
+            {
+                log.trace( "hive_types::to_blob setting empty BLOB" );
+                blob.setBytes( 1,  new byte[0] );
+            }
+        }
+        catch ( SQLException ex )
+        {
+            //
+            log.error( "hive_types::to_blob SQLException: " + ex.getMessage() );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive_types::to_blob Exception: " + ex.getMessage() );
+            throw ex;
+        }
+        finally
+        {
+            // ... nothing to do
+        }
+
+        //
+        log.trace( "hive_types::to_blob returns: " + blob );
+        return blob;
     }
 };

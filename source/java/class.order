@@ -10,7 +10,7 @@ hive_session.java
 hive_bind.java
 hive_bindings.java
 hive_connection.java
+hive_attribute.java
 hive_context.java
 hive_manager.java
-hive_attribute.java
 hive.java

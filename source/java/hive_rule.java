@@ -38,7 +38,7 @@ import oracle.jdbc.*;
 public class hive_rule
 {
     //
-    public static final String[] SUPPORTED = { "use_map" };
+    public static final String[] SUPPORTED = { "typecast" };
 
     //
     private static final int OPEN  = 0;
@@ -61,12 +61,14 @@ public class hive_rule
     //
     public hive_rule()
     {
+        log.trace( "hive_rule default ctor" );
         map_ = new HashMap<String, ArrayList<String>>();
     }
 
     //
     public hive_rule( String sql )
     {
+        log.trace( "hive_rule ctor sql: " + sql );
         map_ = new HashMap<String, ArrayList<String>>();
         add( sql );
     }
@@ -74,21 +76,27 @@ public class hive_rule
     //
     public String sql()
     {
+        log.trace( "hive_rule::sql: " + sql_ );
         return sql_;
     }
 
     //
     public HashMap<String, ArrayList<String>> map()
     {
+        log.trace( "hive_rule::map: " + map_.toString() );
         return map_;
     }
 
     //
     public String add( String sql )
     {
+        log.trace( "hive_rule::add sql: " + sql );
+
         for ( String[] blk : BLOCK )
         {
             String hnt;
+
+            log.trace( "hive_rule::add processing block: " + blk );
 
             if ( ( hnt = hint( sql, blk ) ).length() > 0 )
             {
@@ -96,14 +104,21 @@ public class hive_rule
                 {
                     ArrayList<String> itm;
 
+                    log.trace( "hive_rule::add processing supported: " + sup );
+
                     if ( ( itm = process( hnt, sup ) ) != null )
+                    {
+                        log.trace( "hive_rule::add item: " + itm.toString() );
                         map_.put( sup, itm );
+                    }
                 }
 
                 sql = prune( sql, blk );
                 break;
             }
         }
+
+        log.trace( "hive_rule::add returning: " + sql );
 
         sql_ = sql;
         return sql;
@@ -112,26 +127,36 @@ public class hive_rule
     //
     public int size()
     {
-        if ( map_ == null )
-            return -1;
+        int sz = 0;
 
-        return map_.size();
+        if ( map_ == null )
+            sz = -1;
+        else
+            sz = map_.size();
+
+        log.trace( "hive_rule::size returning: " + sz );
+        return sz;
     }
 
     //
     public int size( String key )
     {
+        int sz = 0;
         ArrayList<String> val = values( key );
 
         if ( val == null )
-            return -1;
+            sz = -1;
+        else
+            sz = val.size();
 
-        return val.size();
+        log.trace( "hive_rule::size [" + key + "] returning: " + sz );
+        return sz;
     }
 
     //
     public ArrayList<String> values( String key )
     {
+        log.trace( "hive_rule::values key: " + key );
         return map_.get( key );
     }
 
@@ -139,6 +164,8 @@ public class hive_rule
     public String value( String key, String val )
     {
         String ret = "";
+
+        log.trace( "hive_rule::value key: " + key + ", val: " + val );
 
         if ( ( map_ != null ) && ( map_.size() > 0 ) )
         {
@@ -148,6 +175,8 @@ public class hive_rule
             {
                 for ( String i : itm )
                 {
+                    log.trace( "hive_rule::value i: " + i );
+
                     hive_tuple<String, String> v = pair( i );
 
                     if ( v != null )
@@ -165,6 +194,7 @@ public class hive_rule
             }
         }
 
+        log.trace( "hive_rule::value returns: " + ret );
         return ret;
     }
 
@@ -175,6 +205,8 @@ public class hive_rule
         int bgn = 0;
         int end = 0;
 
+        log.trace( "hive_rule::hint called sql: " + sql + ", blk: " + blk.toString() );
+
         //
         if ( ( sql != null ) 
         && ( ( bgn = sql.indexOf( blk[ OPEN ] ) ) > 3 ) // must be past DML/DDL "first" operator
@@ -183,6 +215,7 @@ public class hive_rule
             val = sql.substring( bgn + blk[ OPEN ].length(), end - 1 );
         }
 
+        log.trace( "hive_rule::hint returns: " + val );
         return val;
     }
 
@@ -192,6 +225,8 @@ public class hive_rule
         String val = "";
         int bgn = 0;
         int end = 0;
+
+        log.trace( "hive_rule::prune called sql: " + sql + ", blk: " + blk.toString() );
 
         //
         if ( ( sql != null ) 
@@ -204,6 +239,7 @@ public class hive_rule
         else
             sql = val;
 
+        log.trace( "hive_rule::prune returns: " + val );
         return sql;
     }
 
@@ -212,6 +248,8 @@ public class hive_rule
     {
         int pos = 0;
         ArrayList<String> itm = null;
+
+        log.trace( "hive_rule::process hnt: " + hnt + ", sup: " + sup );
 
         if ( ( pos = hnt.indexOf( sup ) ) > -1 )
         {
@@ -300,6 +338,7 @@ public class hive_rule
             }
         }
 
+        log.trace( "hive_rule::process returns: " + itm.toString() );
         return itm;
     }
 

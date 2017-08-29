@@ -63,7 +63,7 @@ begin
 
     --
     param_( 'application', 'Hive ODCI' );
-    param_( 'version', 'v0.1.5.46' );
+    param_( 'version', 'v0.1.5.51' );
     param_( 'license', 'Hive-ODCI - Copyright (C) 2006-2016 Metasystems Technologies Inc. (MTI)'    || chr( 13 )
                     || 'Nicholas Van Wyen'                                                          || chr( 13 )
                     ||                                                                                 chr( 13 )

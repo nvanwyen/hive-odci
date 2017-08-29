@@ -110,16 +110,22 @@ public class hive implements SQLData
                 // if the column is "mapped", then get the type, precision, scale, etc...
                 // from the context, and not the resulting metadata
                 //
-                if ( ctx.isRuleMapped( atr.name ) )
+                if ( ctx.colRuleMapped( atr.name ) )
                 {
+                    //
+                    log.trace( "hive::SqlDesc processing mapped column: " + atr.name );
+
                     // get mapping data ...
-                    atr.code  = ctx.colRuleType( atr.name );
+                    atr.code  = ctx.colRuleTypeCode( atr.name );
                     atr.len   = ctx.colRuleLength( atr.name );
                     atr.prec  = ctx.colRulePrecision( atr.name );
                     atr.scale = ctx.colRuleScale( atr.name );
 
                     atr.csid = cset;
                     atr.csfrm = cfrm;
+
+                    // translate values based on code
+                    atr = ctx.colRuleAttr( atr );
                 }
                 else
                 {
@@ -189,6 +195,15 @@ public class hive implements SQLData
                     }
                 }
 
+                //
+                log.trace( "hive::SqlDesc Stm ATTRIBUTE name:  " + atr.name   + "\n" +
+                           "+                           code:  " + atr.code   + " [" + hive_types.to_typecode( atr.code ) + "]\n" +
+                           "+                           prec:  " + atr.prec   + "\n" +
+                           "+                           scale: " + atr.scale  + "\n" +
+                           "+                           len:   " + atr.len    + "\n" +
+                           "+                           csid:  " + atr.csid   + "\n" +
+                           "+                           csfrm: " + atr.csfrm );
+
                 Object[] obj = new Object[] { new String( atr.name ),
                                               new Integer( atr.code ),
                                               new Integer( atr.prec ),
@@ -244,16 +259,22 @@ public class hive implements SQLData
                 // if the column is "mapped", then get the type, precision, scale, etc...
                 // from the context, and not the resulting metadata
                 //
-                if ( ctx.isRuleMapped( atr.name ) )
+                if ( ctx.colRuleMapped( atr.name ) )
                 {
+                    //
+                    log.trace( "hive::SqlDesc processing mapped column: " + atr.name );
+
                     // get mapping data ...
-                    atr.code  = ctx.colRuleType( atr.name );
+                    atr.code  = ctx.colRuleTypeCode( atr.name );
                     atr.len   = ctx.colRuleLength( atr.name );
                     atr.prec  = ctx.colRulePrecision( atr.name );
                     atr.scale = ctx.colRuleScale( atr.name );
 
                     atr.csid = cset;
                     atr.csfrm = cfrm;
+
+                    // translate values based on code
+                    atr = ctx.colRuleAttr( atr );
                 }
                 else
                 {
@@ -296,6 +317,15 @@ public class hive implements SQLData
                             break;
                     }
                 }
+
+                //
+                log.trace( "hive::SqlDesc Key ATTRIBUTE name:  " + atr.name   + "\n" +
+                           "+                           code:  " + atr.code   + " [" + hive_types.to_typecode( atr.code ) + "]\n" +
+                           "+                           prec:  " + atr.prec   + "\n" +
+                           "+                           scale: " + atr.scale  + "\n" +
+                           "+                           len:   " + atr.len    + "\n" +
+                           "+                           csid:  " + atr.csid   + "\n" +
+                           "+                           csfrm: " + atr.csfrm );
 
                 Object[] obj = new Object[] { new String( atr.name ),
                                               new Integer( atr.code ),
@@ -422,8 +452,36 @@ public class hive implements SQLData
 
             for ( int c = 1; c <= cnt; ++c )
             {
-                Object col = ctx.getObject( c );
+                Object col = null;
                 int typ = hive_types.to_dbms_type( ctx.columnType( c ) );
+
+                try
+                {
+                    switch ( typ )
+                    {
+                        case hive_types.TYPECODE_CLOB:
+                            col = (Object)hive_types.to_clob( (String)ctx.getObject( c ) );
+                            break;
+
+                        case hive_types.TYPECODE_BLOB:
+                            col = (Object)hive_types.to_blob( ctx.getObject( c ) );
+                            break;
+
+                        // others?
+                        default:
+                            col = ctx.getObject( c );
+                    }
+                }
+                catch ( SQLException ex )
+                {
+                    log.warn( "hive::SqlFetch SQLException building [" + hive_types.to_typecode( typ ) + "]: " + ex.getMessage() );
+                    col = ctx.getObject( c );
+                }
+                catch ( Exception ex )
+                {
+                    log.warn( "hive::SqlFetch Exception building [" + hive_types.to_typecode( typ ) + "]: " + ex.getMessage() );
+                    col = ctx.getObject( c );
+                }
 
                 Object[] atr =
                 {

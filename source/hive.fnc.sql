@@ -38,9 +38,9 @@ create or replace function hive_q( stm in varchar2,
 /
 
 -- helper function ...
-create or replace function hive_generate_hint( own in varchar2,
-                                               tab in varchar2,
-                                               typ in varchar2 default 'use_map' ) return varchar2 is
+create or replace function hive_hint( own in varchar2,
+                                      tab in varchar2,
+                                      typ in varchar2 default 'typecast' ) return varchar2 is
 
     hnt varchar2( 4000 ) := null;
 
@@ -169,7 +169,7 @@ begin
     --
     exception when others then return null;
 
-end hive_generate_hint;
+end hive_hint;
 /
 
 show errors

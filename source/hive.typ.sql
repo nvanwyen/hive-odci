@@ -111,7 +111,7 @@ create or replace type body hive_t as
 
         exception
             when others then
-                err_( 'hive_t::ODCITableDescribe [ ' || stm || '] error: ' || sqlerrm );
+                err_( 'hive_t::ODCITableDescribe [' || stm || '] error: ' || sqlerrm );
                 raise;
 
     end;
@@ -343,12 +343,12 @@ create or replace type body hive_t as
 
                             err_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] record type code ['
                                                              || to_char( rec( i ).code )
-                                                             ||' ] not supported for column index ['
+                                                             ||'] not supported for column index ['
                                                              || to_char( i ) || ']' );
 
                             raise_application_error( -20210, 'Record type code ['
                                                            || to_char( rec( i ).code )
-                                                           ||' ] not supported for column index ['
+                                                           ||'] not supported for column index ['
                                                            || to_char( i ) || ']' );
 
                         end if;

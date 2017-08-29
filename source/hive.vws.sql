@@ -121,6 +121,12 @@ as
 select stamp,
        name,
        type,
+       decode( type, 0, 'none',
+                     1, 'error',
+                     2, 'warn',
+                     4, 'info',
+                     8, 'trace',
+                        'unknown' ) tier,
        text
   from log$
  order by stamp;

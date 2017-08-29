@@ -47,7 +47,7 @@ grant execute on hive.binds to hive_user;
 grant execute on hive.binding to hive_user;
 
 --
-grant execute on hive_generate_hint to hive_user;
+grant execute on hive_hint to hive_user;
 
 --
 grant select on hive.dba_hive_params to hive_admin;

@@ -347,13 +347,13 @@ begin
     --
     begin
 
-        wrap_( func_( 'HIVE', 'HIVE_GENERATE_HINT' ) );
-        dbms_output.put_line( 'HIVE.HIVE_GENERATE_HINT Function wrapped' );
+        wrap_( func_( 'HIVE', 'HIVE_HINT' ) );
+        dbms_output.put_line( 'HIVE.HIVE_HINT Function wrapped' );
 
         --
         exception
             when others then
-                dbms_output.put_line( 'Error wrapping function [HIVE.HIVE_GENERATE_HINT]: ' || sqlerrm );
+                dbms_output.put_line( 'Error wrapping function [HIVE.HIVE_HINT]: ' || sqlerrm );
 
     end;
 

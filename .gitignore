@@ -24,8 +24,10 @@ depend
 taspo
 opatch
 ddtek
+test
 
 # 
 *.pptx
 
 #
+jdbc/hive.jar

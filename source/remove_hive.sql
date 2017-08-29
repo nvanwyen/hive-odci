@@ -69,7 +69,7 @@ drop public synonym hive_attributes;
 drop public synonym hive_data;
 drop public synonym hive_records;
 drop public synonym hive_connection;
-drop public synonym hive_generate_hint;
+drop public synonym hive_hint;
 drop public synonym dbms_hive;
 drop public synonym dba_hive_params;
 drop public synonym dba_hive_filters;

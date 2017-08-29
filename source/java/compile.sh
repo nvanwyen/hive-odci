@@ -167,9 +167,9 @@ if [[ -z ${jva} ]] ; then
         jva="${jva} hive_bind.java"
         jva="${jva} hive_bindings.java"
         jva="${jva} hive_connection.java"
+        jva="${jva} hive_attribute.java"
         jva="${jva} hive_context.java"
         jva="${jva} hive_manager.java"
-        jva="${jva} hive_attribute.java"
         jva="${jva} hive.java"
 
     fi

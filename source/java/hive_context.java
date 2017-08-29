@@ -152,7 +152,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
 
                             break;
 
@@ -168,7 +167,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.DATE );
 
                             break;
 
@@ -184,7 +182,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
 
                             break;
 
@@ -200,7 +197,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
 
                             break;
 
@@ -216,7 +212,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
 
                             break;
 
@@ -247,7 +242,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.VARCHAR );
 
                             break;
 
@@ -263,7 +257,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.NUMBER );
 
                             break;
 
@@ -279,7 +272,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.VARCHAR );
 
                             break;
 
@@ -295,7 +287,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.DATE );
 
                             break;
 
@@ -311,7 +302,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.TIMESTAMP );
 
                             break;
 
@@ -327,7 +317,6 @@ public class hive_context
                             if ( ( bnd.scope == hive_bind.SCOPE_OUT )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
                                 throw new hive_exception( "Out parameter are not currently supported" );
-                                //stmt.registerOutParameter( idx, java.sql.Types.VARCHAR );
 
                             break;
 
@@ -383,6 +372,10 @@ public class hive_context
     //
     public int columnType( int i ) throws SQLException, hive_exception
     {
+        int typ = 0;
+
+        log.trace( "hive_context::columnType retrieving index: " + i );
+
         if ( rmd_ == null )
         {
             if ( rst_ == null )
@@ -391,8 +384,38 @@ public class hive_context
             rmd_ = rst_.getMetaData();
         }
 
-        log.trace( "hive_context::columnType rmd_: " + rmd_ );
-        return rmd_.getColumnType( i );
+        if ( colRuleMapped( rmd_.getColumnName( i ) ) )
+        {
+            log.trace( "hive_context::columnType getting mapped type from rul_: " + rul_ );
+            typ = colRuleTypeCode( rmd_.getColumnName( i ) );
+        }
+        else
+        {
+            log.trace( "hive_context::columnType getting native type from rmd_: " + rmd_ );
+            typ = rmd_.getColumnType( i );
+        }
+
+        log.trace( "hive_context::columnType returning: " + typ );
+        return typ;
+    }
+
+    //
+    public int rawType( int i ) throws SQLException, hive_exception
+    {
+        int typ = 0;
+
+        if ( rmd_ == null )
+        {
+            if ( rst_ == null )
+                setResultSet();
+
+            rmd_ = rst_.getMetaData();
+        }
+
+        typ = rmd_.getColumnType( i );
+
+        log.trace( "hive_context::rawType returning: " + typ );
+        return typ;
     }
 
     // recordset
@@ -809,26 +832,33 @@ public class hive_context
     }
 
     //
-    public boolean isRuleMapped( String col )
+    public boolean colRuleMapped( String col )
     {
         boolean ok = false;
+
+        log.trace( "hive_context::colRuleMapped: " + col + ", rule size: " + rul_.size() );
 
         if ( rul_.size() > 0 )
         {
             String val = rul_.value( HINT_USE_MAP, col );
 
+            log.trace( "hive_context::colRuleMapped: rule size: " + rul_.size() );
+
             if ( ( val != null ) && ( val.length() > 0 ) )
                 ok = true;
         }
 
+        log.trace( "hive_context::colRuleMapped: returns: " + ( ( ok ) ? "true" : "false" ) );
         return ok;
     }
 
     //
-    public int colRuleType( String col )
+    public int colRuleTypeCode( String col )
     {
         int val = 0;
         String dat = rul_.value( HINT_USE_MAP, col );
+
+        log.trace( "hive_context::colRuleTypeCode: " + col + ", value: " + dat );
 
         if ( ( dat != null ) && ( dat.length() > 0 ) )
         {
@@ -849,12 +879,46 @@ public class hive_context
             }
         }
 
+        log.trace( "hive_context::colRuleTypeCode: returns " + val + " [" + hive_types.to_typecode( val ) + "]" );
+        return val;
+    }
+
+    //
+    public int colRuleTypeJdbc( String col )
+    {
+        int val = 0;
+        String dat = rul_.value( HINT_USE_MAP, col );
+
+        log.trace( "hive_context::colRuleTypeJdbc: " + col + ", value: " + dat );
+
+        if ( ( dat != null ) && ( dat.length() > 0 ) )
+        {
+            hive_tuple<String, String> par = rul_.pair( dat );
+
+            if ( par != null )
+            {
+                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                {
+                    hive_tuple<String, String> typ = rul_.part( par.y );
+
+                    if ( typ != null )
+                    {
+                        if ( typ.x != null )
+                            val = hive_types.to_typejdbc( typ.x );
+                    }
+                }
+            }
+        }
+
+        log.trace( "hive_context::colRuleTypeJdbc: returns " + val );
         return val;
     }
 
     //
     public int colRuleLength( String col )
     {
+        log.trace( "hive_context::colRuleLength: " + col + " (redirecting)" );
+
         // length and precision are the same
         return colRulePrecision( col );
     }
@@ -864,6 +928,8 @@ public class hive_context
     {
         int val = 0;
         String dat = rul_.value( HINT_USE_MAP, col );
+
+        log.trace( "hive_context::colRulePrecision: " + col + ", value: " + dat );
 
         if ( ( dat != null ) && ( dat.length() > 0 ) )
         {
@@ -907,6 +973,7 @@ public class hive_context
             }
         }
 
+        log.trace( "hive_context::colRulePrecision: returns " + val );
         return val;
     }
 
@@ -915,6 +982,8 @@ public class hive_context
     {
         int val = 0;
         String dat = rul_.value( HINT_USE_MAP, col );
+
+        log.trace( "hive_context::colRuleScale: " + col + ", value: " + dat );
 
         if ( ( dat != null ) && ( dat.length() > 0 ) )
         {
@@ -958,7 +1027,59 @@ public class hive_context
             }
         }
 
+        log.trace( "hive_context::colRuleScale: returns " + val );
         return val;
     }
-};
 
+    //
+    public hive_attribute colRuleAttr( hive_attribute atr )
+    {
+        switch ( atr.code )
+        {
+            case hive_types.TYPECODE_RAW:
+            case hive_types.TYPECODE_CHAR:
+            case hive_types.TYPECODE_VARCHAR2:
+            case hive_types.TYPECODE_VARCHAR:
+            case hive_types.TYPECODE_NCHAR:
+            case hive_types.TYPECODE_NVARCHAR2:
+                atr.prec  = -1;
+                atr.scale = -1;
+                break;
+
+            case hive_types.TYPECODE_DATE:
+                atr.len   = -1;
+                atr.prec  = -1;
+                atr.scale = -1;
+                break;
+
+            case hive_types.TYPECODE_TIMESTAMP:
+            case hive_types.TYPECODE_TIMESTAMP_TZ:
+            case hive_types.TYPECODE_TIMESTAMP_LTZ:
+            case hive_types.TYPECODE_INTERVAL_YM:
+            case hive_types.TYPECODE_INTERVAL_DS:
+            case hive_types.TYPECODE_NUMBER:
+            case hive_types.TYPECODE_BFLOAT:
+                atr.len   = -1;
+                break;
+
+            case hive_types.TYPECODE_MLSLABEL:
+            case hive_types.TYPECODE_BLOB:
+            case hive_types.TYPECODE_BFILE:
+            case hive_types.TYPECODE_CLOB:
+            case hive_types.TYPECODE_CFILE:
+            case hive_types.TYPECODE_REF:
+            case hive_types.TYPECODE_OBJECT:
+            case hive_types.TYPECODE_VARRAY:
+            case hive_types.TYPECODE_TABLE:
+            case hive_types.TYPECODE_NAMEDCOLLECTION:
+            case hive_types.TYPECODE_OPAQUE:
+            case hive_types.TYPECODE_NCLOB:
+            case hive_types.TYPECODE_BDOUBLE:
+            case hive_types.TYPECODE_UROWID:
+            default:
+                break;
+        }
+
+        return atr;
+    }
+};

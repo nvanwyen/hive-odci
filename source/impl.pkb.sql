@@ -408,6 +408,26 @@ create or replace package body impl as
     --
     procedure session_param( name  in varchar2,
                              value in varchar2 ) is
+
+        function sysval_( n in varchar2 ) return varchar2 is
+
+            v varchar2( 4000 );
+
+        begin
+
+            --
+            select a.value into v
+              from param$ a
+             where a.name = n;
+            
+            --
+            return v;
+            
+            --
+            exception when no_data_found then return null;
+
+        end sysval_;
+
     begin
 
         if ( name in ( 'application',
@@ -416,16 +436,49 @@ create or replace package body impl as
                        'encrypted_values',
                        'hive_users',
                        'hive_admin',
-                       'hive_jdbc_driver',
-                       'query_limit' ) ) then
+                       'hive_jdbc_driver' ) ) then
 
             log_warn( 'impl::session_param( ' || name || ' ): ' || es_not_eligible );
             raise_application_error( ec_not_eligible, es_not_eligible );
 
         else
 
-            log_info( 'impl::session_param( ' || name || ' ) set: ' || nvl( value, '{null}' ) );
-            dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
+            -- restricted value changes ...
+            --
+            if ( name in ( 'query_limit' ) ) then   -- add more as needed ...
+
+                if ( name = 'query_limit' ) then    -- handle each acordingly ...
+
+                    begin
+
+                        if ( to_number( value ) <= to_number( sysval_( 'query_limit' ) ) ) then
+
+                            log_info( 'impl::session_param( ' || name || ' ) set restricted: ' || nvl( value, '{null}' ) );
+                            dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
+
+                        else
+
+                            raise_application_error( ec_not_eligible, 'Parameter retricted eligibility, ' ||
+                                                                      'value must be less or equal to: '  || 
+                                                                      sysval_( 'query_limit' ) );
+
+                        end if;
+
+                        exception
+                            when invalid_number then
+                                raise_application_error( ec_not_eligible, 'Parameter retricted eligibility, ' ||
+                                                                          'value must be a number' );
+
+                    end;
+
+                end if;
+
+            else
+
+                log_info( 'impl::session_param( ' || name || ' ) set: ' || nvl( value, '{null}' ) );
+                dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
+
+            end if;
 
         end if;
 

@@ -56,60 +56,60 @@ public class hive_rule
 
     //
     private String sql_;
-    private HashMap<String, ArrayList<String>> map_;
+    private HashMap<String, HashMap<String,hive_hint>> map_;
 
     //
     public hive_rule()
     {
-        log.trace( "hive_rule default ctor" );
-        map_ = new HashMap<String, ArrayList<String>>();
+        //log.trace( "hive_rule default ctor" );
+        map_ = new HashMap<String, HashMap<String,hive_hint>>();
     }
 
     //
     public hive_rule( String sql )
     {
-        log.trace( "hive_rule ctor sql: " + sql );
-        map_ = new HashMap<String, ArrayList<String>>();
+        //log.trace( "hive_rule ctor sql: " + sql );
+        map_ = new HashMap<String, HashMap<String,hive_hint>>();
         add( sql );
     }
 
     //
     public String sql()
     {
-        log.trace( "hive_rule::sql: " + sql_ );
+        //log.trace( "hive_rule::sql: " + sql_ );
         return sql_;
     }
 
     //
-    public HashMap<String, ArrayList<String>> map()
+    public HashMap<String, HashMap<String,hive_hint>> map()
     {
-        log.trace( "hive_rule::map: " + map_.toString() );
+        //log.trace( "hive_rule::map: " + map_.toString() );
         return map_;
     }
 
     //
     public String add( String sql )
     {
-        log.trace( "hive_rule::add sql: " + sql );
+        //log.trace( "hive_rule::add sql: " + sql );
 
         for ( String[] blk : BLOCK )
         {
             String hnt;
 
-            log.trace( "hive_rule::add processing block: " + blk );
+            //log.trace( "hive_rule::add processing block: " + blk );
 
             if ( ( hnt = hint( sql, blk ) ).length() > 0 )
             {
                 for ( String sup : SUPPORTED )
                 {
-                    ArrayList<String> itm;
+                    HashMap<String,hive_hint> rul;
 
-                    log.trace( "hive_rule::add processing supported: " + sup );
+                    //log.trace( "hive_rule::add processing supported: " + sup );
 
-                    if ( ( itm = process( hnt, sup ) ) != null )
+                    if ( ( rul = process( hnt, sup ) ) != null )
                     {
-                        log.trace( "hive_rule::add item: " + itm.toString() );
-                        map_.put( sup, itm );
+                        //log.trace( "hive_rule::add item: " + rul.toString() );
+                        map_.put( sup, rul );
                     }
                 }
 
@@ -118,7 +118,7 @@ public class hive_rule
             }
         }
 
-        log.trace( "hive_rule::add returning: " + sql );
+        //log.trace( "hive_rule::add returning: " + sql );
 
         sql_ = sql;
         return sql;
@@ -134,7 +134,7 @@ public class hive_rule
         else
             sz = map_.size();
 
-        log.trace( "hive_rule::size returning: " + sz );
+        //log.trace( "hive_rule::size returning: " + sz );
         return sz;
     }
 
@@ -142,60 +142,94 @@ public class hive_rule
     public int size( String key )
     {
         int sz = 0;
-        ArrayList<String> val = values( key );
+        HashMap<String,hive_hint> val = value( key );
 
         if ( val == null )
             sz = -1;
         else
             sz = val.size();
 
-        log.trace( "hive_rule::size [" + key + "] returning: " + sz );
+        //log.trace( "hive_rule::size [" + key + "] returning: " + sz );
         return sz;
     }
 
     //
-    public ArrayList<String> values( String key )
+    public HashMap<String,hive_hint> value( String key )
     {
-        log.trace( "hive_rule::values key: " + key );
-        return map_.get( key );
+        HashMap<String,hive_hint> val = null;
+
+        if ( ( map_ != null ) && ( map_.size() > 0 ) )
+            val = map_.get( key );
+
+        return val;
     }
 
     //
-    public String value( String key, String val )
+    public ArrayList<hive_hint> list( String key )
     {
-        String ret = "";
-
-        log.trace( "hive_rule::value key: " + key + ", val: " + val );
+        ArrayList<hive_hint> val = null;
 
         if ( ( map_ != null ) && ( map_.size() > 0 ) )
         {
-            ArrayList<String> itm = values( key );
+            HashMap<String,hive_hint> map = value( key );
 
-            if ( itm != null )
+            if ( ( map != null ) && ( map.size() > 0 ) )
+                val = new ArrayList<hive_hint>( map.values() );
+        }
+
+        return val;
+    }
+
+    //
+    public hive_hint item( String key, String name )
+    {
+        hive_hint val = null;
+        HashMap<String,hive_hint> map = value( key );
+
+        if ( ( map != null ) && ( map.size() > 0 ) )
+            val = map.get( name );
+
+        return val;
+    }
+
+    //
+    public void clear()
+    {
+        // do not reuse the hashmap, so the following is
+        // faster and more effcient than map_.clear() && map_.resize()
+        map_ = null;
+        map_ = new HashMap<String, HashMap<String,hive_hint>>();
+    }
+
+    //
+    public String toString()
+    {
+        String str = "";
+
+        if ( map_ != null )
+        {
+            Iterator itr = map_.entrySet().iterator();
+
+            while ( itr.hasNext() )
             {
-                for ( String i : itm )
+                Map.Entry ent = (Map.Entry)itr.next();
+                HashMap<String,hive_hint> map = (HashMap<String,hive_hint>)ent.getValue();
+
+                str += ent.getKey() + "\n";
+
+                if ( ( map != null ) && ( map.size() > 0 ) )
                 {
-                    log.trace( "hive_rule::value i: " + i );
+                    ArrayList<hive_hint> val = new ArrayList<hive_hint>( map.values() );
 
-                    hive_tuple<String, String> v = pair( i );
-
-                    if ( v != null )
-                    {
-                        if ( ( v.x != null ) && ( v.x.length() > 0 ) )
-                        {
-                            if ( v.x.equalsIgnoreCase( val ) )
-                            {
-                                ret = i;
-                                break;
-                            }
-                        }
-                    }
+                    for ( hive_hint v : val )
+                        str += v.toString() + "\n";
                 }
+
+                str += "\n";
             }
         }
 
-        log.trace( "hive_rule::value returns: " + ret );
-        return ret;
+        return str;
     }
 
     //
@@ -205,7 +239,7 @@ public class hive_rule
         int bgn = 0;
         int end = 0;
 
-        log.trace( "hive_rule::hint called sql: " + sql + ", blk: " + blk.toString() );
+        //log.trace( "hive_rule::hint called sql: " + sql + ", blk: " + blk.toString() );
 
         //
         if ( ( sql != null ) 
@@ -215,7 +249,7 @@ public class hive_rule
             val = sql.substring( bgn + blk[ OPEN ].length(), end - 1 );
         }
 
-        log.trace( "hive_rule::hint returns: " + val );
+        //log.trace( "hive_rule::hint returns: " + val );
         return val;
     }
 
@@ -226,7 +260,7 @@ public class hive_rule
         int bgn = 0;
         int end = 0;
 
-        log.trace( "hive_rule::prune called sql: " + sql + ", blk: " + blk.toString() );
+        //log.trace( "hive_rule::prune called sql: " + sql + ", blk: " + blk.toString() );
 
         //
         if ( ( sql != null ) 
@@ -239,23 +273,23 @@ public class hive_rule
         else
             sql = val;
 
-        log.trace( "hive_rule::prune returns: " + val );
+        //log.trace( "hive_rule::prune returns: " + val );
         return sql;
     }
 
     //
-    private ArrayList<String> process( String hnt, String sup )
+    private HashMap<String,hive_hint> process( String hnt, String sup )
     {
         int pos = 0;
-        ArrayList<String> itm = null;
+        HashMap<String,hive_hint> itm = null;
 
-        log.trace( "hive_rule::process hnt: " + hnt + ", sup: " + sup );
+        //log.trace( "hive_rule::process hnt: " + hnt + ", sup: " + sup );
 
         if ( ( pos = hnt.indexOf( sup ) ) > -1 )
         {
-            if ( ( itm = new ArrayList<String>() ) != null )
+            if ( ( itm = new HashMap<String,hive_hint>() ) != null )
             {
-                // ensure that the number of open parens equalscloseing parens
+                // ensure that the number of open parens equals the number of closing parens
                 if ( countChar( hnt, '(' ) == countChar( hnt, ')' ) )
                 {
                     int opn = 0;
@@ -329,7 +363,48 @@ public class hive_rule
                                     }
 
                                     if ( ary.size() > 0 )
-                                        itm = (ArrayList<String>)ary.clone();
+                                    {
+                                        // process each individual hint in the array
+                                        for ( String dat : ary )
+                                        {
+                                            hive_hint rul = pair( dat );
+
+                                            if ( rul != null )
+                                            {
+                                                if ( rul.data.length() > 0 )
+                                                {
+                                                    tuple<String,String> prt = part( rul.data );
+
+                                                    if ( prt != null )
+                                                    {
+                                                        rul.type = prt.x;
+
+                                                        if ( ( prt.y != null ) && ( prt.y.length() > 0 ) )
+                                                        {
+                                                            tuple<String,String> par = vals( rul.data );
+
+                                                            if ( par != null )
+                                                            {
+                                                                if ( ( par.x != null ) && ( par.x.length() > 0 ) )
+                                                                    rul.size = par.x;
+
+                                                                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                                                                    rul.opts = par.y;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                if ( rul.name.length() > 0 )
+                                                {
+                                                    if ( rul.type.length() > 0 )
+                                                        rul.set_types();
+
+                                                    itm.put( rul.name, rul );
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -338,46 +413,16 @@ public class hive_rule
             }
         }
 
-        log.trace( "hive_rule::process returns: " + itm.toString() );
+        //log.trace( "hive_rule::process returns: " + ( ( itm == null ) ? "NULL" : itm.toString() ) );
         return itm;
     }
 
     // paring splits "left" + ":" + "right" (colon seperated string)
-    // into a tuple ...
-    public hive_tuple<String, String> pair( String key, int index )
+    // into a hive_hint object where hive_hint.name = "left" and 
+    // hive_hint.data = "right"
+    private hive_hint pair( String str )
     {
-        hive_tuple<String, String> tup = null;
-        ArrayList<String> val = values( key );
-
-        if ( ( val != null ) && ( index < val.size() ) )
-        {
-            String[] tok = val.get( index ).split( SEPAR[ 2 ] );
-
-            if ( tok.length > 0 )
-            {
-                if ( ( tup = new hive_tuple<String, String>() ) != null )
-                {
-                    tup.x = tok[ 0 ];
-
-                    for ( int i = 1; i < tok.length; ++i )
-                    {
-                        if ( ( tup.y != null ) && ( tup.y.length() > 0 ) )
-                            tup.y += SEPAR[ 2 ] + tok[ i ];
-                        else
-                            tup.y = tok[ i ];
-                    }
-                }
-            } 
-        }
-
-        return tup;
-    }
-
-    // paring splits "left" + ":" + "right" (colon seperated string)
-    // into a tuple ... osa  known string (e.g. not an index - see above)
-    public hive_tuple<String, String> pair( String str )
-    {
-        hive_tuple<String, String> tup = null;
+        hive_hint rul = null;
 
         if ( ( str != null ) && ( str.length() > 0 ) )
         {
@@ -385,33 +430,28 @@ public class hive_rule
 
             if ( tok.length > 0 )
             {
-                if ( ( tup = new hive_tuple<String, String>() ) != null )
+                if ( ( rul = new hive_hint() ) != null )
                 {
-                    tup.x = tok[ 0 ];
+                    rul.name = tok[ 0 ];
 
-                    for ( int i = 1; i < tok.length; ++i )
-                    {
-                        if ( ( tup.y != null ) && ( tup.y.length() > 0 ) )
-                            tup.y += SEPAR[ 2 ] + tok[ i ];
-                        else
-                            tup.y = tok[ i ];
-                    }
+                    if ( tok.length > 1 )
+                        rul.data = tok[ 1 ];
                 }
             } 
         }
 
-        return tup;
+        return rul;
     }
 
     // part splits base value from paraemters "type( A, B )", returning "type" 
     // and "( A, B )" as a tuple ...
-    public hive_tuple<String, String> part( String par )
+    private tuple<String,String> part( String par )
     {
-        hive_tuple<String, String> tup = null;
+        tuple<String,String> tup = null;
 
         if ( ( par != null ) && ( par.length() > 0 ) )
         {
-            if ( ( tup = new hive_tuple<String, String>() ) != null )
+            if ( ( tup = new tuple<String,String>() ) != null )
             {
                 if ( ( par.contains( PAREN[ 0 ] ) )
                   && ( countChar( par, '(' ) == countChar( par, ')' ) ) )
@@ -424,18 +464,19 @@ public class hive_rule
             }
         }
 
+        //log.trace( "hive_rule::part returns: " + ( ( tup == null ) ? "NULL" : tup.toString() ) );
         return tup;
     }
 
     // param splits values of "type( A, B )" or "( A, B )", returning A and B
     // as a tuple ...
-    public hive_tuple<String, String> vals( String par )
+    private tuple<String,String> vals( String par )
     {
-        hive_tuple<String, String> tup = null;
+        tuple<String,String> tup = null;
 
         if ( ( par != null ) && ( par.length() > 0 ) )
         {
-            if ( ( tup = new hive_tuple<String, String>() ) != null )
+            if ( ( tup = new tuple<String,String>() ) != null )
             {
                 // tuple is populated only when parens are present
                 if ( ( par.contains( PAREN[ 0 ] ) )
@@ -459,42 +500,8 @@ public class hive_rule
             }
         }
 
+        //log.trace( "hive_rule::vals returns: " + ( ( tup == null ) ? "NULL" : tup.toString() ) );
         return tup;
-    }
-
-    //
-    public void clear()
-    {
-        // do not reuse the hashmap, so the following is
-        // faster and more effcient than map_.clear() && map_.resize()
-        map_ = null;
-        map_ = new HashMap<String, ArrayList<String>>();
-    }
-
-    //
-    public String toString()
-    {
-        String str = "";
-
-        if ( map_ != null )
-        {
-            Iterator itr = map_.entrySet().iterator();
-
-            while ( itr.hasNext() )
-            {
-                Map.Entry ent = (Map.Entry)itr.next();
-                ArrayList<String> val = (ArrayList<String>)ent.getValue();
-
-                str += ent.getKey() + "\n";
-
-                for ( String v : val )
-                    str += "+ " + v + "\n";
-
-                str += "\n";
-            }
-        }
-
-        return str;
     }
 
     // helper util

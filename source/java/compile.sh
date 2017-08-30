@@ -156,12 +156,13 @@ if [[ -z ${jva} ]] ; then
 
         # static ordered list
         jva="${jva} log.java"
+        jva="${jva} tuple.java"
         jva="${jva} hive_types.java"
         jva="${jva} hive_exception.java"
         jva="${jva} hive_parameter.java"
         jva="${jva} hive_properties.java"
         jva="${jva} callback_handler.java"
-        jva="${jva} hive_tuple.java"
+        jva="${jva} hive_hint.java"
         jva="${jva} hive_rule.java"
         jva="${jva} hive_session.java"
         jva="${jva} hive_bind.java"

@@ -59,7 +59,7 @@ public class hive_context
     //
     public hive_context( String sql, oracle.sql.ARRAY bnd, oracle.sql.STRUCT con ) throws SQLException, hive_exception
     {
-        log.trace( "hive_context::ctor: " + sql );
+        //log.trace( "hive_context::ctor: " + sql );
 
         rul_ = new hive_rule();
         sql_ = rul_.add( sql );
@@ -100,14 +100,14 @@ public class hive_context
     //
     public boolean ready()
     {
-        log.trace( "hive_context::ready: " + ( ! ( rst_ == null ) ) );
+        //log.trace( "hive_context::ready: " + ( ! ( rst_ == null ) ) );
         return ( ! ( rst_ == null ) );
     }
 
     //
     public void clear()
     {
-        log.trace( "hive_context::clear" );
+        //log.trace( "hive_context::clear" );
 
         // don't clear the connection, bindings, rules or sql ... only JDBC classes
         stm_ = null;
@@ -132,7 +132,7 @@ public class hive_context
             {
                 int idx = 0;
 
-                log.trace( "hive_context - Context binding data: " + bnd_.toString() );
+                //log.trace( "hive_context - Context binding data: " + bnd_.toString() );
 
                 for ( hive_bind bnd : bnd_.binds )
                 {
@@ -143,7 +143,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_BOOL:
 
-                            log.trace( "hive_context::applyBindings: TYPE_BOOL" );
+                            //log.trace( "hive_context::applyBindings: TYPE_BOOL" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -158,7 +158,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_DATE:
 
-                            log.trace( "hive_context::applyBindings: TYPE_DATE" );
+                            //log.trace( "hive_context::applyBindings: TYPE_DATE" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -173,7 +173,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_FLOAT:
 
-                            log.trace( "hive_context::applyBindings: TYPE_FLOAT" );
+                            //log.trace( "hive_context::applyBindings: TYPE_FLOAT" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -188,7 +188,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_INT:
 
-                            log.trace( "hive_context::applyBindings: TYPE_INT" );
+                            //log.trace( "hive_context::applyBindings: TYPE_INT" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -203,7 +203,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_LONG:
 
-                            log.trace( "hive_context::applyBindings: TYPE_LONG" );
+                            //log.trace( "hive_context::applyBindings: TYPE_LONG" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -218,7 +218,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_NULL:
 
-                            log.trace( "hive_context::applyBindings: TYPE_NULL" );
+                            //log.trace( "hive_context::applyBindings: TYPE_NULL" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -233,7 +233,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_ROWID:
 
-                            log.trace( "hive_context::applyBindings: TYPE_ROWID" );
+                            //log.trace( "hive_context::applyBindings: TYPE_ROWID" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -248,7 +248,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_SHORT:
 
-                            log.trace( "hive_context::applyBindings: TYPE_SHORT" );
+                            //log.trace( "hive_context::applyBindings: TYPE_SHORT" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -263,7 +263,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_STRING:
 
-                            log.trace( "hive_context::applyBindings: TYPE_STRING" );
+                            //log.trace( "hive_context::applyBindings: TYPE_STRING" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -278,7 +278,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_TIME:
 
-                            log.trace( "hive_context::applyBindings: TYPE_TIME" );
+                            //log.trace( "hive_context::applyBindings: TYPE_TIME" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -293,7 +293,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_TIMESTAMP:
 
-                            log.trace( "hive_context::applyBindings: TYPE_TIMESTAMP" );
+                            //log.trace( "hive_context::applyBindings: TYPE_TIMESTAMP" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -308,7 +308,7 @@ public class hive_context
                         //
                         case hive_bind.TYPE_URL:
 
-                            log.trace( "hive_context::applyBindings: TYPE_URL" );
+                            //log.trace( "hive_context::applyBindings: TYPE_URL" );
 
                             if ( ( bnd.scope == hive_bind.SCOPE_IN )
                               || ( bnd.scope == hive_bind.SCOPE_INOUT ) )
@@ -365,7 +365,7 @@ public class hive_context
             rmd_ = rst_.getMetaData();
         }
 
-        log.trace( "hive_context::columnCount rmd_: " + rmd_ );
+        //log.trace( "hive_context::columnCount rmd_: " + rmd_ );
         return rmd_.getColumnCount();
     }
 
@@ -374,7 +374,7 @@ public class hive_context
     {
         int typ = 0;
 
-        log.trace( "hive_context::columnType retrieving index: " + i );
+        //log.trace( "hive_context::columnType retrieving index: " + i );
 
         if ( rmd_ == null )
         {
@@ -386,16 +386,16 @@ public class hive_context
 
         if ( colRuleMapped( rmd_.getColumnName( i ) ) )
         {
-            log.trace( "hive_context::columnType getting mapped type from rul_: " + rul_ );
+            //log.trace( "hive_context::columnType getting mapped type from rul_: " + rul_ );
             typ = colRuleTypeCode( rmd_.getColumnName( i ) );
         }
         else
         {
-            log.trace( "hive_context::columnType getting native type from rmd_: " + rmd_ );
+            //log.trace( "hive_context::columnType getting native type from rmd_: " + rmd_ );
             typ = rmd_.getColumnType( i );
         }
 
-        log.trace( "hive_context::columnType returning: " + typ );
+        //log.trace( "hive_context::columnType returning: " + typ );
         return typ;
     }
 
@@ -414,7 +414,7 @@ public class hive_context
 
         typ = rmd_.getColumnType( i );
 
-        log.trace( "hive_context::rawType returning: " + typ );
+        //log.trace( "hive_context::rawType returning: " + typ );
         return typ;
     }
 
@@ -424,7 +424,7 @@ public class hive_context
     {
         ++rec_;
 
-        log.trace( "hive_context::next rst_: " + rst_ );
+        //log.trace( "hive_context::next rst_: " + rst_ );
         return rst_.next();
     }
 
@@ -553,14 +553,14 @@ public class hive_context
     {
         String limit = hive_parameter.value( "query_limit" );
 
-        log.trace( "hive_context::execute" );
+        //log.trace( "hive_context::execute" );
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
 
         if ( limit != null )
         {
-            log.trace( "hive_context::execute query_limit: " + limit );
+            //log.trace( "hive_context::execute query_limit: " + limit );
 
             try
             {
@@ -581,7 +581,7 @@ public class hive_context
     {
         boolean ok = false;
 
-        log.trace( "hive_context::executeDML" );
+        //log.trace( "hive_context::executeDML" );
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No DML defined for hive context" );
@@ -621,7 +621,7 @@ public class hive_context
     {
         boolean ok = false;
 
-        log.trace( "hive_context::executeDDL" );
+        //log.trace( "hive_context::executeDDL" );
 
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No DDL defined for hive context" );
@@ -653,7 +653,7 @@ public class hive_context
 
         if ( rst_ == null )
         {
-            log.trace( "hive_context::descSql: " + sql_ );
+            //log.trace( "hive_context::descSql: " + sql_ );
             PreparedStatement stm = applyBindings( con_.getConnection().prepareStatement( limitSql( sql_ ) ) );
             ResultSet rst = stm.executeQuery();
             rmd = rst.getMetaData();
@@ -678,7 +678,7 @@ public class hive_context
         if ( stm_ == null )
             stm_ = applyBindings( con_.getConnection().prepareStatement( sql_ ) );
 
-        log.trace( "hive_context::setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
+        //log.trace( "hive_context::setPreparedStatement returns: " + ( ! ( stm_ == null ) ) );
         return ( ! ( stm_ == null ) );
     }
 
@@ -694,7 +694,7 @@ public class hive_context
                 rst_ = stm_.executeQuery();
         }
 
-        log.trace( "hive_context::setResultSet returns: " + ( ! ( rst_ == null ) ) );
+        //log.trace( "hive_context::setResultSet returns: " + ( ! ( rst_ == null ) ) );
         return ( ! ( rst_ == null ) );
     }
 
@@ -710,7 +710,7 @@ public class hive_context
                 rmd_ = rst_.getMetaData();
         }
 
-        log.trace( "hive_context::setResultSetMetaData returns: " + ( ! ( rmd_ == null ) ) );
+        //log.trace( "hive_context::setResultSetMetaData returns: " + ( ! ( rmd_ == null ) ) );
         return ( ! ( rmd_ == null ) );
     }
 
@@ -743,7 +743,7 @@ public class hive_context
                 qry += " limit 0";
         }
 
-        log.trace( "hive_context::limitSql (zero): " + qry );
+        //log.trace( "hive_context::limitSql (zero): " + qry );
         return qry;
     }
 
@@ -777,7 +777,7 @@ public class hive_context
                     int lim = 0;
 
                     lim = Integer.parseInt( qry.substring( reg.start() + 5 ).trim() );
-                    log.trace( "hive_context::limitSql extsing limit: " + Integer.toString( lim ) );
+                    //log.trace( "hive_context::limitSql extsing limit: " + Integer.toString( lim ) );
 
                     if ( lim > rsz )
                     {
@@ -794,7 +794,7 @@ public class hive_context
             }
         }
 
-        log.trace( "hive_context::limitSql (" + Integer.toString( rsz ) + "): " + qry );
+        //log.trace( "hive_context::limitSql (" + Integer.toString( rsz ) + "): " + qry );
         return qry;
     }
 
@@ -836,19 +836,33 @@ public class hive_context
     {
         boolean ok = false;
 
-        log.trace( "hive_context::colRuleMapped: " + col + ", rule size: " + rul_.size() );
+        //log.trace( "hive_context::colRuleMapped: " + col + ", rule size: " + rul_.size() );
 
         if ( rul_.size() > 0 )
+            ok = ( rul_.item( HINT_USE_MAP, col ) != null );
+
+        //log.trace( "hive_context::colRuleMapped: returns: " + ( ( ok ) ? "true" : "false" ) );
+        return ok;
+    }
+
+    //
+    public boolean colRuleMapped( int idx ) throws SQLException, hive_exception
+    {
+        boolean ok = false;
+
+        //log.trace( "hive_context::colRuleMapped index: " + idx );
+
+        if ( rmd_ == null )
         {
-            String val = rul_.value( HINT_USE_MAP, col );
+            if ( rst_ == null )
+                setResultSet();
 
-            log.trace( "hive_context::colRuleMapped: rule size: " + rul_.size() );
-
-            if ( ( val != null ) && ( val.length() > 0 ) )
-                ok = true;
+            rmd_ = rst_.getMetaData();
         }
 
-        log.trace( "hive_context::colRuleMapped: returns: " + ( ( ok ) ? "true" : "false" ) );
+        ok = colRuleMapped( rmd_.getColumnName( idx ) );
+
+        //log.trace( "hive_context::colRuleMapped returns: " + ( ( ok ) ? "true" : "false" ) );
         return ok;
     }
 
@@ -856,30 +870,12 @@ public class hive_context
     public int colRuleTypeCode( String col )
     {
         int val = 0;
-        String dat = rul_.value( HINT_USE_MAP, col );
+        hive_hint dat = rul_.item( HINT_USE_MAP, col );
 
-        log.trace( "hive_context::colRuleTypeCode: " + col + ", value: " + dat );
+        if ( dat != null )
+            val = dat.code;
 
-        if ( ( dat != null ) && ( dat.length() > 0 ) )
-        {
-            hive_tuple<String, String> par = rul_.pair( dat );
-
-            if ( par != null )
-            {
-                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
-                {
-                    hive_tuple<String, String> typ = rul_.part( par.y );
-
-                    if ( typ != null )
-                    {
-                        if ( typ.x != null )
-                            val = hive_types.to_typecode( typ.x );
-                    }
-                }
-            }
-        }
-
-        log.trace( "hive_context::colRuleTypeCode: returns " + val + " [" + hive_types.to_typecode( val ) + "]" );
+        //log.trace( "hive_context::colRuleTypeCode: returns " + val + " [" + hive_types.to_typecode( val ) + "]" );
         return val;
     }
 
@@ -887,37 +883,19 @@ public class hive_context
     public int colRuleTypeJdbc( String col )
     {
         int val = 0;
-        String dat = rul_.value( HINT_USE_MAP, col );
+        hive_hint dat = rul_.item( HINT_USE_MAP, col );
 
-        log.trace( "hive_context::colRuleTypeJdbc: " + col + ", value: " + dat );
+        if ( dat != null )
+            val = dat.jdbc;
 
-        if ( ( dat != null ) && ( dat.length() > 0 ) )
-        {
-            hive_tuple<String, String> par = rul_.pair( dat );
-
-            if ( par != null )
-            {
-                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
-                {
-                    hive_tuple<String, String> typ = rul_.part( par.y );
-
-                    if ( typ != null )
-                    {
-                        if ( typ.x != null )
-                            val = hive_types.to_typejdbc( typ.x );
-                    }
-                }
-            }
-        }
-
-        log.trace( "hive_context::colRuleTypeJdbc: returns " + val );
+        //log.trace( "hive_context::colRuleTypeCode: returns " + val + " [" + hive_types.to_typecode( val ) + "]" );
         return val;
     }
 
     //
     public int colRuleLength( String col )
     {
-        log.trace( "hive_context::colRuleLength: " + col + " (redirecting)" );
+        //log.trace( "hive_context::colRuleLength: " + col + " (redirecting)" );
 
         // length and precision are the same
         return colRulePrecision( col );
@@ -927,53 +905,27 @@ public class hive_context
     public int colRulePrecision( String col )
     {
         int val = 0;
-        String dat = rul_.value( HINT_USE_MAP, col );
+        hive_hint dat = rul_.item( HINT_USE_MAP, col );
 
-        log.trace( "hive_context::colRulePrecision: " + col + ", value: " + dat );
-
-        if ( ( dat != null ) && ( dat.length() > 0 ) )
+        if ( dat != null )
         {
-            hive_tuple<String, String> par = rul_.pair( dat );
-
-            if ( par != null )
+            if ( dat.size.length() > 0 )
             {
-                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                try
                 {
-                    hive_tuple<String, String> typ = rul_.part( par.y );
-
-                    if ( typ != null )
-                    {
-                        if ( typ.x != null )
-                        {
-                            int tcd = hive_types.to_typecode( typ.x );
-
-                            if ( typ.y != null )
-                            {
-                                hive_tuple<String, String> tup = rul_.vals( typ.y );
-
-                                if ( ( tup.x != null ) && ( tup.x.length() > 0 ) )
-                                {
-                                    try
-                                    {
-                                        val = Integer.parseInt( tup.x );
-                                    }
-                                    catch ( NumberFormatException ex )
-                                    {
-                                        val = hive_types.default_precision_typecode( tcd );
-                                    }
-                                }
-                                else
-                                    val = hive_types.default_precision_typecode( tcd );
-                            }
-                            else
-                                val = hive_types.default_precision_typecode( tcd );
-                        }
-                    }
+                    val = Integer.parseInt( dat.size );
+                }
+                catch ( NumberFormatException ex )
+                {
+                    val = hive_types.default_precision_typecode( dat.code );
                 }
             }
+            else
+                val = hive_types.default_precision_typecode( dat.code );
         }
+        else
+            val = hive_types.default_precision_typecode( dat.code );
 
-        log.trace( "hive_context::colRulePrecision: returns " + val );
         return val;
     }
 
@@ -981,53 +933,27 @@ public class hive_context
     public int colRuleScale( String col )
     {
         int val = 0;
-        String dat = rul_.value( HINT_USE_MAP, col );
+        hive_hint dat = rul_.item( HINT_USE_MAP, col );
 
-        log.trace( "hive_context::colRuleScale: " + col + ", value: " + dat );
-
-        if ( ( dat != null ) && ( dat.length() > 0 ) )
+        if ( dat != null )
         {
-            hive_tuple<String, String> par = rul_.pair( dat );
-
-            if ( par != null )
+            if ( dat.opts.length() > 0 )
             {
-                if ( ( par.y != null ) && ( par.y.length() > 0 ) )
+                try
                 {
-                    hive_tuple<String, String> typ = rul_.part( par.y );
-
-                    if ( typ != null )
-                    {
-                        if ( typ.x != null )
-                        {
-                            int tcd = hive_types.to_typecode( typ.x );
-
-                            if ( typ.y != null )
-                            {
-                                hive_tuple<String, String> tup = rul_.vals( typ.y );
-
-                                if ( ( tup.y != null ) && ( tup.y.length() > 0 ) )
-                                {
-                                    try
-                                    {
-                                        val = Integer.parseInt( tup.y );
-                                    }
-                                    catch ( NumberFormatException ex )
-                                    {
-                                        val = hive_types.default_scale_typecode( tcd );
-                                    }
-                                }
-                                else
-                                    val = hive_types.default_scale_typecode( tcd );
-                            }
-                            else
-                                val = hive_types.default_scale_typecode( tcd );
-                        }
-                    }
+                    val = Integer.parseInt( dat.opts );
+                }
+                catch ( NumberFormatException ex )
+                {
+                    val = hive_types.default_scale_typecode( dat.code );
                 }
             }
+            else
+                val = hive_types.default_scale_typecode( dat.code );
         }
+        else
+            val = hive_types.default_scale_typecode( dat.code );
 
-        log.trace( "hive_context::colRuleScale: returns " + val );
         return val;
     }
 

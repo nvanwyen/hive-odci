@@ -53,7 +53,7 @@ public class hive_manager
     {
         key_ = key_.add( new BigDecimal( 1 ) );
 
-        log.trace( "hive_manager::nextKey key: " + key_.toString() );
+        //log.trace( "hive_manager::nextKey key: " + key_.toString() );
         return key_;
     }
 
@@ -73,7 +73,7 @@ public class hive_manager
             }
         }
 
-        log.trace( "hive_manager::findContext returns: " + key.toString() );
+        //log.trace( "hive_manager::findContext returns: " + key.toString() );
         return key;
     }
 
@@ -84,19 +84,19 @@ public class hive_manager
 
         if ( key.intValue() == 0 )
         {
-            log.trace( "hive_manager::createContext zero value key, generating next" );
+            //log.trace( "hive_manager::createContext zero value key, generating next" );
 
             key = nextKey();
             map_.put( key, ctx );
 
-            log.trace( "hive_manager::createContext new map size: " + map_.size() );
+            //log.trace( "hive_manager::createContext new map size: " + map_.size() );
         }
         else
         {
-            log.trace( "hive_manager::createContext found existing context" );
+            //log.trace( "hive_manager::createContext found existing context" );
         }
 
-        log.trace( "hive_manager::createContext return: " + key );
+        //log.trace( "hive_manager::createContext return: " + key );
         return key;
     }
 
@@ -104,7 +104,7 @@ public class hive_manager
     public hive_context getContext( BigDecimal key )
         throws hive_exception
     {
-        log.trace( "hive_manager::getContext key: " + key.toString() );
+        //log.trace( "hive_manager::getContext key: " + key.toString() );
         hive_context ctx = map_.get( key );
 
         if ( ctx == null )

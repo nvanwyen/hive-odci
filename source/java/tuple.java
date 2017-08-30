@@ -29,20 +29,20 @@ import java.lang.*;
 //
 @SuppressWarnings( { "deprecation", "unchecked" } )
 //
-public class hive_tuple<X, Y> 
+public class tuple<X,Y>
 {
     //
-    public X x; 
-    public Y y; 
+    public X x;
+    public Y y;
 
     //
-    public hive_tuple() { /* ctor */ }
+    public tuple() { /* ctor */ }
 
     //
-    public hive_tuple( X x, Y y )
+    public tuple( X x, Y y )
     {
-        this.x = x; 
-        this.y = y; 
+        this.x = x;
+        this.y = y;
     }
 
     //

@@ -38,13 +38,6 @@ import oracle.jdbc.OracleTypes;
 public class hive_types
 {
     /*
-        offset values, adjust TYPECODE/TYPJDBC constants
-        only as needed to avoid overlap in values
-    */
-    public static final int TYPECODE_OFFSET = 10000;
-    public static final int TYPEJDBC_OFFSET = 50000;
-
-    /*
         This java class duplicates the PL/SQL SYS.DBMS_TYPES
         package specification type codes for convenience
         as of 12c (may not be applicable in later version)
@@ -95,7 +88,7 @@ public class hive_types
     public static final int TYPEJDBC_BIT              = java.sql.Types.BIT;
     public static final int TYPEJDBC_BLOB             = java.sql.Types.BLOB;
     public static final int TYPEJDBC_BOOLEAN          = java.sql.Types.BOOLEAN;
-    public static final int TYPEJDBC_CHAR             = java.sql.Types.CHAR            + TYPEJDBC_OFFSET;
+    public static final int TYPEJDBC_CHAR             = java.sql.Types.CHAR;
     public static final int TYPEJDBC_CLOB             = java.sql.Types.CLOB;
     public static final int TYPEJDBC_DATALINK         = java.sql.Types.DATALINK;
     public static final int TYPEJDBC_DATE             = java.sql.Types.DATE;
@@ -111,7 +104,7 @@ public class hive_types
     public static final int TYPEJDBC_NCHAR            = java.sql.Types.NCHAR;
     public static final int TYPEJDBC_NCLOB            = java.sql.Types.NCLOB;
     public static final int TYPEJDBC_NULL             = java.sql.Types.NULL;
-    public static final int TYPEJDBC_NUMERIC          = java.sql.Types.NUMERIC         + TYPEJDBC_OFFSET;
+    public static final int TYPEJDBC_NUMERIC          = java.sql.Types.NUMERIC;
     public static final int TYPEJDBC_NVARCHAR         = java.sql.Types.NVARCHAR;
     public static final int TYPEJDBC_OTHER            = java.sql.Types.OTHER;
     public static final int TYPEJDBC_REAL             = java.sql.Types.REAL;
@@ -124,7 +117,7 @@ public class hive_types
     public static final int TYPEJDBC_TIMESTAMP        = java.sql.Types.TIMESTAMP;
     public static final int TYPEJDBC_TINYINT          = java.sql.Types.TINYINT;
     public static final int TYPEJDBC_VARBINARY        = java.sql.Types.VARBINARY;
-    public static final int TYPEJDBC_VARCHAR          = java.sql.Types.VARCHAR         + TYPEJDBC_OFFSET;
+    public static final int TYPEJDBC_VARCHAR          = java.sql.Types.VARCHAR;
 
     /*
         ODCI return 
@@ -137,40 +130,119 @@ public class hive_types
     {
         int ret = 0;
 
-        log.trace( "hive_types::to_jdbc_type typ: " + typ );
+        //log.trace( "hive_types::to_jdbc_type typ: " + typ );
 
         //
         switch ( typ )
         {
-            case TYPECODE_VARCHAR2:
-                ret = java.sql.Types.VARCHAR;
+            case TYPECODE_DATE:
+                ret = TYPEJDBC_DATE;
                 break;
 
             case TYPECODE_NUMBER:
-                ret = java.sql.Types.INTEGER;
+                ret = TYPEJDBC_NUMERIC;
                 break;
 
-            case TYPECODE_CLOB:
-                ret = java.sql.Types.CLOB;
+            case TYPECODE_RAW:
+                ret = TYPEJDBC_LONGVARBINARY;
+                break;
+
+            case TYPECODE_CHAR:
+                ret = TYPEJDBC_CHAR;
+                break;
+
+            case TYPECODE_VARCHAR2:
+            case TYPECODE_VARCHAR:
+                ret = TYPEJDBC_VARCHAR;
+                break;
+
+            case TYPECODE_MLSLABEL:
+                ret = TYPEJDBC_STRUCT;
                 break;
 
             case TYPECODE_BLOB:
-                ret = java.sql.Types.BLOB;
+                ret = TYPEJDBC_BLOB;
                 break;
 
-            case TYPECODE_DATE:
-                ret = java.sql.Types.DATE;
+            case TYPECODE_BFILE:
+                ret = TYPEJDBC_OTHER;
+                break;
+
+            case TYPECODE_CLOB:
+                ret = TYPEJDBC_CLOB;
+                break;
+
+            case TYPECODE_CFILE:
+                ret = TYPEJDBC_OTHER;
+                break;
+
+            case TYPECODE_TIMESTAMP:
+            case TYPECODE_TIMESTAMP_TZ:
+            case TYPECODE_TIMESTAMP_LTZ:
+                ret = TYPEJDBC_TIMESTAMP;
+                break;
+
+            case TYPECODE_INTERVAL_YM:
+            case TYPECODE_INTERVAL_DS:
+                ret = TYPEJDBC_TIMESTAMP;
+                break;
+
+            case TYPECODE_REF:
+                ret = TYPEJDBC_REF;
                 break;
 
             case TYPECODE_OBJECT:
+                ret = TYPEJDBC_JAVA_OBJECT;
+                break;
+
+            case TYPECODE_VARRAY:
+                ret = TYPEJDBC_ARRAY;
+                break;
+
+            case TYPECODE_TABLE:
+                ret = TYPEJDBC_STRUCT;
+                break;
+
+            case TYPECODE_NAMEDCOLLECTION:
+                ret = TYPEJDBC_STRUCT;
+                break;
+
+            case TYPECODE_OPAQUE:
+                ret = TYPEJDBC_JAVA_OBJECT;
+                break;
+
+            case TYPECODE_NCHAR:
+                ret = TYPEJDBC_CHAR;
+                break;
+
+            case TYPECODE_NVARCHAR2:
+                ret = TYPEJDBC_VARCHAR;
+                break;
+
+            case TYPECODE_NCLOB:
+                ret = TYPEJDBC_BLOB;
+                break;
+
+            case TYPECODE_BFLOAT:
+                ret = TYPEJDBC_FLOAT;
+                break;
+
+            case TYPECODE_BDOUBLE:
+                ret = TYPEJDBC_DOUBLE;
+                break;
+
+            case TYPECODE_UROWID:
+                ret = TYPEJDBC_ROWID;
+                break;
+
             default:
-                log.trace( "hive_types::to_jdbc_type using default" );
-                ret = java.sql.Types.STRUCT;
+                //log.trace( "hive_types::to_jdbc_type using default" );
+                ret = TYPEJDBC_NULL;
                 break;
         }
 
         //
-        log.trace( "hive_types::to_jdbc_type returns: " + ret );
+        //log.trace( "hive_types::to_jdbc_type returns: " + ret );
         return ret;
     }
 
@@ -179,7 +251,7 @@ public class hive_types
     {
         int ret = 0;
 
-        log.trace( "hive_types::to_dbms_type typ: " + typ + " [" + to_typejdbc( typ ) + "]" );
+        //log.trace( "hive_types::to_dbms_type typ: " + typ + " [" + to_typejdbc( typ ) + "]" );
 
         //
         switch ( typ )
@@ -239,13 +311,13 @@ public class hive_types
             case TYPEJDBC_STRUCT:
             case TYPEJDBC_VARBINARY:
             default:
-                log.trace( "hive_types::to_dbms_type using default" );
+                //log.trace( "hive_types::to_dbms_type using default" );
                 ret = typ; // ? unknown ?
                 break;
         }
 
         //
-        log.trace( "hive_types::to_dbms_type returns: " + ret + " [" + to_typecode( ret ) + "]" );
+        //log.trace( "hive_types::to_dbms_type returns: " + ret + " [" + to_typecode( ret ) + "]" );
         return ret;
     }
 
@@ -323,7 +395,7 @@ public class hive_types
     {
         int typ = 0;
 
-        log.trace( "hive_types::to_typecode: " + str );
+        //log.trace( "hive_types::to_typecode: " + str );
 
         if ( str.trim().equalsIgnoreCase( "DATE" ) )
             typ = TYPECODE_DATE;
@@ -384,7 +456,7 @@ public class hive_types
         else 
             typ = 0;
 
-        log.trace( "hive_types::to_typecode: returns " + typ );
+        //log.trace( "hive_types::to_typecode: returns " + typ );
         return typ;
     }
 
@@ -393,7 +465,7 @@ public class hive_types
     {
         int typ = 0;
 
-        log.trace( "hive_types::to_typejdbc: " + str );
+        //log.trace( "hive_types::to_typejdbc: " + str );
 
         if ( str.trim().equalsIgnoreCase( "ARRAY" ) )
             typ = TYPEJDBC_ARRAY;
@@ -488,7 +560,7 @@ public class hive_types
         else 
             typ = 0;
 
-        log.trace( "hive_types::to_typejdbc: returns " + typ );
+        //log.trace( "hive_types::to_typejdbc: returns " + typ );
         return typ;
     }
 
@@ -497,7 +569,7 @@ public class hive_types
     {
         String val = "";
 
-        log.trace( "hive_types::to_typecode: " + typ );
+        //log.trace( "hive_types::to_typecode: " + typ );
 
         switch ( typ )
         {
@@ -614,11 +686,11 @@ public class hive_types
                 break;
 
             default:
-                log.trace( "hive_types::to_typecode using default" );
+                //log.trace( "hive_types::to_typecode using default" );
                 break;
         }
 
-        log.trace( "hive_types::to_typecode: returns " + val );
+        //log.trace( "hive_types::to_typecode: returns " + val );
         return val;
     }
 
@@ -627,7 +699,7 @@ public class hive_types
     {
         String val = "";
 
-        log.trace( "hive_types::to_typejdbc: " + typ );
+        //log.trace( "hive_types::to_typejdbc: " + typ );
 
         switch ( typ )
         {
@@ -776,11 +848,11 @@ public class hive_types
                 break;
 
             default:
-                log.trace( "hive_types::to_typejdbc using default" );
+                //log.trace( "hive_types::to_typejdbc using default" );
                 break;
         }
 
-        log.trace( "hive_types::to_typejdbc: returns " + val );
+        //log.trace( "hive_types::to_typejdbc: returns " + val );
         return val;
     }
 
@@ -789,7 +861,7 @@ public class hive_types
     {
         int def = 0;
 
-        log.trace( "hive_types::default_precision_typecode: " + typ );
+        //log.trace( "hive_types::default_precision_typecode: " + typ );
 
         switch ( typ )
         {
@@ -831,12 +903,12 @@ public class hive_types
             case TYPECODE_TIMESTAMP_TZ:
             case TYPECODE_UROWID:
             default:
-                log.trace( "hive_types::default_precision_typecode using default" );
+                //log.trace( "hive_types::default_precision_typecode using default" );
                 def = 0;
                 break;
         }
 
-        log.trace( "hive_types::default_precision_typecode: returns " + def );
+        //log.trace( "hive_types::default_precision_typecode: returns " + def );
         return def;
     }
 
@@ -845,7 +917,7 @@ public class hive_types
     {
         int def = 0;
 
-        log.trace( "hive_types::default_precision_typejdbc: " + typ );
+        //log.trace( "hive_types::default_precision_typejdbc: " + typ );
 
         switch ( typ )
         {
@@ -892,12 +964,12 @@ public class hive_types
             case TYPEJDBC_SMALLINT:
             case TYPEJDBC_TINYINT:
             default:
-                log.trace( "hive_types::default_scale_typecode using default" );
+                //log.trace( "hive_types::default_scale_typecode using default" );
                 def = 0;
                 break;
         }
 
-        log.trace( "hive_types::default_scale_typecode: returns " + def );
+        //log.trace( "hive_types::default_scale_typecode: returns " + def );
         return def;
     }
 
@@ -906,7 +978,7 @@ public class hive_types
     {
         int def = 0;
 
-        log.trace( "hive_types::default_scale_typecode: " + typ );
+        //log.trace( "hive_types::default_scale_typecode: " + typ );
 
         switch ( typ )
         {
@@ -945,12 +1017,12 @@ public class hive_types
             case TYPECODE_VARCHAR2:
             case TYPECODE_VARRAY:
             default:
-                log.trace( "hive_types::default_scale_typejdbc using default" );
+                //log.trace( "hive_types::default_scale_typejdbc using default" );
                 def = 0;
                 break;
         }
 
-        log.trace( "hive_types::default_scale_typejdbc: returns " + def );
+        //log.trace( "hive_types::default_scale_typejdbc: returns " + def );
         return def;
     }
 
@@ -959,7 +1031,7 @@ public class hive_types
     {
         int def = 0;
 
-        log.trace( "hive_types::default_scale_typejdbc: " + typ );
+        //log.trace( "hive_types::default_scale_typejdbc: " + typ );
 
         switch ( typ )
         {
@@ -1006,12 +1078,12 @@ public class hive_types
             case TYPEJDBC_VARBINARY:
             case TYPEJDBC_VARCHAR:
             default:
-                log.trace( "hive_types::default_scale_typejdbc using default" );
+                //log.trace( "hive_types::default_scale_typejdbc using default" );
                 def = 0;
                 break;
         }
 
-        log.trace( "hive_types::default_scale_typejdbc: returns " + def );
+        //log.trace( "hive_types::default_scale_typejdbc: returns " + def );
         return def;
     }
 
@@ -1023,7 +1095,7 @@ public class hive_types
         Connection con = null;
 
         //
-        log.trace( "hive_types::to_clob val: " + val );
+        //log.trace( "hive_types::to_clob val: " + val );
 
         try
         {
@@ -1035,12 +1107,12 @@ public class hive_types
 
             if ( ( val != null ) && ( val.length() > 0 ) )
             {
-                log.trace( "hive_types::to_clob setting CLOB value" );
+                //log.trace( "hive_types::to_clob setting CLOB value" );
                 clob.setString( 1, val );
             }
             else
             {
-                log.trace( "hive_types::to_clob setting empty CLOB" );
+                //log.trace( "hive_types::to_clob setting empty CLOB" );
                 clob.setString( 1, "" );
             }
         }
@@ -1062,7 +1134,7 @@ public class hive_types
         }
 
         //
-        log.trace( "hive_types::to_clob returns: " + clob );
+        //log.trace( "hive_types::to_clob returns: " + clob );
         return clob;
     }
 
@@ -1074,7 +1146,7 @@ public class hive_types
         Connection con = null;
 
         //
-        log.trace( "hive_types::to_blob val: " + val );
+        //log.trace( "hive_types::to_blob val: " + val );
 
         try
         {
@@ -1090,15 +1162,15 @@ public class hive_types
 
             if ( val != null )
             {
-                log.trace( "hive_types::to_blob getting BLOB data" );
+                //log.trace( "hive_types::to_blob getting BLOB data" );
                 byte[] data = out.toByteArray();
 
-                log.trace( "hive_types::to_blob setting BLOB value length: " + data.length );
+                //log.trace( "hive_types::to_blob setting BLOB value length: " + data.length );
                 blob.setBytes( 1, data );
             }
             else
             {
-                log.trace( "hive_types::to_blob setting empty BLOB" );
+                //log.trace( "hive_types::to_blob setting empty BLOB" );
                 blob.setBytes( 1,  new byte[0] );
             }
         }
@@ -1120,7 +1192,7 @@ public class hive_types
         }
 
         //
-        log.trace( "hive_types::to_blob returns: " + blob );
+        //log.trace( "hive_types::to_blob returns: " + blob );
         return blob;
     }
 };

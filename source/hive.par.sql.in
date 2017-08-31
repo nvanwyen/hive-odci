@@ -145,7 +145,8 @@ begin
     param_( 'default_bind_access', 'public:1, %user%:3' );
 
     --
-    param_( 'query_limit', 1000 );
+    -- param_( 'query_limit', 1000 );
+    param_( 'query_limit', 0 );
 
 end;
 /

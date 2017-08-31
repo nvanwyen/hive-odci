@@ -63,8 +63,6 @@ public class hive_session
         url  = "";
         name = "";
         pass = "";
-
-        //log.trace( "hive_session::ctor default" );
     }
 
     //
@@ -78,8 +76,6 @@ public class hive_session
         url  = u;
         name = "";
         pass = "";
-
-        //log.trace( "hive_session::ctor - url: " + u );
     }
 
     //
@@ -93,8 +89,6 @@ public class hive_session
         url  = u;
         name = n;
         pass = p;
-
-        //log.trace( "hive_session::ctor - url: " + u + " , name: " + n + ", pass: " + p );
     }
 
     //
@@ -114,8 +108,6 @@ public class hive_session
             if ( a.trim().length() > 0 )
                 auth = a;
         }
-
-        //log.trace( "hive_session::ctor - url: " + u + " , name: " + n + ", pass: " + p );
     }
 
     //
@@ -168,11 +160,7 @@ public class hive_session
                 else
                     auth = "normal";
             }
-
-            //log.trace( "hive_session::ctor - oracle.sql.STRUCT: " + obj.toString() );
         }
-        else
-            log.info( "hive_session::ctor - oracle.sql.STRUCT: NULL" );
     }
 
     //
@@ -186,7 +174,6 @@ public class hive_session
         str += "... pass: " + pass + "\n";
         str += "... auth: " + auth + "\n";
 
-        //log.trace( "hive_session::toString: " + str );
         return str;
     }
 
@@ -204,7 +191,6 @@ public class hive_session
                 eq = true;
         }
 
-        //log.trace( "hive_session::equals: " + ( ( eq ) ? "TRUE" : "FALSE" ) );
         return eq;
     }
 };

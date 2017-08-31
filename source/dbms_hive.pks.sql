@@ -45,7 +45,7 @@ create or replace package dbms_hive as
     procedure remove( name in varchar2 );                   -- unset (e.g. remove)
 
     --
-    procedure purge_log;
+    procedure purge_log( usr in varchar2 default null );
     procedure purge_filter( key in varchar2 default null );
 
     --

@@ -451,16 +451,29 @@ create or replace package body impl as
 
                     begin
 
-                        if ( to_number( value ) <= to_number( sysval_( 'query_limit' ) ) ) then
+                        if ( sysval_( 'query_limit' ) > 0 ) then
 
-                            log_info( 'impl::session_param( ' || name || ' ) set restricted: ' || nvl( value, '{null}' ) );
-                            dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
+                            if ( to_number( value ) <= to_number( sysval_( 'query_limit' ) ) ) then
+
+                                log_info( 'impl::session_param( ' || name || ' ) set restricted: ' || nvl( value, '{null}' ) );
+                                dbms_session.set_context( ctx_, substr( name, 1, 30 ), value );
+
+                            else
+
+                                raise_application_error( ec_not_eligible, 'Parameter retricted eligibility, ' ||
+                                                                          'value must be less or equal to: '  || 
+                                                                          sysval_( 'query_limit' ) );
+
+                            end if;
 
                         else
 
-                            raise_application_error( ec_not_eligible, 'Parameter retricted eligibility, ' ||
-                                                                      'value must be less or equal to: '  || 
-                                                                      sysval_( 'query_limit' ) );
+                            if ( sysval_( 'query_limit' ) < 0 ) then
+
+                               raise_application_error( ec_not_eligible, 'Parameter retricted eligibility, ' ||
+                                                                          'value must be greater or equal to aero (0)' );
+
+                            end if;
 
                         end if;
 

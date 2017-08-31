@@ -211,18 +211,27 @@ create or replace package body dbms_hive as
     end remove;
 
     --
-    procedure purge_log is
+    procedure purge_log( usr in varchar2 default null ) is
 
         pragma autonomous_transaction;
 
     begin
 
-        log_inf_( 'purge_log called' );
+        log_inf_( 'purge_log called, usr: ' || nvl( usr, '{null}' ) );
 
-        --
-        delete from log$;
+        if ( usr is not null ) then
 
-        log_wrn_( 'purge_log removed ' || to_char( sql%rowcount ) || ' row(s)' );
+            --
+            delete from log$ where name = usr;
+            log_wrn_( 'purge_log removed ' || to_char( sql%rowcount ) || ' row(s) for name: ' || usr );
+
+        else
+
+            --
+            execute immediate 'truncate table log$ drop storage';
+            log_wrn_( 'purge_log truncated log' );
+
+        end if;
 
         commit;
 

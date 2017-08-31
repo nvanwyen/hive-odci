@@ -132,6 +132,22 @@ select stamp,
  order by stamp;
 
 --
+create or replace view user_hive_log
+as
+select stamp,
+       type,
+       decode( type, 0, 'none',
+                     1, 'error',
+                     2, 'warn',
+                     4, 'info',
+                     8, 'trace',
+                        'unknown' ) tier,
+       text
+  from log$
+ where name = user
+ order by stamp;
+
+--
 create or replace view user_hive_params
 as
 select name,

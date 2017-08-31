@@ -163,8 +163,6 @@ public class hive_bind
                 val = true;
         }
 
-
-        //log.trace( "hive_bind::toBool: " + toString() );
         return val;
     }
 
@@ -191,7 +189,6 @@ public class hive_bind
             }
         }
 
-        //log.trace( "hive_bind::toDate: " + toString() );
         return val;
     }
 
@@ -205,7 +202,6 @@ public class hive_bind
             val = Float.valueOf( value );
         }
 
-        //log.trace( "hive_bind::toFloat: " + toString() );
         return val;
     }
 
@@ -219,7 +215,6 @@ public class hive_bind
             val = Integer.valueOf( value );
         }
 
-        //log.trace( "hive_bind::toInt: " + toString() );
         return val;
     }
 
@@ -233,14 +228,12 @@ public class hive_bind
             val = Long.valueOf( value );
         }
 
-        //log.trace( "hive_bind::toLong: " + toString() );
         return val;
     }
 
     //
     public String toRowid()
     {
-        //log.trace( "hive_bind::toRowid: " + toString() );
         return toVarchar();
     }
 
@@ -254,14 +247,12 @@ public class hive_bind
             val = Short.valueOf( value );
         }
 
-        //log.trace( "hive_bind::toShort: " + toString() );
         return val;
     }
 
     //
     public String toVarchar()
     {
-        //log.trace( "hive_bind::tovarchar: " + toString() );
         return value;
     }
 
@@ -288,7 +279,6 @@ public class hive_bind
             }
         }
 
-        //log.trace( "hive_bind::toTime: " + toString() );
         return val;
     }
 
@@ -315,7 +305,6 @@ public class hive_bind
             }
         }
 
-        //log.trace( "hive_bind::toTimestamp: " + toString() );
         return val;
     }
 
@@ -333,7 +322,6 @@ public class hive_bind
             log.warn( "hive_bind::toUrl MalformedURLException: " + ex.getMessage() );
         }
 
-        //log.trace( "hive_bind::toUrl: " + toString() );
         return val;
     }
 };

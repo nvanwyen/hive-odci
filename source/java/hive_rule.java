@@ -61,14 +61,12 @@ public class hive_rule
     //
     public hive_rule()
     {
-        //log.trace( "hive_rule default ctor" );
         map_ = new HashMap<String, HashMap<String,hive_hint>>();
     }
 
     //
     public hive_rule( String sql )
     {
-        //log.trace( "hive_rule ctor sql: " + sql );
         map_ = new HashMap<String, HashMap<String,hive_hint>>();
         add( sql );
     }
@@ -76,27 +74,21 @@ public class hive_rule
     //
     public String sql()
     {
-        //log.trace( "hive_rule::sql: " + sql_ );
         return sql_;
     }
 
     //
     public HashMap<String, HashMap<String,hive_hint>> map()
     {
-        //log.trace( "hive_rule::map: " + map_.toString() );
         return map_;
     }
 
     //
     public String add( String sql )
     {
-        //log.trace( "hive_rule::add sql: " + sql );
-
         for ( String[] blk : BLOCK )
         {
             String hnt;
-
-            //log.trace( "hive_rule::add processing block: " + blk );
 
             if ( ( hnt = hint( sql, blk ) ).length() > 0 )
             {
@@ -104,21 +96,14 @@ public class hive_rule
                 {
                     HashMap<String,hive_hint> rul;
 
-                    //log.trace( "hive_rule::add processing supported: " + sup );
-
                     if ( ( rul = process( hnt, sup ) ) != null )
-                    {
-                        //log.trace( "hive_rule::add item: " + rul.toString() );
                         map_.put( sup, rul );
-                    }
                 }
 
                 sql = prune( sql, blk );
                 break;
             }
         }
-
-        //log.trace( "hive_rule::add returning: " + sql );
 
         sql_ = sql;
         return sql;
@@ -134,7 +119,6 @@ public class hive_rule
         else
             sz = map_.size();
 
-        //log.trace( "hive_rule::size returning: " + sz );
         return sz;
     }
 
@@ -149,7 +133,6 @@ public class hive_rule
         else
             sz = val.size();
 
-        //log.trace( "hive_rule::size [" + key + "] returning: " + sz );
         return sz;
     }
 
@@ -239,8 +222,6 @@ public class hive_rule
         int bgn = 0;
         int end = 0;
 
-        //log.trace( "hive_rule::hint called sql: " + sql + ", blk: " + blk.toString() );
-
         //
         if ( ( sql != null ) 
         && ( ( bgn = sql.indexOf( blk[ OPEN ] ) ) > 3 ) // must be past DML/DDL "first" operator
@@ -249,7 +230,6 @@ public class hive_rule
             val = sql.substring( bgn + blk[ OPEN ].length(), end - 1 );
         }
 
-        //log.trace( "hive_rule::hint returns: " + val );
         return val;
     }
 
@@ -259,8 +239,6 @@ public class hive_rule
         String val = "";
         int bgn = 0;
         int end = 0;
-
-        //log.trace( "hive_rule::prune called sql: " + sql + ", blk: " + blk.toString() );
 
         //
         if ( ( sql != null ) 
@@ -273,7 +251,6 @@ public class hive_rule
         else
             sql = val;
 
-        //log.trace( "hive_rule::prune returns: " + val );
         return sql;
     }
 
@@ -282,8 +259,6 @@ public class hive_rule
     {
         int pos = 0;
         HashMap<String,hive_hint> itm = null;
-
-        //log.trace( "hive_rule::process hnt: " + hnt + ", sup: " + sup );
 
         if ( ( pos = hnt.indexOf( sup ) ) > -1 )
         {
@@ -413,7 +388,6 @@ public class hive_rule
             }
         }
 
-        //log.trace( "hive_rule::process returns: " + ( ( itm == null ) ? "NULL" : itm.toString() ) );
         return itm;
     }
 
@@ -464,7 +438,6 @@ public class hive_rule
             }
         }
 
-        //log.trace( "hive_rule::part returns: " + ( ( tup == null ) ? "NULL" : tup.toString() ) );
         return tup;
     }
 
@@ -500,7 +473,6 @@ public class hive_rule
             }
         }
 
-        //log.trace( "hive_rule::vals returns: " + ( ( tup == null ) ? "NULL" : tup.toString() ) );
         return tup;
     }
 

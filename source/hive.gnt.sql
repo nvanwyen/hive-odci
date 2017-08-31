@@ -58,6 +58,7 @@ grant select on hive.dba_hive_log to hive_admin;
 grant select on hive.user_hive_params to hive_user;
 grant select on hive.user_hive_filters to hive_user;
 grant select on hive.user_hive_filter_privs to hive_user;
+grant select on hive.user_hive_log to hive_user;
 
 -- hive_admin grants
 --

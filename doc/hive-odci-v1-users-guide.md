@@ -351,7 +351,7 @@ bound (e.g. string, date, number, etc...). And the third is the scope of
 the bind, most useful for DML operations (e.g. IN, OUT, IN/OUT).
 
 In our case we only care about scope references of IN, hence the
-```1 /* ref_in */```. Since both bind operators are ``DATE`` variables
+```1 /* ref_in */```. Since both bind operators are ```DATE``` variables
 they both have ```1 /* type_date */```.
 
 The actual bound data is based on ```SYSDATE```, but since we don't know
@@ -376,7 +376,7 @@ We now have replacements for both the PL/SQL Reporting and the monthly
 
 You guessed it; DML. Our application is still putting data in, modifying
 it and removing it so we need to support that too. No problem. We can use
-an ```INSTEAD OF``` trigger and send our ```INSEERT```, ```UPDATE``` and
+an ```INSTEAD OF``` trigger and send our ```INSERT```, ```UPDATE``` and
 ```DELETE``` commands to Hadopp/Hive using Hive-ODCI.
 ```
     create or replace trigger scott.user_log_dml
@@ -474,6 +474,143 @@ array of bind objects and connection information.
 The only real difference here is the example is creating and using local
 variables for ```HIVE_BINDS``` and the ```HIVE_BINDING``` types to show
 how it can be used in that manner.
+
+#### Hints
+The Hive SQL-Like for Hadoop allows for hints to be passed in
+which control plan execution and join optimization, the Hive-ODCI
+interface also allows for hints to be passed to the ODCI engine
+which turn on or provide additional functionality. These hints
+are parsed and removed from the query before being passed off to 
+Hive for processing. Any hints not supported by Hive-ODCI remain 
+in place and are passed in as provided.
+
+All hints are provided as comment blocks to the query, just like 
+an Oracle or Hive hint. Comment blocks are wrapped, starting with
+```/*+``` and ending in ```*/``` or start with ```--+``` and end with
+a newline. 
+
+##### typecast()
+This hint provides a mechanism for casting data types in Hive
+to ones provided to Oracle. This is useful when the Hive data type is
+not supported by Oracle or the data type in Hive is insufficient for
+describing the Oracle type.
+
+Take for example the universal Hive data type ```string```, which 
+by default is handled as a ```VARCHAR2(4000)``` by Hive-ODCI.
+However, suppose that the original data type was a ```CLOB```, or
+simply that the ```string``` column exceeds the ```4000``` 
+character limit? This is where the ```typecast()``` hint comes into
+play. You can instruct Hive-ODCI to create a ```CLOB``` column data
+type when the column name is encountered with a casting rule.
+
+Casting rules are either space or comma delineated while wrapped in
+the parenthesis of the ```typecast()``` keyword. Each rule is
+formatted by the column name in the Hive record-set delineated by a
+colon with the following data type and optionally  length, precision 
+and scale.
+
+```
+    column_name:datatype[(length/precision,scale)]
+```
+
+
+Let's take the above SQL and assume that when Scoop was used to
+originally copied to HDFS that it was done by an over zealous 
+administrator, who took the high-road and made every Hive column
+a ```string```. Oops, that's not going to work for us because the 
+original table had the ```STAMP``` column as a ```DATE``` and the
+ ```MESSAGE``` column as a ```CLOB``` and we know that it will exceed
+ ```4000``` characters in length.
+ 
+ So let's confirm be first describing the table ...
+
+```
+    SQL> col "col_name"   for a30
+    SQL> col "data_type"  for a30
+    SQL> col "comment"    for a20
+
+    SQL> select * from table( hive_q( 'desc user_log', null, null ) );
+
+    col_name         data_type     comment
+    ---------------- ------------- ---------
+    stamp            string
+    account          string
+    message          string
+```
+
+If we cast those types to the correct data types, using ```typecast()```
+we can rest assure that the Oracle view or cursor returned is the
+correct data type.
+
+If we recreate or view, this time using the casting rule, as follows 
+the type defined in Oracle will now be correct.
+
+```
+    --
+    create or replace view scott.user_log
+        (
+            stamp, 
+            account, 
+            message 
+        )
+    as
+    select * 
+      from table( hive_q( q'[ select /*+ stamp:date message:clob */
+                                     stamp, 
+                                     account, 
+                                     message 
+                                from user_log
+                               order by stamp ]' ) ) 
+    /
+```
+
+Now when we look at our ```VIEW``` it is described correctly ...
+
+```
+    SQL> desc SCOTT.USER_LOG
+
+     Name           Null?    Type
+     -------------- -------- ---------------
+     STAMP                   DATE
+     ACCOUNT                 VARCHAR2(30)
+     MESSAGE                 CLOB
+```
+
+For other types, you can optionally define length, precision and scale.
+Some other examples may look like ...
+
+```
+    select /*+ 
+              cust_id:number(9) 
+              salary:number(7,2)
+              dob:timestamp(2) 
+              first_name:varchar2(50)
+              last_name:varchar2(100)
+              middle_initial:char(1)
+           */
+      from customers
+```
+
+If you have a large number of columns, you can use the helper
+function ```HIVE_HINT()``` (below), against a template, to generate the hints
+for you.
+
+
+```
+    SQL> col hint for a80 word_wrap
+    SQL> select hive_hint( 'SCOTT', 'CUST' ) hint from dual;
+
+    HINT
+    -------------------------------------------
+    /*+ cust_id:number(9) salary:number(7,2)
+    dob:timestamp(2) first_name:varchar2(50)
+    last_name:varchar2(100)
+    middle_initial:char(1) */
+    
+```
+
+If the column is not encountered during execution, Hive-ODCI simply
+ignores the rule.
 
 #### Final thought
 
@@ -934,7 +1071,7 @@ for both Administrators and Users.
 ### dba_hive_params
 Lists both the system and session level values.
 
-This view is accessible only by the ```HIVE_ADMIN`` role
+This view is accessible only by the ```HIVE_ADMIN``` role
 
 * Columns
 ```
@@ -946,7 +1083,7 @@ This view is accessible only by the ```HIVE_ADMIN`` role
 ### dba_hive_filters
 Lists the saved Filters.
 
-This view is accessible only by the ```HIVE_ADMIN`` role
+This view is accessible only by the ```HIVE_ADMIN``` role
 
 * Columns
 ```
@@ -960,7 +1097,7 @@ This view is accessible only by the ```HIVE_ADMIN`` role
 ### dba_hive_filter_privs
 Lists the privileges of the saved Filters.
 
-This view is accessible only by the ```HIVE_ADMIN`` role
+This view is accessible only by the ```HIVE_ADMIN``` role
 
 * Columns
 ```
@@ -973,20 +1110,34 @@ This view is accessible only by the ```HIVE_ADMIN`` role
 ### dba_hive_log
 Lists the log data
 
-This view is accessible only by the ```HIVE_ADMIN`` role
+This view is accessible only by the ```HIVE_ADMIN``` role
 
 * Columns
 ```
     stamp   -   The time stamp the log record
     name    -   Account name who create the log record
     type    -   The type of log record
+    tier    -   The text representation of the type
+    text    -   The text of the log record
+```
+
+### user_hive_log
+Lists the log data for the current user
+
+This view is accessible through the ```HIVE_USER``` role
+
+* Columns
+```
+    stamp   -   The time stamp the log record
+    type    -   The type of log record
+    tier    -   The text representation of the type
     text    -   The text of the log record
 ```
 
 ### user_hive_params
 Lists current parameter values used by the session
 
-This view is accessible by both the ```HIVE_ADMIN`` and
+This view is accessible by both the ```HIVE_ADMIN``` and
 ```HIVE_USER``` roles
 
 * Columns
@@ -998,7 +1149,7 @@ This view is accessible by both the ```HIVE_ADMIN`` and
 ### user_hive_filters
 Lists the saved Filters which are accessible by the session
 
-This view is accessible by both the ```HIVE_ADMIN`` and
+This view is accessible by both the ```HIVE_ADMIN``` and
 ```HIVE_USER``` roles
 
 * Columns
@@ -1014,7 +1165,7 @@ This view is accessible by both the ```HIVE_ADMIN`` and
 Lists the privileges of the saved Filters which are
 accessible by the session
 
-This view is accessible by both the ```HIVE_ADMIN`` and
+This view is accessible by both the ```HIVE_ADMIN``` and
 ```HIVE_USER``` roles
 
 * Columns
@@ -1331,7 +1482,7 @@ that does not contain a previous grant for the account specified
 ```
 
 ### dbms_hive
-A ```PACKAGE``` provideing the interfaces for management of
+A ```PACKAGE``` providing the interfaces for management of
 Hive-ODCI configurations.
 
 This object is accessible through the ```HIVE_ADMIN``` role and is
@@ -1394,11 +1545,19 @@ not exist, no error is thrown.
 ```
 
 ##### purge_log()
-A ```PROCEDURE``` which purges all data in the ```DBA_HIVE_LOG``
+A ```PROCEDURE``` which purges all data in the ```DBA_HIVE_LOG```
+optionally removing single user records. The ```name```
+parameter is case-sensitive and when provided removes records matching
+only the those records created by ```name```. If no ```name``` is 
+provided or ```NULL``` is provided the table is truncated and storage 
+dropped (```TRUNCATE TABLE LOG$ DROP STORAGE```). This is to provide a
+faster cleanup procedure than issuing an unqualified  ```DELETE```
+statement.
+
 
 * Prototype
 ```
-    procedure purge_log;
+    procedure purge_log( name in varchar2 default null );
 ```
 
 ##### purge_filter()
@@ -1985,19 +2144,24 @@ vs.
                                  from cust', null, null );
 ``` 
 
-### bitor
-This ```FUNCTION``` performs a logical inclusive bit-wise OR
-operation on each pair of corresponding bits provided.
+### hive_hint
+This helper ```FUNCTION```, accessible through the ```HIVE_USER```
+role, returns a hints for an ```OWNER.TABLE``` column listing. The 
+hint string returned can be passed into a select for a ```HIVE_Q```
+query. Please see *Hints* section above for more information
 
 * Prototype
 ```
-    function bitor( x in number, y in number ) return number;
+    function hive_hint( own in varchar2,
+                        tab in varchar2,
+                        typ in varchar2 default 'typecast' )
 ```
 
 * Parameter
 ```
-    x       -   First bit mask
-    y       -   Second bit mask
+    own     -   Owner of the template table to generate hints from
+    tab     -   Table template to generate hints from
+    typ     -   Type of hint string to generate
 ```
 
 ### bitxor
@@ -2070,7 +2234,7 @@ in the transparent conversions from the JDBC Driver to the PL/SQL
 calls.
 
 ### attribute
-This ``OBJECT`` type is used to describe a column value. it is used
+This ```OBJECT``` type is used to describe a column value. it is used
 internally only to define rows in a record set and a table description.
 
 * Members
@@ -2085,7 +2249,7 @@ internally only to define rows in a record set and a table description.
 ```
 
 ### attributes
-A ``TABLE`` array of ``ATTRIBUTE`` objects.
+A ```TABLE``` array of ```ATTRIBUTE``` objects.
 
 * Members
 ```
@@ -2108,7 +2272,7 @@ This ```OBJECT```  type contains a single column of information.
 ```
 
 ### records
-A ``TABLE`` array of ``DATA`` objects, representing a single row
+A ```TABLE``` array of ```DATA``` objects, representing a single row
 
 * Members
 ```
@@ -2137,7 +2301,7 @@ This ```OBJECT``` defines the bind variable used for the remote command
 ```
 
 ### binds
-A ``TABLE`` array of ``BIND`` objects
+A ```TABLE``` array of ```BIND``` objects
 
 * Members
 ```

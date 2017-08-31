@@ -78,6 +78,7 @@ drop public synonym dba_hive_log;
 drop public synonym user_hive_params;
 drop public synonym user_hive_filters;
 drop public synonym user_hive_filter_privs;
+drop public synonym user_hive_log;
 
 --
 drop role hive_user;

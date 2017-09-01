@@ -11,12 +11,14 @@
 *.class
 
 #
-push.sh
-dist.sh
-pull.sh
 get.sh
+dist.sh
+push.sh
+pull.sh
+pub.sh
 .push
 .pull
+.pub
 
 #
 archive

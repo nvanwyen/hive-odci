@@ -1,5 +1,6 @@
 # Hive-ODCI - Users Guide
-=======================
+
+----------
 
 Hive-ODCI is an [Oracle Data Cartridge Interface][0] for dynamically accessing 
 Hadoop/Hive data-stores through an Oracle 12c database. In other words 

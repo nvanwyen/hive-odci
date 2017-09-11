@@ -106,7 +106,11 @@ create or replace type body hive_t as
     begin 
 
         --
-        trc_( 'hive_t::ODCITableDescribe - called: ' || stm  );
+        trc_( 'hive_t::ODCITableDescribe - called: '                            || chr( 10 ) || 
+            '... stm: ' || case when ( stm is null ) then '{null}' else stm end || chr( 10 ) ||
+            '... bnd: ' || binding.to_string( bnd )                             || chr( 10 ) ||
+            '... con: ' || case when ( con is null ) then '{null}' else '{not null}' end );
+
         return impl.sql_describe( typ, stm, bnd, con );
 
         exception
@@ -157,7 +161,12 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( 'hive_t::ODCITablePrepare - called: ' || stm  );
+        --
+        trc_( 'hive_t::ODCITablePrepare - called: '                                      || chr( 10 ) || 
+            '... inf: ' || case when ( inf is null ) then '{null}' else '{not null}' end || chr( 10 ) ||
+            '... stm: ' || case when ( stm is null ) then '{null}' else stm end          || chr( 10 ) ||
+            '... bnd: ' || binding.to_string( bnd )                                      || chr( 10 ) ||
+            '... con: ' || case when ( con is null ) then '{null}' else '{not null}' end );
 
         ret := impl.sql_open( key, stm, bnd, con );
 
@@ -218,7 +227,12 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( 'hive_t::ODCITableStart - called: ' || stm  );
+        --
+        trc_( 'hive_t::ODCITableStart - called: '                                        || chr( 10 ) || 
+            '... ctx: ' || case when ( ctx is null ) then '{null}' else '{not null}' end || chr( 10 ) ||
+            '... stm: ' || case when ( stm is null ) then '{null}' else stm end          || chr( 10 ) ||
+            '... bnd: ' || binding.to_string( bnd )                                      || chr( 10 ) ||
+            '... con: ' || case when ( con is null ) then '{null}' else '{not null}' end );
 
         --
         ret := impl.sql_open( key, stm, bnd, con );
@@ -284,7 +298,12 @@ create or replace type body hive_t as
 
     begin
 
-        trc_( 'hive_t::ODCITableFetch - called: ' || to_char( self.key )  );
+        --
+        trc_( 'hive_t::ODCITableFetch - called: '                                           || chr( 10 ) || 
+            '... self: ' || case when ( self is null ) then '{null}' else '{not null}' end  || chr( 10 ) ||
+            '... num:  ' || case when ( num is null ) then '{null}' else to_char( num ) end || chr( 10 ) ||
+            '... rws:  ' || '<out>' );
+
 
         -- retrieve the next "num" records
         ret := impl.sql_fetch( self.key, num, rec );

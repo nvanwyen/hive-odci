@@ -97,7 +97,7 @@ public class hive_connection
         }
         catch ( ClassNotFoundException ex )
         {
-            log.error( "hive_connection::loadDriver error: " + ex.getMessage() );
+            log.error( "hive_connection::loadDriver error: " + log.stack( ex ) );
             throw new hive_exception( "Driver class not found: " + getDriverName() );
         }
     }
@@ -271,7 +271,7 @@ public class hive_connection
         catch ( LoginException ex )
         {
             ok = false;
-            log.error( "hive_connection - kerberos login failed: " + ex.getMessage() );
+            log.error( "hive_connection - kerberos login failed: " + log.stack( ex ) );
             throw new hive_exception( "Kerberos exception: " + ex.getMessage() );
         }
 

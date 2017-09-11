@@ -92,12 +92,12 @@ public class hive_parameter
         catch ( SQLException ex )
         {
             //
-            log.error( "hive_parameter::value SQLException: " + ex.getMessage() );
+            log.error( "hive_parameter::value SQLException: " + log.stack( ex ) + log.code( ex ) );
         }
         catch ( Exception ex )
         {
             //
-            log.error( "hive_parameter::value Exception: " + ex.getMessage() );
+            log.error( "hive_parameter::value Exception: " + log.stack( ex ) );
         }
         finally
         {
@@ -109,11 +109,11 @@ public class hive_parameter
             }
             catch ( SQLException ex ) 
             {
-                log.error( "hive_parameter::value (finally_block) SQLException: " + ex.getMessage() );
+                log.error( "hive_parameter::value (finally_block) SQLException: " + log.stack( ex ) + log.code( ex ) );
             }
             catch ( Exception ex )
             {
-                log.error( "hive_parameter::value (finally_block) Exception: " + ex.getMessage() );
+                log.error( "hive_parameter::value (finally_block) Exception: " + log.stack( ex ) );
             }
 
             // *** do not close the "default" connection ***
@@ -152,12 +152,12 @@ public class hive_parameter
         catch ( SQLException ex )
         {
             //
-            log.error( "hive_parameter::env SQLException: " + ex.getMessage() );
+            log.error( "hive_parameter::env SQLException: " + log.stack( ex ) + log.code( ex ) );
         }
         catch ( Exception ex )
         {
             //
-            log.error( "hive_parameter::env Exception: " + ex.getMessage() );
+            log.error( "hive_parameter::env Exception: " + log.stack( ex ) );
         }
         finally
         {
@@ -169,11 +169,11 @@ public class hive_parameter
             }
             catch ( SQLException ex ) 
             {
-                log.error( "hive_parameter::env (finally_block) SQLException: " + ex.getMessage() );
+                log.error( "hive_parameter::env (finally_block) SQLException: " + log.stack( ex ) + log.code( ex ) );
             }
             catch ( Exception ex )
             {
-                log.error( "hive_parameter::env (finally_block) Exception: " + ex.getMessage() );
+                log.error( "hive_parameter::env (finally_block) Exception: " + log.stack( ex ) );
             }
 
             // *** do not close the "default" connection ***
@@ -183,5 +183,3 @@ public class hive_parameter
         return val;
     }
 };
-
-

@@ -62,6 +62,10 @@ public class hive_context
         rul_ = new hive_rule();
         sql_ = rul_.add( sql );
 
+        log.trace( "hive::ctor\n... sql: " + ( ( sql != null ) ? sql            : "{null}" ) + "\n" +
+                               "... bnd: " + ( ( bnd != null ) ? bnd.toString() : "{null}" ) + "\n" +
+                               "... con: " + ( ( con != null ) ? con.toString() : "{null}" ) );
+
         if ( ( sql_ == null ) || ( sql_.length() == 0 ) )
             throw new hive_exception( "No SQL defined for hive context" );
 
@@ -517,7 +521,7 @@ public class hive_context
             }
             catch ( NumberFormatException ex )
             {
-                log.error( "hive_context::execute NumberFormatException: " + ex.getMessage() );
+                log.error( "hive_context::execute NumberFormatException: " + log.stack( ex ) );
                 // ... do nothing
             }
         }
@@ -542,7 +546,7 @@ public class hive_context
         }
         catch ( SQLException ex )
         {
-            log.error( "hive_context::executeDML exception: " + ex.getMessage() );
+            log.error( "hive_context::executeDML exception: " + log.stack( ex ) + log.code( ex ) );
 
             try
             {
@@ -550,7 +554,7 @@ public class hive_context
             }
             catch ( SQLException x ) 
             {
-                log.error( "hive_context::executeDML rollback failed: " + x.getMessage() );
+                log.error( "hive_context::executeDML rollback failed: " + log.stack( x ) );
             }
 
             ok = false;
@@ -575,7 +579,7 @@ public class hive_context
         }
         catch ( SQLException ex )
         {
-            log.error( "hive_context::executeDML exception: " + ex.getMessage() );
+            log.error( "hive_context::executeDML exception: " + log.stack( ex ) + log.code( ex ) );
             ok = false;
         }
 

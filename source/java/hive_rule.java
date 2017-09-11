@@ -212,7 +212,7 @@ public class hive_rule
             }
         }
 
-        return str;
+        return ( ( str.length() > 0 ) ? str : "{empty}" );
     }
 
     //

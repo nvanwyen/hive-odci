@@ -117,13 +117,13 @@ public class hive_hint
     //
     public String toString()
     {
-        return                     "\n" +
-               "+ name: " + name + "\n" +
-               "+ data: " + data + "\n" +
-               "+ type: " + type + "\n" +
-               "+ size: " + size + "\n" +
-               "+ opts: " + opts + "\n" +
-               "+ code: " + code + "\n" +
+        return                                                             "\n" +
+               "+ name: " + ( ( name.length() > 0 ) ? name : "{empty}" ) + "\n" +
+               "+ data: " + ( ( data.length() > 0 ) ? data : "{empty}" ) + "\n" +
+               "+ type: " + ( ( type.length() > 0 ) ? type : "{empty}" ) + "\n" +
+               "+ size: " + ( ( size.length() > 0 ) ? size : "{empty}" ) + "\n" +
+               "+ opts: " + ( ( opts.length() > 0 ) ? opts : "{empty}" ) + "\n" +
+               "+ code: " + code                                         + "\n" +
                "+ jdbc: " + jdbc;
     }
 };

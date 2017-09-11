@@ -83,7 +83,7 @@ public class hive_bindings
         for ( hive_bind bnd : binds )
             str += bnd.toString();
 
-        return str;
+        return ( ( str.length() > 0 ) ? str : "{empty}" );
     }
 
     //

@@ -84,6 +84,8 @@ public class hive implements SQLData
 
         if ( ctx == null )
             throw new hive_exception( "Context not created for SqlDesc( attr, stmt, bnds, conn )" );
+        else
+            log.trace( "hive::SqlDesc hive_context [created]: " + ctx.toString() );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
@@ -217,6 +219,8 @@ public class hive implements SQLData
 
         if ( ctx == null )
             throw new hive_exception( "Context not found for SqlDesc( attr, key )" );
+        else
+            log.trace( "hive::SqlDesc hive_context [managed]: " + ctx.toString() );
 
         Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
@@ -326,6 +330,9 @@ public class hive implements SQLData
         hive_context ctx = new hive_context( stmt, bnds, conn );
         key_ = manager_.createContext( ctx );
 
+        if ( ctx != null )
+            log.trace( "hive::SqlOpen hive_context [created]: " + ctx.toString() );
+
         return key_;
     }
 
@@ -385,6 +392,8 @@ public class hive implements SQLData
 
         if ( ctx == null )
             throw new hive_exception( "Context not found for SqlFetch" );
+      //else
+      //    log.trace( "hive::SqlFetch hive_context [managed]: " + ctx.toString() );
 
         //
         if ( ! ctx.ready() )
@@ -479,7 +488,10 @@ public class hive implements SQLData
         hive_context ctx = manager_.getContext( key );
 
         if ( ctx != null )
+        {
+            log.trace( "hive::SqlClose hive_context [managed]: " + ctx.toString() );
             ctx.clear();
+        }
 
         return SUCCESS;
     }
@@ -492,6 +504,8 @@ public class hive implements SQLData
 
         if ( ctx == null )
             throw new hive_exception( "Context not created for SqlDml( stmt, bnds, conn )" );
+        else
+            log.trace( "hive::SqlDml hive_context [created]: " + ctx.toString() );
 
         ctx.executeDML();
     }
@@ -504,6 +518,8 @@ public class hive implements SQLData
 
         if ( ctx == null )
             throw new hive_exception( "Context not created for SqlDml( stmt, conn ) " );
+        else
+            log.trace( "hive::SqlDdl hive_context [created]: " + ctx.toString() );
 
         ctx.executeDDL();
     }

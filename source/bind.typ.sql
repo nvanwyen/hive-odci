@@ -41,7 +41,8 @@ create or replace type bind as object
     -- default ctor: bind( v, t, s )
     --
     constructor function bind( v varchar2, t number ) return self as result,
-    constructor function bind( v varchar2 ) return self as result
+    constructor function bind( v varchar2 ) return self as result,
+    constructor function bind return self as result
 );
 /
 
@@ -51,6 +52,17 @@ show errors
 create or replace type body bind as
 
     constructor function bind( v varchar2, t number ) return self as result is
+
+        --
+        procedure trc_( txt in varchar2 ) is
+        begin
+
+            execute immediate 'begin impl.log_trace( :p0 ); end;'
+              using 'bind::ctor (v, t): ' || txt;
+            exception when others then null;
+
+        end trc_;
+
     begin
 
         self.value := v;
@@ -58,17 +70,62 @@ create or replace type body bind as
 
         self.scope := 1 /* binding.scope_in */;
 
+        trc_( 'returning self: value: ' || self.value ||
+                            ', type: '  || to_char( self.type ) ||
+                            ', scope: ' || to_char( self.scope ) );
+
         return;
 
     end bind;
 
     constructor function bind( v varchar2 ) return self as result is
+
+        --
+        procedure trc_( txt in varchar2 ) is
+        begin
+
+            execute immediate 'begin impl.log_trace( :p0 ); end;'
+              using 'bind::ctor (v): ' || txt;
+            exception when others then null;
+
+        end trc_;
+
     begin
 
         self.value := v;
 
         self.type  := 9 /* binding.type_string */;
         self.scope := 1 /* binding.scope_in    */;
+
+        trc_( 'returning self: value: ' || self.value ||
+                            ', type: '  || to_char( self.type ) ||
+                            ', scope: ' || to_char( self.scope ) );
+
+        return;
+
+    end bind;
+
+    constructor function bind return self as result is
+
+        --
+        procedure trc_( txt in varchar2 ) is
+        begin
+
+            execute immediate 'begin impl.log_trace( :p0 ); end;'
+              using 'bind::ctor (): ' || txt;
+            exception when others then null;
+
+        end trc_;
+
+    begin
+
+        self.value := '';
+        self.type  := 9 /* binding.type_string */;
+        self.scope := 1 /* binding.scope_in    */;
+
+        trc_( 'returning self: value: ' || self.value ||
+                            ', type: '  || to_char( self.type ) ||
+                            ', scope: ' || to_char( self.scope ) );
 
         return;
 
@@ -190,6 +247,10 @@ create or replace package binding as
 
     --
     procedure save( key in varchar2, lst in binds );
+
+    -- debugging ..
+    function to_string( bnd in bind ) return varchar2;
+    function to_string( bnd in binds ) return varchar2;
 
     --
     ex_unknown  exception;
@@ -1253,6 +1314,53 @@ create or replace package body binding as
                 raise;
 
     end save;
+
+    --
+    function to_string( bnd in bind ) return varchar2 is
+    begin
+
+        return 'bind: ' || case when ( bnd is not null )
+                                then       'value: ' || bnd.value            || chr( 10 ) ||
+                                     '...   type:  ' || to_char( bnd.type )  || chr( 10 ) ||
+                                     '...   scope: ' || to_char( bnd.scope ) 
+                                else '{NULL}'
+                           end;
+
+    end to_string;
+
+    --
+    function to_string( bnd in binds ) return varchar2 is
+
+        s varchar2( 32767 ) := null;
+
+    begin
+
+        s := 'binds: ';
+
+        if ( bnd is not null ) then
+
+            s := 'size: ' || to_char( bnd.count );
+
+            if ( bnd.count > 0 ) then
+
+                for i in 1 .. bnd.count loop
+
+                    s := s || chr( 10 ) || 'item [' || to_char( i ) || ']:' ||
+                              chr( 10 ) || to_string( bnd( i ) );
+
+                end loop;
+
+            end if;
+
+        else
+
+            s := '{NULL}';
+
+        end if;
+
+        return s;
+
+    end to_string;
 
 end binding;
 /

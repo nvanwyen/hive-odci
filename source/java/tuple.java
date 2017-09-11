@@ -58,6 +58,6 @@ public class tuple<X,Y>
                 str += ", y: " + y.toString();
         }
 
-        return str;
+        return ( ( str.length() > 0 ) ? str : "{empty}" );
     }
 };

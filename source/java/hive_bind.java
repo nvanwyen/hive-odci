@@ -125,10 +125,10 @@ public class hive_bind
     {
         String str = "";
 
-        str +=                         "\n";
-        str += "... value: " + value + "\n";
-        str += "... type:  " + type  + "\n";
-        str += "... scope: " + scope + "\n";
+        str +=                                                                  "\n";
+        str += "... value: " + ( ( value.length() > 0 ) ? value : "{empty}" ) + "\n";
+        str += "... type:  " + type                                           + "\n";
+        str += "... scope: " + scope                                          + "\n";
 
         return str;
     }

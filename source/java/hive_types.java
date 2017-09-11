@@ -345,12 +345,12 @@ public class hive_types
         catch ( SQLException ex )
         {
             //
-            log.error( "hive_types::nls_charset_id SQLException: " + ex.getMessage() );
+            log.error( "hive_types::nls_charset_id SQLException: " + log.stack( ex ) + log.code( ex ) );
         }
         catch ( Exception ex )
         {
             //
-            log.error( "hive_types::nls_charset_id Exception: " + ex.getMessage() );
+            log.error( "hive_types::nls_charset_id Exception: " + log.stack( ex ) );
         }
         finally
         {
@@ -362,11 +362,11 @@ public class hive_types
             }
             catch ( SQLException ex ) 
             {
-                log.error( "hive_types::nls_charset_id (finally_block) SQLException: " + ex.getMessage() );
+                log.error( "hive_types::nls_charset_id (finally_block) SQLException: " + log.stack( ex ) + log.code( ex ) );
             }
             catch ( Exception ex )
             {
-                log.error( "hive_types::nls_charset_id (finally_block) Exception: " + ex.getMessage() );
+                log.error( "hive_types::nls_charset_id (finally_block) Exception: " + log.stack( ex ) );
             }
 
             // *** do not close the "default" connection ***
@@ -1073,13 +1073,13 @@ public class hive_types
         catch ( SQLException ex )
         {
             //
-            log.error( "hive_types::to_clob SQLException: " + ex.getMessage() );
+            log.error( "hive_types::to_clob SQLException: " + log.stack( ex ) + log.code( ex ) );
             throw ex;
         }
         catch ( Exception ex )
         {
             //
-            log.error( "hive_types::to_clob Exception: " + ex.getMessage() );
+            log.error( "hive_types::to_clob Exception: " + log.stack( ex ) );
             throw ex;
         }
         finally
@@ -1119,13 +1119,13 @@ public class hive_types
         catch ( SQLException ex )
         {
             //
-            log.error( "hive_types::to_blob SQLException: " + ex.getMessage() );
+            log.error( "hive_types::to_blob SQLException: " + log.stack( ex ) + log.code( ex ) );
             throw ex;
         }
         catch ( Exception ex )
         {
             //
-            log.error( "hive_types::to_blob Exception: " + ex.getMessage() );
+            log.error( "hive_types::to_blob Exception: " + log.stack( ex ) );
             throw ex;
         }
         finally

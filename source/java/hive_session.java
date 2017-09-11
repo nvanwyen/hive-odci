@@ -168,11 +168,11 @@ public class hive_session
     {
         String str = "";
 
-        str +=                      "\n";
-        str += "... url:  " + url + "\n";
-        str += "... name: " + name + "\n";
-        str += "... pass: " + pass + "\n";
-        str += "... auth: " + auth + "\n";
+        str +=                                                               "\n";
+        str += "... url:  " + ( ( url.length()  > 0 ) ? url  : "{empty}" ) + "\n";
+        str += "... name: " + ( ( name.length() > 0 ) ? name : "{empty}" ) + "\n";
+        str += "... pass: " + ( ( pass.length() > 0 ) ? pass : "{empty}" ) + "\n";
+        str += "... auth: " + ( ( auth.length() > 0 ) ? auth : "{empty}" ) + "\n";
 
         return str;
     }

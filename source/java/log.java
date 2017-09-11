@@ -42,6 +42,26 @@ public class log
     public static final int INFO            =  4;
     public static final int TRACE           =  8;
 
+    //
+    public static String stack( Throwable ex )
+    {
+        //
+        String trace = "";
+        Writer result = new StringWriter();
+        PrintWriter printer = new PrintWriter( result );
+
+        //
+        ex.printStackTrace( printer );
+        return result.toString();
+    }
+
+    //
+    public static String code( SQLException ex )
+    {
+        //
+        return "\n* SQL code: " + String.valueOf( ex.getErrorCode() );
+    }    
+
     // this is private, because the hive_paramter object
     // will not have been created yet, and there was a need early
     // on to get a paraemter value. This is no longer the case

@@ -52,14 +52,14 @@ public class hive_attribute
     {
         String str = new String();
 
-        str +=                          "\n";
-        str += "... name:  " +  name  + "\n";
-        str += "... code:  " +  code  + "\n";
-        str += "... prec:  " +  prec  + "\n";
-        str += "... scale: " +  scale + "\n";
-        str += "... len:   " +  len   + "\n";
-        str += "... csid:  " +  csid  + "\n";
-        str += "... csfrm: " +  csfrm + "\n";
+        str +=                                                                 "\n";
+        str += "... name:  " +  ( ( name.length() > 0 ) ? name : "{empty}" ) + "\n";
+        str += "... code:  " +  code                                         + "\n";
+        str += "... prec:  " +  prec                                         + "\n";
+        str += "... scale: " +  scale                                        + "\n";
+        str += "... len:   " +  len                                          + "\n";
+        str += "... csid:  " +  csid                                         + "\n";
+        str += "... csfrm: " +  csfrm                                        + "\n";
 
         return str;
     }

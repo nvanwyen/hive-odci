@@ -37,6 +37,9 @@ create or replace function hive_q( stm in varchar2,
                                    con in connection default null ) return anydataset pipelined using hive_t;
 /
 
+--
+show errors
+
 -- helper function ...
 create or replace function hive_hint( own in varchar2,
                                       tab in varchar2,
@@ -172,6 +175,7 @@ begin
 end hive_hint;
 /
 
+--
 show errors
 
 --

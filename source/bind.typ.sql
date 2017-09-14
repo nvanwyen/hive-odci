@@ -46,6 +46,7 @@ create or replace type bind as object
 );
 /
 
+--
 show errors
 
 --
@@ -134,12 +135,14 @@ create or replace type body bind as
 end;
 /
 
+--
 show errors
 
 --
 create or replace type binds as table of bind;
 /
 
+--
 show errors
 
 --
@@ -271,6 +274,7 @@ create or replace package binding as
 end binding;
 /
 
+--
 show errors
 
 --
@@ -1365,6 +1369,7 @@ create or replace package body binding as
 end binding;
 /
 
+--
 show errors
 
 --

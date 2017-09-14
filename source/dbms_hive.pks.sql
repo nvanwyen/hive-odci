@@ -79,6 +79,7 @@ create or replace package dbms_hive as
 end dbms_hive;
 /
 
+--
 show errors
 
 --

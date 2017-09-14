@@ -532,6 +532,7 @@ create or replace package body dbms_hive as
 end dbms_hive;
 /
 
+--
 show errors
 
 --

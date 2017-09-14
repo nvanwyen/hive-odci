@@ -72,6 +72,7 @@ create or replace type hive_t as object
 );
 /
 
+--
 show errors
 
 --
@@ -441,6 +442,8 @@ create or replace type body hive_t as
 
 end;
 /
+
+--
 show errors
 
 --

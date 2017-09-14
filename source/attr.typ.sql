@@ -44,9 +44,15 @@ create or replace type attribute is object
 );
 /
 
+--
+show errors
+
 -- array of column descriptions
 create or replace type attributes as table of attribute;
 /
+
+--
+show errors
 
 -- column data, marries up to ANYDATA
 create or replace type data as object
@@ -83,6 +89,7 @@ create or replace type connection as object
 );
 /
 
+--
 show errors
 
 --

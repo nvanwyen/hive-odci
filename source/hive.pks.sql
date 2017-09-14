@@ -88,6 +88,7 @@ create or replace package remote as
 end remote;
 /
 
+--
 show errors
 
 --

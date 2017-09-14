@@ -41,6 +41,7 @@ begin
 end bitor;
 /
 
+--
 show errors
 
 --
@@ -52,6 +53,7 @@ begin
 end bitxor;
 / 
 
+--
 show errors
 
 --
@@ -63,6 +65,7 @@ begin
 end bitnot;
 /
 
+--
 show errors
 
 --
@@ -110,6 +113,7 @@ begin
 end oid;
 /
 
+--
 show errors
 
 --
@@ -148,6 +152,7 @@ begin
 end oname;
 /
 
+--
 show errors
 
 --

@@ -43,6 +43,9 @@ public class log
     public static final int TRACE           =  8;
 
     //
+    private static int level_               = -1;
+
+    //
     public static String stack( Throwable ex )
     {
         //
@@ -60,7 +63,20 @@ public class log
     {
         //
         return "\n* SQL code: " + String.valueOf( ex.getErrorCode() );
-    }    
+    }
+
+    //
+    public static String class_name( Object obj )
+    {
+        String cls = "";
+
+        if ( obj != null )
+            cls = obj.getClass().getName() + " [" + Integer.toHexString( obj.hashCode() ) + "]";
+        else
+            cls = "{null class}";
+
+        return cls;
+    }
 
     // this is private, because the hive_paramter object
     // will not have been created yet, and there was a need early
@@ -151,60 +167,114 @@ public class log
     }
 
     //
-    static public void write( int type, String text ) throws SQLException, Exception
+    public static int level()
     {
-        //
-        Connection con = null;
-        PreparedStatement stm = null;
-
-        try
-        {
-            //
-            con = DriverManager.getConnection( "jdbc:default:connection:" );
-
-            //
-            if ( con.getAutoCommit() )
-                con.setAutoCommit( false );
-
-            //
-            String sql = "begin impl.log( ?, ? ); end;";
-
-            //
-            stm = con.prepareStatement( sql );
-            stm.setInt( 1, type );
-            stm.setString( 2, text );
-
-            //
-            stm.executeUpdate();
-            stm.close();
-        }
-        catch ( SQLException ex )
-        {
-            // ... do nothing!
-        }
-        catch ( Exception ex )
-        {
-            // ... do nothing!
-        }
-        finally
+        if ( level_ == -1 )
         {
             try
             {
-                //
-                if ( stm != null )
-                    stm.close();
+                String lvl = param( "log_level" );
 
-                if ( con != null )
+                if ( ( lvl != null ) && ( lvl.length() > 0 ) )
                 {
-                    if ( ! con.getAutoCommit() )
-                        con.setAutoCommit( true );
-                }
+                    try
+                    {
+                        level_ = Integer.parseInt( lvl.trim() );
+                        write( INFO, "log::level retrieved: " + level_ );
+                    }
+                    catch ( NumberFormatException ex )
+                    {
+                        // force write ...
+                        level_ = WARN;
+                        write( ERROR, "log::level NumberFormatException parsing log_level, assuming NONE" );
 
-                // *** do not close the "default" connection ***
+                        //
+                        level_ = NONE;
+                    }
+                }
+            }
+            catch ( SQLException ex )
+            {
+                level_ = NONE;
+            }
+            catch ( Exception ex )
+            {
+                level_ = NONE;
+            }
+        }
+
+        return level_;
+    }
+    //
+    public static boolean logging( int type )
+    {
+        return ( ( level() & type ) > NONE );
+    }
+
+    //
+    public static boolean logging()
+    {
+        return ( level() > NONE );
+    }
+
+    //
+    static public void write( int type, String text ) throws SQLException, Exception
+    {
+        if ( ( level() > NONE ) && ( ( level() & type ) > NONE ) )
+        {
+            //
+            Connection con = null;
+            PreparedStatement stm = null;
+
+            try
+            {
+                //
+                con = DriverManager.getConnection( "jdbc:default:connection:" );
+
+                //
+                if ( con.getAutoCommit() )
+                    con.setAutoCommit( false );
+
+                //
+                String sql = "begin impl.log( ?, ? ); end;";
+
+                //
+                stm = con.prepareStatement( sql );
+                stm.setInt( 1, type );
+                stm.setString( 2, text );
+
+                //
+                stm.executeUpdate();
+                stm.close();
             }
             catch ( SQLException ex )
             {
                 // ... do nothing!
+            }
+            catch ( Exception ex )
+            {
+                // ... do nothing!
+            }
+            finally
+            {
+                try
+                {
+                    //
+                    if ( stm != null )
+                        stm.close();
+
+                    if ( con != null )
+                    {
+                        if ( ! con.getAutoCommit() )
+                            con.setAutoCommit( true );
+                    }
+
+                    // *** do not close the "default" connection ***
+                }
+                catch ( SQLException ex )
+                {
+                    // ... do nothing!
+                }
             }
         }
     }

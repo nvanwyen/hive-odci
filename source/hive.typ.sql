@@ -354,10 +354,24 @@ create or replace type body hive_t as
                             trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_clob' );
                             rws.setclob( rec( i ).val_clob );
 
+                            if ( dbms_lob.istemporary( rec( i ).val_clob ) = 1 ) then
+
+                                trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set freeing clob' );
+                                dbms_lob.freetemporary( rec( i ).val_clob );
+
+                            end if;
+
                         elsif ( rec( i ).code = dbms_types.typecode_blob ) then
 
                             trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set typecode_blob' );
                             rws.setblob( rec( i ).val_blob );
+
+                            if ( dbms_lob.istemporary( rec( i ).val_blob ) = 1 ) then
+
+                                trc_( 'hive_t::ODCITableFetch [' || to_char( self.key ) || '] set freeing blob' );
+                                dbms_lob.freetemporary( rec( i ).val_blob );
+
+                            end if;
 
                         else
 

@@ -411,7 +411,7 @@ public class hive_rule
                     if ( tok.length > 1 )
                         rul.data = tok[ 1 ];
                 }
-            } 
+            }
         }
 
         return rul;
@@ -485,7 +485,7 @@ public class hive_rule
         {
             if ( str.charAt( i ) == chr )
                 ++cnt;
-        }        
+        }
 
         return cnt;
     }

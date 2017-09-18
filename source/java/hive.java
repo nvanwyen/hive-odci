@@ -52,7 +52,6 @@ public class hive implements SQLData
 
     // override (SQLData inheritence)
     public String getSQLTypeName()
-        throws SQLException 
     {
         return sql_;
     }
@@ -61,15 +60,43 @@ public class hive implements SQLData
     public void readSQL( SQLInput stream, String type )
         throws SQLException 
     {
-        sql_ = type;
-        key_ = stream.readBigDecimal();
+        try
+        {
+            sql_ = type;
+            key_ = stream.readBigDecimal();
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::readSQL SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::readSQL Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     // override (SQLData inheritence)
     public void writeSQL( SQLOutput stream )
         throws SQLException 
     {
-        stream.writeBigDecimal( key_ );
+        try
+        {
+            stream.writeBigDecimal( key_ );
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::writeSQL SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::writeSQL Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     //
@@ -87,124 +114,138 @@ public class hive implements SQLData
         else
             log.trace( "hive::SqlDesc hive_context [created]: " + ctx.toString() );
 
-        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
-
-        ResultSetMetaData rmd = ctx.descSql();
-
-        if ( rmd.getColumnCount() > 0 )
+        try
         {
-            int cset = hive_types.nls_charset_id();
-            int cfrm = hive_types.nls_charset_format();
+            Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
-            for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
+            ResultSetMetaData rmd = ctx.descSql();
+
+            if ( rmd.getColumnCount() > 0 )
             {
-                hive_attribute atr = new hive_attribute();
+                int cset = hive_types.nls_charset_id();
+                int cfrm = hive_types.nls_charset_format();
 
-                atr.name = rmd.getColumnName( i );
-
-                // if the column is "mapped", then get the type, precision, scale, etc...
-                // from the context, and not the resulting metadata
-                //
-                if ( ctx.colRuleMapped( atr.name ) )
+                for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
                 {
-                    // get mapping data ...
-                    atr.code  = ctx.colRuleTypeCode( atr.name );
-                    atr.len   = ctx.colRuleLength( atr.name );
-                    atr.prec  = ctx.colRulePrecision( atr.name );
-                    atr.scale = ctx.colRuleScale( atr.name );
+                    hive_attribute atr = new hive_attribute();
 
-                    atr.csid = cset;
-                    atr.csfrm = cfrm;
+                    atr.name = rmd.getColumnName( i );
 
-                    // translate values based on code
-                    atr = ctx.colRuleAttr( atr );
-                }
-                else
-                {
-                    atr.code = hive_types.to_dbms_type( rmd.getColumnType( i ) );
-
-                    switch ( atr.code )
+                    // if the column is "mapped", then get the type, precision, scale, etc...
+                    // from the context, and not the resulting metadata
+                    //
+                    if ( ctx.colRuleMapped( atr.name ) )
                     {
-                        case hive_types.TYPECODE_VARCHAR2:
-                            {
-                                if ( rmd.getPrecision( i ) > 4000 )
-                                    atr.len = 4000;
-                                else
-                                {
-                                    if ( rmd.getPrecision( i ) > 0 )
-                                        atr.len = rmd.getPrecision( i );
-                                    else
-                                        atr.len = -1;
-                                }
-                            }
-                            atr.csid = cset;
-                            atr.csfrm = cfrm;
-                            atr.prec = -1;
-                            atr.scale = -1;
-                            break;
+                        // get mapping data ...
+                        atr.code  = ctx.colRuleTypeCode( atr.name );
+                        atr.len   = ctx.colRuleLength( atr.name );
+                        atr.prec  = ctx.colRulePrecision( atr.name );
+                        atr.scale = ctx.colRuleScale( atr.name );
 
-                        case hive_types.TYPECODE_NUMBER:
-                            atr.prec = rmd.getPrecision( i );
-                            atr.scale = rmd.getScale( i );
+                        atr.csid = cset;
+                        atr.csfrm = cfrm;
 
-                            if ( ( atr.prec == 0 ) && ( atr.scale == 0 ) )
-                                atr.scale = -127;
-
-                            if ( atr.prec == -1 ) 
-                            {
-                                atr.prec = 0;
-                                atr.scale = -127;
-                            }
-
-                            if ( atr.scale == -1 )
-                                atr.scale = -127;
-
-                            break;
-
-                        case hive_types.TYPECODE_CLOB:
-                            atr.len = rmd.getPrecision( i );
-                            atr.csid = cset;
-                            atr.csfrm = cfrm;
-                            break;
-
-                        case hive_types.TYPECODE_BLOB:
-                            atr.len = rmd.getPrecision( i );
-                            break;
-
-                        case hive_types.TYPECODE_DATE:
-                            break;
-
-                        case hive_types.TYPECODE_TIMESTAMP:
-                        case hive_types.TYPECODE_TIMESTAMP_TZ:
-                        case hive_types.TYPECODE_TIMESTAMP_LTZ:
-                            atr.prec = 0;
-                            atr.scale = 6;
-                            break;
-
-                        case hive_types.TYPECODE_OBJECT:
-                        default:
-                            break;
+                        // translate values based on code
+                        atr = ctx.colRuleAttr( atr );
                     }
+                    else
+                    {
+                        atr.code = hive_types.to_dbms_type( rmd.getColumnType( i ) );
+
+                        switch ( atr.code )
+                        {
+                            case hive_types.TYPECODE_VARCHAR2:
+                                {
+                                    if ( rmd.getPrecision( i ) > 4000 )
+                                        atr.len = 4000;
+                                    else
+                                    {
+                                        if ( rmd.getPrecision( i ) > 0 )
+                                            atr.len = rmd.getPrecision( i );
+                                        else
+                                            atr.len = -1;
+                                    }
+                                }
+                                atr.csid = cset;
+                                atr.csfrm = cfrm;
+                                atr.prec = -1;
+                                atr.scale = -1;
+                                break;
+
+                            case hive_types.TYPECODE_NUMBER:
+                                atr.prec = rmd.getPrecision( i );
+                                atr.scale = rmd.getScale( i );
+
+                                if ( ( atr.prec == 0 ) && ( atr.scale == 0 ) )
+                                    atr.scale = -127;
+
+                                if ( atr.prec == -1 ) 
+                                {
+                                    atr.prec = 0;
+                                    atr.scale = -127;
+                                }
+
+                                if ( atr.scale == -1 )
+                                    atr.scale = -127;
+
+                                break;
+
+                            case hive_types.TYPECODE_CLOB:
+                                atr.len = rmd.getPrecision( i );
+                                atr.csid = cset;
+                                atr.csfrm = cfrm;
+                                break;
+
+                            case hive_types.TYPECODE_BLOB:
+                                atr.len = rmd.getPrecision( i );
+                                break;
+
+                            case hive_types.TYPECODE_DATE:
+                                break;
+
+                            case hive_types.TYPECODE_TIMESTAMP:
+                            case hive_types.TYPECODE_TIMESTAMP_TZ:
+                            case hive_types.TYPECODE_TIMESTAMP_LTZ:
+                                atr.prec = 0;
+                                atr.scale = 6;
+                                break;
+
+                            case hive_types.TYPECODE_OBJECT:
+                            default:
+                                break;
+                        }
+                    }
+
+                    Object[] obj = new Object[] { new String( atr.name ),
+                                                  new Integer( atr.code ),
+                                                  new Integer( atr.prec ),
+                                                  new Integer( atr.scale ),
+                                                  new Integer( atr.len ),
+                                                  new Integer( atr.csid ),
+                                                  new Integer( atr.csfrm ) };
+
+                    StructDescriptor ids = StructDescriptor.createDescriptor( "ATTRIBUTE", con );
+                    STRUCT itm = new STRUCT( ids, con, obj );
+                    col.add( itm );
                 }
-
-                Object[] obj = new Object[] { new String( atr.name ),
-                                              new Integer( atr.code ),
-                                              new Integer( atr.prec ),
-                                              new Integer( atr.scale ),
-                                              new Integer( atr.len ),
-                                              new Integer( atr.csid ),
-                                              new Integer( atr.csfrm ) };
-
-                StructDescriptor ids = StructDescriptor.createDescriptor( "ATTRIBUTE", con );
-                STRUCT itm = new STRUCT( ids, con, obj );
-                col.add( itm );
             }
+
+            ArrayDescriptor des = ArrayDescriptor.createDescriptor( "ATTRIBUTES", con );
+            STRUCT[] dat = col.toArray( new STRUCT[ col.size() ] );
+
+            attr[0] = new ARRAY( des, con, dat );
         }
-
-        ArrayDescriptor des = ArrayDescriptor.createDescriptor( "ATTRIBUTES", con );
-        STRUCT[] dat = col.toArray( new STRUCT[ col.size() ] );
-
-        attr[0] = new ARRAY( des, con, dat );
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlDesc SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlDesc Exception: " + log.stack( ex ) );
+            throw ex;
+        }
 
         return SUCCESS;
     }
@@ -222,98 +263,112 @@ public class hive implements SQLData
         else
             log.trace( "hive::SqlDesc hive_context [managed]: " + ctx.toString() );
 
-        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
-
-        ResultSetMetaData rmd = ctx.descSql();
-
-        if ( rmd.getColumnCount() > 0 )
+        try
         {
-            int cset = hive_types.nls_charset_id();
-            int cfrm = hive_types.nls_charset_format();
+            Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
-            for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
+            ResultSetMetaData rmd = ctx.descSql();
+
+            if ( rmd.getColumnCount() > 0 )
             {
-                hive_attribute atr = new hive_attribute();
+                int cset = hive_types.nls_charset_id();
+                int cfrm = hive_types.nls_charset_format();
 
-                atr.name = rmd.getColumnName( i );
-
-                // if the column is "mapped", then get the type, precision, scale, etc...
-                // from the context, and not the resulting metadata
-                //
-                if ( ctx.colRuleMapped( atr.name ) )
+                for ( int i = 1; i <= rmd.getColumnCount(); ++i ) 
                 {
-                    // get mapping data ...
-                    atr.code  = ctx.colRuleTypeCode( atr.name );
-                    atr.len   = ctx.colRuleLength( atr.name );
-                    atr.prec  = ctx.colRulePrecision( atr.name );
-                    atr.scale = ctx.colRuleScale( atr.name );
+                    hive_attribute atr = new hive_attribute();
 
-                    atr.csid = cset;
-                    atr.csfrm = cfrm;
+                    atr.name = rmd.getColumnName( i );
 
-                    // translate values based on code
-                    atr = ctx.colRuleAttr( atr );
-                }
-                else
-                {
-                    atr.code = hive_types.to_dbms_type( rmd.getColumnType( i ) );
-
-                    switch ( atr.code )
+                    // if the column is "mapped", then get the type, precision, scale, etc...
+                    // from the context, and not the resulting metadata
+                    //
+                    if ( ctx.colRuleMapped( atr.name ) )
                     {
-                        case hive_types.TYPECODE_VARCHAR2:
-                            {
-                                if ( rmd.getPrecision( i ) > 4000 )
-                                    atr.len = 4000;
-                                else
-                                {
-                                    if ( rmd.getPrecision( i ) > 0 )
-                                        atr.len = rmd.getPrecision( i );
-                                    else
-                                        atr.len = -1;
-                                }
-                            }
-                            break;
+                        // get mapping data ...
+                        atr.code  = ctx.colRuleTypeCode( atr.name );
+                        atr.len   = ctx.colRuleLength( atr.name );
+                        atr.prec  = ctx.colRulePrecision( atr.name );
+                        atr.scale = ctx.colRuleScale( atr.name );
 
-                        case hive_types.TYPECODE_NUMBER:
-                            atr.prec = rmd.getPrecision( i );
-                            atr.scale = rmd.getScale( i );
-                            break;
+                        atr.csid = cset;
+                        atr.csfrm = cfrm;
 
-                        case hive_types.TYPECODE_CLOB:
-                            atr.len = rmd.getPrecision( i );
-                            break;
-
-                        case hive_types.TYPECODE_BLOB:
-                            atr.len = rmd.getPrecision( i );
-                            break;
-
-                        case hive_types.TYPECODE_DATE:
-                            break;
-
-                        case hive_types.TYPECODE_OBJECT:
-                        default:
-                            break;
+                        // translate values based on code
+                        atr = ctx.colRuleAttr( atr );
                     }
+                    else
+                    {
+                        atr.code = hive_types.to_dbms_type( rmd.getColumnType( i ) );
+
+                        switch ( atr.code )
+                        {
+                            case hive_types.TYPECODE_VARCHAR2:
+                                {
+                                    if ( rmd.getPrecision( i ) > 4000 )
+                                        atr.len = 4000;
+                                    else
+                                    {
+                                        if ( rmd.getPrecision( i ) > 0 )
+                                            atr.len = rmd.getPrecision( i );
+                                        else
+                                            atr.len = -1;
+                                    }
+                                }
+                                break;
+
+                            case hive_types.TYPECODE_NUMBER:
+                                atr.prec = rmd.getPrecision( i );
+                                atr.scale = rmd.getScale( i );
+                                break;
+
+                            case hive_types.TYPECODE_CLOB:
+                                atr.len = rmd.getPrecision( i );
+                                break;
+
+                            case hive_types.TYPECODE_BLOB:
+                                atr.len = rmd.getPrecision( i );
+                                break;
+
+                            case hive_types.TYPECODE_DATE:
+                                break;
+
+                            case hive_types.TYPECODE_OBJECT:
+                            default:
+                                break;
+                        }
+                    }
+
+                    Object[] obj = new Object[] { new String( atr.name ),
+                                                  new Integer( atr.code ),
+                                                  new Integer( atr.prec ),
+                                                  new Integer( atr.scale ),
+                                                  new Integer( atr.len ),
+                                                  new Integer( atr.csid ),
+                                                  new Integer( atr.csfrm ) };
+
+                    StructDescriptor ids = StructDescriptor.createDescriptor( "ATTRIBUTE", con );
+                    STRUCT itm = new STRUCT( ids, con, obj );
+                    col.add( itm );
                 }
-
-                Object[] obj = new Object[] { new String( atr.name ),
-                                              new Integer( atr.code ),
-                                              new Integer( atr.prec ),
-                                              new Integer( atr.scale ),
-                                              new Integer( atr.len ),
-                                              new Integer( atr.csid ),
-                                              new Integer( atr.csfrm ) };
-
-                StructDescriptor ids = StructDescriptor.createDescriptor( "ATTRIBUTE", con );
-                STRUCT itm = new STRUCT( ids, con, obj );
-                col.add( itm );
             }
+
+            ArrayDescriptor des = ArrayDescriptor.createDescriptor( "ATTRIBUTES", con );
+            STRUCT[] dat = col.toArray( new STRUCT[ col.size() ] );
+
+            attr[0] = new ARRAY( des, con, dat );
         }
-
-        ArrayDescriptor des = ArrayDescriptor.createDescriptor( "ATTRIBUTES", con );
-        STRUCT[] dat = col.toArray( new STRUCT[ col.size() ] );
-
-        attr[0] = new ARRAY( des, con, dat );
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlDesc SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlDesc Exception: " + log.stack( ex ) );
+            throw ex;
+        }
 
         return SUCCESS;
     }
@@ -324,16 +379,30 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        if ( manager_ == null )
-            manager_ = new hive_manager();
+        try
+        {
+            if ( manager_ == null )
+                manager_ = new hive_manager();
 
-        hive_context ctx = new hive_context( stmt, bnds, conn );
-        key_ = manager_.createContext( ctx );
+            hive_context ctx = new hive_context( stmt, bnds, conn );
+            key_ = manager_.createContext( ctx );
 
-        if ( ctx != null )
-            log.trace( "hive::SqlOpen hive_context [created]: " + ctx.toString() );
+            if ( ctx != null )
+                log.trace( "hive::SqlOpen hive_context [created]: " + ctx.toString() );
 
-        return key_;
+            return key_;
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlOpen SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlOpen Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     //
@@ -343,22 +412,36 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
+        try
+        {
+            Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
-        //
-        key_ = SqlOpen( stmt, bnds, conn );
+            //
+            key_ = SqlOpen( stmt, bnds, conn );
 
-        if ( key_.intValue() == 0 )
-            return FAILURE;
+            if ( key_.intValue() == 0 )
+                return FAILURE;
 
-        //
-        Object[] imp = new Object[ 1 ];
-        imp[ 0 ] = key_;
+            //
+            Object[] imp = new Object[ 1 ];
+            imp[ 0 ] = key_;
 
-        StructDescriptor dsc = new StructDescriptor( "HIVE_T", con );
-        sctx[ 0 ] = new STRUCT( dsc, con, imp );
+            StructDescriptor dsc = new StructDescriptor( "HIVE_T", con );
+            sctx[ 0 ] = new STRUCT( dsc, con, imp );
 
-        return SUCCESS;
+            return SUCCESS;
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlOpen SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlOpen Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     //
@@ -368,14 +451,28 @@ public class hive implements SQLData
                                       oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        key_ = SqlOpen( stmt, bnds, conn );
+        try
+        {
+            key_ = SqlOpen( stmt, bnds, conn );
 
-        if ( key_.intValue() == 0 )
-            return FAILURE;
+            if ( key_.intValue() == 0 )
+                return FAILURE;
 
-        key[ 0 ] = key_;
+            key[ 0 ] = key_;
 
-        return SUCCESS;
+            return SUCCESS;
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlOpen SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlOpen Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     static public BigDecimal SqlFetch( ARRAY[]    out,
@@ -383,145 +480,199 @@ public class hive implements SQLData
                                        BigDecimal num )
         throws SQLException, InvalidKeyException, hive_exception
     {
-        Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
-
-        if ( manager_ == null )
-            manager_ = new hive_manager();
-
-        hive_context ctx = manager_.getContext( key );
-
-        if ( ctx == null )
-            throw new hive_exception( "Context not found for SqlFetch" );
-      //else
-      //    log.trace( "hive::SqlFetch hive_context [managed]: " + ctx.toString() );
-
-        //
-        if ( ! ctx.ready() )
+        try
         {
-            if ( ! ctx.execute() )
-                return FAILURE;
-        }
+            Connection con = DriverManager.getConnection( "jdbc:default:connection:" );
 
-        //
-        StructDescriptor dsc = new StructDescriptor( "DATA", con );
+            if ( manager_ == null )
+                manager_ = new hive_manager();
 
-        if ( ctx.next() )
-        {
-            int cnt = ctx.columnCount();
-            Object[] cols = new Object[ cnt ];
+            hive_context ctx = manager_.getContext( key );
 
-            for ( int c = 1; c <= cnt; ++c )
+            if ( ctx == null )
+                throw new hive_exception( "Context not found for SqlFetch" );
+
+            //
+            if ( ! ctx.ready() )
             {
-                Object col = null;
-                int typ = 0;
-
-
-                if ( ctx.colRuleMapped( c ) )
-                    typ = ctx.columnType( c );
-                else
-                    typ = hive_types.to_dbms_type( ctx.columnType( c ) );
-
-                try
-                {
-                    switch ( typ )
-                    {
-                        case hive_types.TYPECODE_CLOB:
-                            col = (Object)hive_types.to_clob( (String)ctx.getObject( c ) );
-                            break;
-
-                        case hive_types.TYPECODE_BLOB:
-                            col = (Object)hive_types.to_blob( ctx.getObject( c ) );
-                            break;
-
-                        // others?
-                        default:
-                            col = ctx.getObject( c );
-                    }
-                }
-                catch ( SQLException ex )
-                {
-                    log.warn( "hive::SqlFetch SQLException building [" + hive_types.to_typecode( typ ) + "]: " + ex.getMessage() );
-                    col = ctx.getObject( c );
-                }
-                catch ( Exception ex )
-                {
-                    log.warn( "hive::SqlFetch Exception building [" + hive_types.to_typecode( typ ) + "]: " + ex.getMessage() );
-                    col = ctx.getObject( c );
-                }
-
-                Object[] atr =
-                {
-                    new BigDecimal( typ ),                                  // type code
-                    ( typ == hive_types.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
-                    ( typ == hive_types.TYPECODE_NUMBER )    ? col : null,  // val_number
-                    ( typ == hive_types.TYPECODE_DATE )      ? col : null,  // val_date
-                    ( typ == hive_types.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
-                    ( typ == hive_types.TYPECODE_CLOB )      ? col : null,  // val_clob
-                    ( typ == hive_types.TYPECODE_BLOB )      ? col : null   // val_blob
-                };
-
-                //
-                cols[ c - 1 ] = new STRUCT( dsc, con, atr );
+                if ( ! ctx.execute() )
+                    return FAILURE;
             }
 
             //
-            ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "RECORDS", con );
+            StructDescriptor dsc = new StructDescriptor( "DATA", con );
 
-            ARRAY arr = new ARRAY( ary, con, cols );
-            out[ 0 ] = arr;
+            if ( ctx.next() )
+            {
+                int cnt = ctx.columnCount();
+                Object col = null;
+                Object[] cols = new Object[ cnt ];
+
+                for ( int c = 1; c <= cnt; ++c )
+                {
+                    int typ = 0;
+
+                    if ( ctx.colRuleMapped( c ) )
+                        typ = ctx.columnType( c );
+                    else
+                        typ = hive_types.to_dbms_type( ctx.columnType( c ) );
+
+                    try
+                    {
+                        //
+                        col = ctx.getObject( c );
+
+                        switch ( typ )
+                        {
+                            // 
+                            case hive_types.TYPECODE_CLOB:
+                                col = (Object)hive_types.to_clob( (String)col );
+                                break;
+
+                            //
+                            case hive_types.TYPECODE_BLOB:
+                                col = (Object)hive_types.to_blob( col );
+                                break;
+
+                            // other
+                            default:
+                                break;
+                        }
+                    }
+                    catch ( SQLException ex )
+                    {
+                        log.warn( "hive::SqlFetch SQLException building [" + hive_types.to_typecode( typ ) + "]: "
+                                                                           + log.stack( ex ) + log.code( ex ) );
+                    }
+                    catch ( Exception ex )
+                    {
+                        log.warn( "hive::SqlFetch Exception building [" + hive_types.to_typecode( typ ) + "]: "
+                                                                        + log.stack( ex ) );
+                    }
+
+                    //
+                    Object[] atr =
+                    {
+                        new BigDecimal( typ ),                                  // type code
+                        ( typ == hive_types.TYPECODE_VARCHAR2 )  ? col : null,  // val_varchar2
+                        ( typ == hive_types.TYPECODE_NUMBER )    ? col : null,  // val_number
+                        ( typ == hive_types.TYPECODE_DATE )      ? col : null,  // val_date
+                        ( typ == hive_types.TYPECODE_TIMESTAMP ) ? col : null,  // val_timestamp
+                        ( typ == hive_types.TYPECODE_CLOB )      ? col : null,  // val_clob
+                        ( typ == hive_types.TYPECODE_BLOB )      ? col : null   // val_blob
+                    };
+
+                    //
+                    cols[ c - 1 ] = new STRUCT( dsc, con, atr );
+                }
+
+                //
+                ArrayDescriptor ary = ArrayDescriptor.createDescriptor( "RECORDS", con );
+
+                ARRAY arr = new ARRAY( ary, con, cols );
+                out[ 0 ] = arr;
+            }
+            else
+                out[ 0 ] = null;
+
+            return SUCCESS;
         }
-        else
-            out[ 0 ] = null;
-
-        return SUCCESS;
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlFetch SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlFetch Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     //
     static public BigDecimal SqlClose( BigDecimal key )
-        throws SQLException, InvalidKeyException, hive_exception
+        throws InvalidKeyException, hive_exception
     {
-        if ( manager_ == null )
+        try
         {
-            manager_ = new hive_manager();
+            if ( manager_ == null )
+            {
+                manager_ = new hive_manager();
+            }
+
+            hive_context ctx = manager_.getContext( key );
+
+            if ( ctx != null )
+            {
+                log.trace( "hive::SqlClose hive_context [managed]: " + ctx.toString() );
+                ctx.clear();
+            }
+
+            return SUCCESS;
         }
-
-        hive_context ctx = manager_.getContext( key );
-
-        if ( ctx != null )
+        catch ( Exception ex )
         {
-            log.trace( "hive::SqlClose hive_context [managed]: " + ctx.toString() );
-            ctx.clear();
+            //
+            log.error( "hive::SqlClose Exception: " + log.stack( ex ) );
+            throw ex;
         }
-
-        return SUCCESS;
     }
 
     //
     static public void SqlDml( String stmt, oracle.sql.ARRAY bnds, oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        hive_context ctx = new hive_context( stmt, bnds, conn );
+        try
+        {
+            hive_context ctx = new hive_context( stmt, bnds, conn );
 
-        if ( ctx == null )
-            throw new hive_exception( "Context not created for SqlDml( stmt, bnds, conn )" );
-        else
-            log.trace( "hive::SqlDml hive_context [created]: " + ctx.toString() );
+            if ( ctx == null )
+                throw new hive_exception( "Context not created for SqlDml( stmt, bnds, conn )" );
+            else
+                log.trace( "hive::SqlDml hive_context [created]: " + ctx.toString() );
 
-        ctx.executeDML();
+            ctx.executeDML();
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlDml SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlDml Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 
     //
     static public void SqlDdl( String stmt, oracle.sql.STRUCT conn )
         throws SQLException, hive_exception
     {
-        hive_context ctx = new hive_context( stmt, null, conn );
+        try
+        {
+            hive_context ctx = new hive_context( stmt, null, conn );
 
-        if ( ctx == null )
-            throw new hive_exception( "Context not created for SqlDml( stmt, conn ) " );
-        else
-            log.trace( "hive::SqlDdl hive_context [created]: " + ctx.toString() );
+            if ( ctx == null )
+                throw new hive_exception( "Context not created for SqlDml( stmt, conn ) " );
+            else
+                log.trace( "hive::SqlDdl hive_context [created]: " + ctx.toString() );
 
-        ctx.executeDDL();
+            ctx.executeDDL();
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlDdl SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlDdl Exception: " + log.stack( ex ) );
+            throw ex;
+        }
     }
 };
 

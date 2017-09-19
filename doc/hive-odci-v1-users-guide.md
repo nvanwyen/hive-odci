@@ -504,11 +504,10 @@ character limit? This is where the ```typecast()``` hint comes into
 play. You can instruct Hive-ODCI to create a ```CLOB``` column data
 type when the column name is encountered with a casting rule.
 
-Casting rules are either space or comma delineated while wrapped in
-the parenthesis of the ```typecast()``` keyword. Each rule is
-formatted by the column name in the Hive record-set delineated by a
-colon with the following data type and optionally  length, precision 
-and scale.
+Casting rules are either space delineated while wrapped in the
+parenthesis of the ```typecast()``` keyword. Each rule is formatted
+by the column name in the Hive record-set delineated by a colon with
+the following data type and optionally  length, precision and scale.
 
 ```
     column_name:datatype[(length/precision,scale)]

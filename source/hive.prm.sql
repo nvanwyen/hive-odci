@@ -59,6 +59,7 @@ grant select on dba_indexes           to hive;
 
 
 --
+grant execute on dbms_lob      to hive;
 grant execute on dbms_sql      to hive;
 grant execute on dbms_session  to hive;
 grant execute on dbms_standard to hive;

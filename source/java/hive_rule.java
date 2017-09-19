@@ -48,12 +48,6 @@ public class hive_rule
     private static final String[][] BLOCK = { { "/*+", "*/" },
                                               { "--+", "\n" } };
 
-
-    // list of currently supported hints
-    //
-    private static final String[] PAREN = { "(", ")" };
-    private static final String[] SEPAR = { ",", " ", ":" };
-
     //
     private String sql_;
     private HashMap<String, HashMap<String,hive_hint>> map_;
@@ -269,11 +263,11 @@ public class hive_rule
                 {
                     int opn = 0;
 
-                    if ( ( opn = hnt.indexOf( PAREN[ OPEN ], pos + sup.length() ) ) > -1 )
+                    if ( ( opn = hnt.indexOf( '(', pos + sup.length() ) ) > -1 )
                     {
                         int cls = 0;
 
-                        if ( ( cls = hnt.lastIndexOf( PAREN[ CLOSE ] ) ) > -1 )
+                        if ( ( cls = hnt.lastIndexOf( ')' ) ) > -1 )
                         {
                             // fully qualifed hint "/*+ ... *\" or "--+ ... \n" ...
                             String val = hnt.substring( opn + 1, cls ); /// do not replace "," with " "
@@ -287,21 +281,21 @@ public class hive_rule
                                 if ( ( ary = new ArrayList<String>() ) != null )
                                 {
                                     // tokenize on " " ... logic based on "mti/vpd/src/vpd.pol.sql:hints_()"
-                                    String[] tok = val.split( SEPAR[ 1 ] );
+                                    String[] tok = val.split( " |\n|\t" ); // include newline and tab (issue #8)
                                     String str = "";
                                     int idx = 0;
 
                                     while ( idx < tok.length )
                                     {
                                         // opening "(" ...
-                                        if ( tok[ idx ].contains( PAREN[ 0 ] ) )
+                                        if ( tok[ idx ].contains( "(" ) )
                                         {
                                             for ( int j = idx; j < tok.length; ++j )
                                             {
                                                 str += tok[ j ];
 
                                                 // closing ")" ...
-                                                if ( tok[ idx ].contains( PAREN[ 1 ] ) )
+                                                if ( tok[ idx ].contains( ")" ) )
                                                     break;
 
                                                 ++idx;
@@ -400,7 +394,7 @@ public class hive_rule
 
         if ( ( str != null ) && ( str.length() > 0 ) )
         {
-            String[] tok = str.split( SEPAR[ 2 ] );
+            String[] tok = str.split( ":" );
 
             if ( tok.length > 0 )
             {
@@ -427,11 +421,11 @@ public class hive_rule
         {
             if ( ( tup = new tuple<String,String>() ) != null )
             {
-                if ( ( par.contains( PAREN[ 0 ] ) )
+                if ( ( par.contains( "(" ) )
                   && ( countChar( par, '(' ) == countChar( par, ')' ) ) )
                 {
-                    tup.x = par.substring( 0, par.indexOf( PAREN[ 0 ] ) );
-                    tup.y = par.substring( par.indexOf( PAREN[ 0 ] ) );
+                    tup.x = par.substring( 0, par.indexOf( '(' ) );
+                    tup.y = par.substring( par.indexOf( '(' ) );
                 }
                 else
                     tup.x = par; // tuple.y is empty/unavailable
@@ -452,14 +446,14 @@ public class hive_rule
             if ( ( tup = new tuple<String,String>() ) != null )
             {
                 // tuple is populated only when parens are present
-                if ( ( par.contains( PAREN[ 0 ] ) )
+                if ( ( par.contains( "(" ) )
                   && ( countChar( par, '(' ) == countChar( par, ')' ) ) )
                 {
-                    String val = par.substring( par.indexOf( PAREN[ OPEN ] ) + 1, par.lastIndexOf( PAREN[ CLOSE ] ) );
+                    String val = par.substring( par.indexOf( '(' ) + 1, par.lastIndexOf( ')' ) );
 
                     if ( val.length() > 0 )
                     {
-                        String[] tok = val.replace( ",", " " ).split( SEPAR[ 1 ] );
+                        String[] tok = val.replace( ",", " " ).split( " " );
 
                         if ( tok.length > 0 )
                         {

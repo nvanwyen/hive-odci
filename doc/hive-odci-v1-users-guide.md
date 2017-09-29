@@ -992,6 +992,86 @@ so be cognizant that a user with ```HIVE_ADMIN``` is considered
 a trusted and responsible party, similar to a user with ```DBA```
 but having less permissions in the database.
 
+#### Privileges
+Hive-ODCI has built-in RBAC controls for securing the rights of
+remote object access. This works similar to the Oracle RBAC
+grant/revoke capabilities on database objects.
+
+The Hive-ODCI privileges allow management of user and role access
+assignments through the granting and revoking of permissions on
+remote table names.  This is controlled by the API available in the 
+```DBMS_HIVE``` package procedures ```GRANT_ACCESS``` and 
+```REVOKE_ACCESS```.
+
+SQL command operations submitted for execution in Hive/HDFS are
+preprocessed by the built-in security control interface, which
+extracts the table name list and checks it against the authorization
+assignment. Because Hive-ODCI cannot predetermine schema and table
+names without executing the command, which would be in contradiction 
+to providing the security in the first place, the API for granting
+and revoking privileges are available only in the ```DBMS_HIVE``` 
+package, requiring ```HIVE_ADMIN``` access.
+
+```
+create or replace package dbms_hive as
+
+    ...
+
+    procedure grant_access( opr in varchar2,   -- operation list
+                            tab in varchar2,   -- hive table list (case sensitive)
+                            gnt in varchar2 ); -- grantee list
+
+    -- revoke access from hive table
+    procedure revoke_access( opr in varchar2,
+                             tab in varchar2,
+                             gnt in varchar2 );
+
+    ...
+
+end dbms_hive;
+```
+Each parameter, ```opr``` (operation), ```gnt``` (grantee) and ```tab```
+(table) can be provided as a comma separated list of items, rather
+than one at a time thus making the calls more convenient in their use.
+
+Role grants are always verified based hierarchy, so that grants of
+role-to-role can still provide access. For example, if a role named
+```MANAGER``` is granted to a role named ```WORKER```, and the ```WORKER```
+is granted Hive-ODCI ```SELECT``` privileges on a table, then anyone
+with the ```MANAGER``` role can still gain query access, even if the role
+```WORKER``` was not directly granted to the user.
+
+Examples of usage:
+```
+    -- grant single operation, on a single table to a single user
+    SQL> exec dbms_hive.grant_access( 'select', 'cust', 'scott' );
+
+    -- grant multiple operations, on a single table to a single role
+    SQL> exec dbms_hive.grant_access( 'select, insert', 'cust', 'dba' );
+
+    -- grant multiple operations, on multiple tables to multiple users and role;
+    SQL> exec dbms_hive.grant_access( 'select, insert, update, delete', -
+      2                               'cust, movie, review', -
+      3                               'scott, jdoe, dba' );
+
+    -- revoke an operation, on a table from multiple users and roles
+    SQL> exec dbms_hive.revoke_access( 'delete', 'review', 'scott, jdoe' );
+```
+
+Access assignments can be seen through the provided views ```DBA_HIVE_PRIVS```
+and ```USER_HIVE_PRIVS```. The latter is available only with ```HIVE_ADMIN```
+access and the former through ```HIVE_USER``` access. These views will report
+the privilege granted for the operation, even if it exists lower in the 
+hierarchical layer. This is useful for determine how or if a user is able to
+submit an operation.
+
+As the run-time functionality, parses and makes privilege determinations, the
+Hive-ODCI security uses multiple parameters to determine action and outcome
+of resulting calls. The parameters ```auth_no_grant_action```, 
+```auth_auto_grant```, ```auth_table_undefined``` and ```auth_sql_parse_error```
+drive what Hive-ODCI does as a result of the security validations and 
+assignments.
+
 #### Bindings
 Filters, or saved ```HIVE_BINDS``` work more like Network ACL (see
 ```DBMS_NETWORK_ACl_ADMIN```) and Java Policies (see ```DBMS_JAVA```)
@@ -1107,6 +1187,22 @@ This view is accessible only by the ```HIVE_ADMIN``` role
     write   -   Contains write access
 ```
 
+### dba_hive_privs
+Lists all privilege assignments for the remote
+Hive/HDFS operation rights.
+
+This view is accessible only by the ```HIVE_ADMIN``` role
+
+* Columns
+```
+    table_name   - The Hive/HDFS table name (case sensitive)
+                   being protected
+    privilege    - The protected operation 
+    grantee      - The user or role assigned rights to the
+                   operation of the table
+    grantee_type - The type (USER or ROLE) of the grantee
+```
+
 ### dba_hive_log
 Lists the log data
 
@@ -1174,6 +1270,23 @@ This view is accessible by both the ```HIVE_ADMIN``` and
     grantee -   The grantee name, user or role
     read    -   Contains read access
     write   -   Contains write access
+```
+### user_hive_privs
+Lists the currently logged in user's privilege 
+assignments for the remote Hive/HDFS operation 
+rights.
+
+This view is accessible by both the ```HIVE_ADMIN``` and
+```HIVE_USER``` roles
+
+* Columns
+```
+    table_name   - The Hive/HDFS table name (case sensitive)
+                   being protected
+    privilege    - The protected operation 
+    grantee      - The role assigned rights providing access
+                   to the operation of the table
+    grantee_type - The ROLE of the grantee
 ```
 
 ## Packages
@@ -1577,7 +1690,7 @@ Filters are removed.
 ```
 
 ##### move_ts()
-A ```PROCEDURE``` moving the Hive-ODCI objects to different
+A ```PROCEDURE``` for moving the Hive-ODCI objects to different
 tablespace. If the current tablespace name is the same as the
 one specified then no errors are thrown. If the tablespace
 specified does not exists then an exception is thrown.
@@ -1601,6 +1714,49 @@ can be used, all other values will be ignored.
     obj     -   Optional object name, can be NULL, "param", "filter",
                 "priv" or "log". Any other value will be ignored
 ```
+
+##### grant_access
+```PROCEDURE``` used for assigning privileged access to remote Hive/HDFS
+operations. This procedure allocates the availability of user rights on 
+those objects. This is *not* RBAC at Hive/HDFS, but rather security assignment
+for privileges to submit operations.
+
+* Prototype
+```
+    procedure grant_access( opr in varchar2,
+                            tab in varchar2,
+                            gnt in varchar2 );
+```
+
+* Parameter
+```
+    opr     -   operation list, such as SELECT, INSERT, UPDATE, CREATE, etc...
+    tab     -   case sensitive list of table/view names to protect
+    gnt     -   list of grantee assignments
+```
+Each parameter is a comma separated list of values, so that multiple values
+can be provided in a single call.
+
+##### revoke_access
+```PROCEDURE``` used for removing privileged access on remote Hive/HDFS
+operations. This removes previously granted allocation assignment, using
+the ```grant_access()``` API above.
+
+* Prototype
+```
+    procedure revoke_access( opr in varchar2,
+                            tab in varchar2,
+                            gnt in varchar2 );
+```
+
+* Parameter
+```
+    opr     -   operation list, such as SELECT, INSERT, UPDATE, CREATE, etc...
+    tab     -   case sensitive list of table/view names
+    gnt     -   list of current grantee assignments
+```
+Each parameter is a comma separated list of values, so that multiple values
+can be provided in a single call.
 
 ### remote
 This ```PACKAGE``` is the interface for managing the remote connectivity
@@ -2452,12 +2608,12 @@ The fully qualified Java class name of the driver to load
 The JDBC URL for the remote system
 
 ### hive_jdbc_url.X
-These paraemters are addtional URL key value pairs in consecutive
+These parameters are additional URL key value pairs in consecutive
 order. A gap in the numbering sequence will cause Hive-ODCI to stop
 reading the parameters assuming that it has reached the end of the list.
 
 ### java_property.X
-These paraemters are the Java Syetms properties to set in consecutive
+These parameters are the Java Systems properties to set in consecutive
 order. A gap in the numbering sequence will cause Hive-ODCI to stop
 reading the parameters assuming that it has reached the end of the list.
 
@@ -2477,6 +2633,52 @@ The authentication type for the JDBC Driver.
 ### query_limit
 The ceiling limitation for any given query,. When set no query will return
 more rows than the parameter specified 
+
+### auth_no_grant_action
+Determine rule when no table grants are available
+
+options: 
+    ```error```  Throw an exception to the calling process (log is implied)
+    ```log```    Log the this is an error, but take no further action
+    ```auto```   Add new grants, based on the "auth_grant_handler" parameter rules
+    ```ignore``` Do nothing, take no action
+
+default: 
+    ```ignore```
+
+### auth_auto_grant
+Define the grant handling rules, when auto is set in ```auth_no_grant_action```
+this is a comma separate list of users and/or roles
+
+options: 
+    ```current``` A special-case name, meaning the currently logged in user
+    ```<role>```  Any valid role name (invalids ignored)
+    ```<user>```  Any valid user name (invalids ignored)
+
+default: 
+    ```NULL``` (a ```NULL``` or missing value, takes no action)
+
+### auth_table_undefined
+Determine rule when no table grants are found
+
+options: 
+    ```error``` Throw an exception to the calling process (```log``` is implied)
+    ```allow``` Assume allow access
+    ```deny```  Assume deny access
+
+default: 
+    ```allow```
+
+### auth_sql_parse_error
+Determine rule when handling JSqlParser error (parsing sql or syntax
+error)
+
+option:  
+    ```error``` Throw the JSqlParserException back to the calling process
+    ```none```  Catch the error and return none (e.g. no table info)
+
+default: 
+    ```none```
 
 ## Roles
 ------------------------------
@@ -2509,10 +2711,12 @@ objects providing location transparency.
 * dba_hive_params
 * dba_hive_filters
 * dba_hive_filter_privs
+* dba_hive_privs
 * dba_hive_log
 * user_hive_params
 * user_hive_filters
 * user_hive_filter_privs
+* user_hive_privs
 
 
 

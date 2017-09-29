@@ -209,15 +209,7 @@ select a.tab  as table_name,
                           'UNKNOWN' ) as grantee_type
   from auth$ a,
        ora$user$ b
- where a.id# = b.id#
-   and a.id# in ( select c.id#
-                    from ora$user$ c,
-                         ( select /*+ connect_by_filtering */
-                                  e.grantee#,
-                                  e.granted_role#
-                             from ora$role$priv$ e
-                          connect by e.grantee# = prior e.granted_role# ) d
-                   where c.id# = d.granted_role# );
+ where a.id# = b.id#;
 
 --
 create or replace view user_hive_privs
@@ -231,7 +223,10 @@ select a.tab  as table_name,
   from auth$ a,
        ora$user$ b
  where a.id# = b.id#
-   and a.id# in ( select c.id#
+   and a.id# = ( select id#
+                   from ora$user$
+                 where name = user )
+    or a.id# in ( select c.id#
                     from ora$user$ c,
                          ( select /*+ connect_by_filtering */
                                   e.grantee#,

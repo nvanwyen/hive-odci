@@ -88,6 +88,7 @@ public class hive_auth
 
         try
         {
+            String[] tab = table.trim().split( "," );
             String[] gnt = grantee.trim().split( "," );
             String[] opr = operation.trim().split( "," );
 
@@ -98,41 +99,55 @@ public class hive_auth
             if ( con.getAutoCommit() )
                 con.setAutoCommit( false );
 
-            //
-            for ( String act : gnt )
+            if ( ( tab != null ) && ( gnt != null ) && ( opr != null ) )
             {
-                act = act.trim().toUpperCase();
-
                 //
                 for ( String prm : opr )
                 {
-                    prm = prm.trim().toUpperCase();
-
-                    if ( is_operation( prm ) )
+                    if ( ( prm != null ) && ( prm.trim().length() > 0 ) )
                     {
-                        if ( ! is_granted( table, act, prm ) )
+                        prm = prm.trim().toUpperCase();
+
+                        if ( is_operation( prm ) )
                         {
-                            String sql = "insert into auth$ ( tab, id#, opr ) " +
-                                         "select ?, id#, ? from ora$user$ where name = ?";
+                            //
+                            for ( String tbl : tab )
+                            {
+                                if ( ( tbl != null ) && ( tbl.trim().length() > 0 ) )
+                                {
+                                    tbl = tbl.trim();
 
-                            stm = con.prepareStatement( sql );
+                                    for ( String act : gnt )
+                                    {
+                                        if ( ( act != null ) && ( act.trim().length() > 0 ) )
+                                        {
+                                            act = act.trim().toUpperCase();
 
-                            stm.setString( 1, table );
-                            stm.setString( 2, prm );
-                            stm.setString( 3, act );
+                                            if ( ! is_granted( tbl, act, prm ) )
+                                            {
+                                                String sql = "insert into auth$ ( tab, id#, opr ) " +
+                                                             "select ?, id#, ? from ora$user$ where name = ?";
 
-                            stm.executeUpdate();
-                            stm.close();
+                                                stm = con.prepareStatement( sql );
 
+                                                stm.setString( 1, tbl );
+                                                stm.setString( 2, prm );
+                                                stm.setString( 3, act );
+
+                                                stm.executeUpdate();
+                                                stm.close();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+
+                //
+                con.commit();
             }
-
-            //
-            con.commit();
-
-            stm.close();
         }
         catch ( SQLException ex )
         {
@@ -179,6 +194,7 @@ public class hive_auth
 
         try
         {
+            String[] tab = table.trim().split( "," );
             String[] gnt = grantee.trim().split( "," );
             String[] opr = operation.trim().split( "," );
 
@@ -189,47 +205,61 @@ public class hive_auth
             if ( con.getAutoCommit() )
                 con.setAutoCommit( false );
 
-            //
-            for ( String act : gnt )
+            if ( ( tab != null ) && ( gnt != null ) && ( opr != null ) )
             {
-                act = act.trim().toUpperCase();
-
                 //
                 for ( String prm : opr )
                 {
-                    prm = prm.trim().toUpperCase();
-
-                    if ( is_operation( prm ) )
+                    if ( ( prm != null ) && ( prm.trim().length() > 0 ) )
                     {
-                        if ( is_granted( table, act, prm ) )
+                        prm = prm.trim().toUpperCase();
+
+                        if ( is_operation( prm ) )
                         {
-                            String sql = "delete from auth$ " +
-                                          "where tab = ? " +
-                                            "and opr = ? " +
-                                            "and id# = " +
-                                              "( select id# " +
-                                                  "from ora$user$ " +
-                                                 "where name = ? )";
+                            //
+                            for ( String tbl : tab )
+                            {
+                                if ( ( tbl != null ) && ( tbl.trim().length() > 0 ) )
+                                {
+                                    tbl = tbl.trim();
 
-                            stm = con.prepareStatement( sql );
+                                    for ( String act : gnt )
+                                    {
+                                        if ( ( act != null ) && ( act.trim().length() > 0 ) )
+                                        {
+                                            act = act.trim().toUpperCase();
 
-                            stm.setString( 1, table );
-                            stm.setString( 2, prm );
-                            stm.setString( 3, act );
+                                            if ( is_granted( tbl, act, prm ) )
+                                            {
+                                                String sql = "delete from auth$ " +
+                                                              "where tab = ? " +
+                                                                "and opr = ? " +
+                                                                "and id# = " +
+                                                                  "( select id# " +
+                                                                      "from ora$user$ " +
+                                                                     "where name = ? )";
 
-                            stm.executeUpdate();
-                            stm.close();
+                                                stm = con.prepareStatement( sql );
 
+                                                stm.setString( 1, tbl );
+                                                stm.setString( 2, prm );
+                                                stm.setString( 3, act );
+
+                                                stm.executeUpdate();
+                                                stm.close();
+
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
+
+                //
+                con.commit();
             }
-
-
-            //
-            con.commit();
-
-            stm.close();
         }
         catch ( SQLException ex )
         {

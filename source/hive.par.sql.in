@@ -179,7 +179,7 @@ begin
     -- option:  error   = Throw the JSqlParserException back to the calling process
     --          none    = Catch the error and return none (e.g. no table info)
     --          
-    -- default: notable
+    -- default: none
     param_( 'auth_sql_parse_error', 'none' );
     --
 

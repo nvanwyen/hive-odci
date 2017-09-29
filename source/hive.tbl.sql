@@ -70,5 +70,14 @@ create table log$
 /
 
 --
+create table auth$
+(
+    tab varchar2( 256 )  not null,
+    id# number           not null,
+    opr varchar2( 12 )   not null
+)
+/
+
+--
 -- ... done!
 --

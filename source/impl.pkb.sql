@@ -77,6 +77,11 @@ create or replace package body impl as
     name 'oracle.mti.odci.hive.SqlDdl( java.lang.String, oracle.sql.STRUCT )';
 
     --
+    procedure priv_( tab in varchar2, gnt in varchar2, opr in varchar2, act in number ) as
+    language java
+    name 'oracle.mti.odci.hive.SqlPriv( java.lang.String, java.lang.String, java.lang.String, int )';
+
+    --
     function param_( n in varchar2 ) return varchar2 is
 
         v varchar2( 4000 );
@@ -890,6 +895,17 @@ create or replace package body impl as
                 raise;
 
     end sql_ddl;
+
+    --
+    procedure sql_priv( tab in varchar2,
+                        gnt in varchar2,
+                        opr in varchar2,
+                        act in number ) is
+    begin
+
+        priv_( tab, gnt, opr, act );
+
+    end sql_priv;
 
 end impl;
 /

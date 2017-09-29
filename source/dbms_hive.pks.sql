@@ -42,7 +42,7 @@ create or replace package dbms_hive as
     procedure param( name in varchar2, value in varchar2 ); -- set
 
     --
-    procedure remove( name in varchar2 );                   -- unset (e.g. remove)
+    procedure remove( name in varchar2 );                   -- remove (unset)
 
     --
     procedure purge_log( usr in varchar2 default null );
@@ -51,6 +51,30 @@ create or replace package dbms_hive as
     --
     procedure move_ts( ts in varchar2, obj in varchar2 default null );
 
+    -- grant/revoke follows:
+    -- GRANT <operation, operation, ...> ON <table> TO <grantee, grantee, ...>
+    --
+    -- where "operation" follows the Hive Language guidelines, such as
+    -- SELECT, INSERT, UPDATE, DELETE, MERGE, CREATE, ALTER, DROP, ...
+    -- and "grantee" are local Oracle database users or roles
+    --
+    -- grant access to hive table
+    procedure grant_access( opr in varchar2,   -- operation list
+                            tab in varchar2,   -- hive table (case sensitive)
+                            gnt in varchar2 ); -- grantee list
+
+    -- revoke access from hive table
+    procedure revoke_access( opr in varchar2,
+                             tab in varchar2,
+                             gnt in varchar2 );
+    --
+    -- If there are no grants assigned to the Hive table, then access
+    -- is considered ALLOW ANY for all accounts. Only when there is at least
+    -- one operation granted to iat least one grantee is the Hive table
+    -- considered protected, and check for ALLOW/DENY of operations
+    --
+
+    --
     ex_zero     exception;
     es_zero     constant varchar2( 256 ) := 'Tablespace does not exist or has a size of zero (0)';
     ec_zero     constant number := -20702;

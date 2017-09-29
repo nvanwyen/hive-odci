@@ -35,6 +35,10 @@ alter session set current_schema = hive;
 create or replace package body dbms_hive as
 
     --
+    auth_grant      constant number :=   0;
+    auth_revoke     constant number :=   1;
+
+    --
     procedure log_err_( txt varchar2 ) is
     begin
 
@@ -528,6 +532,34 @@ create or replace package body dbms_hive as
         end if;
 
     end move_ts;
+
+    --
+    procedure grant_access( opr in varchar2,
+                            tab in varchar2,
+                            gnt in varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.sql_priv( :p0, :p1, :p2, :p3 ); end;'
+          using tab,
+                gnt,
+                opr,
+                auth_grant;
+
+    end grant_access;
+
+    --
+    procedure revoke_access( opr in varchar2,
+                             tab in varchar2,
+                             gnt in varchar2 ) is
+    begin
+
+        execute immediate 'begin impl.sql_priv( :p0, :p1, :p2, :p3 ); end;'
+          using tab,
+                gnt,
+                opr,
+                auth_revoke;
+
+    end revoke_access;
 
 end dbms_hive;
 /

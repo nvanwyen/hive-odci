@@ -162,6 +162,8 @@ if [[ -z ${jva} ]] ; then
         jva="${jva} hive_parameter.java"
         jva="${jva} hive_properties.java"
         jva="${jva} callback_handler.java"
+        jva="${jva} hive_parser.java"
+        jva="${jva} hive_auth.java"
         jva="${jva} hive_hint.java"
         jva="${jva} hive_rule.java"
         jva="${jva} hive_session.java"
@@ -242,7 +244,7 @@ fi
 #
 bse=oracle
 obj=${bse}/mti/odci
-cls=${CLASSPATH}:${jdk}:${ORACLE_HOME}/jdbc/lib/ojdbc7.jar:.:
+cls=${CLASSPATH}:${jdk}:${ORACLE_HOME}/jdbc/lib/ojdbc7.jar:../jdbc/jsqlparser-1.1.jar:.:
 
 # #
 # CLASSPATH=${CLASSPATH}:${cls}:.:

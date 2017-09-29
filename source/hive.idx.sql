@@ -57,5 +57,10 @@ create index priv$lvl
 /
 
 --
+create unique index auth$obj
+    on auth$ ( tab, id#, opr )
+/
+
+--
 -- ... done!
 --

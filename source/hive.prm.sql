@@ -38,6 +38,7 @@ grant unlimited tablespace to hive;
 
 --
 grant select on sys.user$                   to hive with grant option;
+grant select on sys.sysauth$                to hive with grant option;
 grant select on sys.resource_group_mapping$ to hive with grant option;
 grant select on sys.user_astatus_map        to hive with grant option;
 

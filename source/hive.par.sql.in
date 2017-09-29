@@ -144,9 +144,44 @@ begin
     -- if no access is provided (e.g. no colon) then priv_read is given
     param_( 'default_bind_access', 'public:1, %user%:3' );
 
+    -- zero (0) is unlimited, others restrict rows returned
+    param_( 'query_limit', 1000 );
+
+    -- hive authorization handling paraemters
     --
-    -- param_( 'query_limit', 1000 );
-    param_( 'query_limit', 0 );
+    -- determine rule when no table grants are avaiable
+    -- options: error   =   Throw an exception to the calling process (log is implied)
+    --          log     =   Log the this is an error, but take no further action
+    --          auto    =   Add new grants, based on the "auth_grant_handler" paraemter rules
+    --          ignore  =   Do nothing, take no action
+    --
+    -- default: ignore
+    param_( 'auth_no_grant_action', 'ignore' );
+
+    -- define the grant handling rules, when auto is set in auth_no_grant_action
+    -- this is a comma seperate list of users and/or roles
+    -- options: current = a special-case name, meaning the currently logged in user
+    --          <role>  = any valid role name (invalids ignored)
+    --          <user>  = any valid user name (invalids ignored)
+    --
+    -- default: NULL (a NULL or missing value, takes no action)
+    param_( 'auth_auto_grant', 'current, sys, hive_user' );
+
+    -- determine rule when no table grants are found
+    -- options: error   =   Throw an exception to the calling process (log is implied)
+    --          allow   =   Assume "allow access"
+    --          deny    =   Assume "deny access"
+    --
+    -- default: allow
+    param_( 'auth_table_undefined', 'allow' );
+
+    -- determine rule when handling JSqlParser error (parsing sql or sytax error)
+    -- option:  error   = Throw the JSqlParserException back to the calling process
+    --          none    = Catch the error and return none (e.g. no table info)
+    --          
+    -- default: notable
+    param_( 'auth_sql_parse_error', 'none' );
+    --
 
 end;
 /

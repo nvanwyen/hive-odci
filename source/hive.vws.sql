@@ -51,6 +51,32 @@ select *
 /
 
 --
+create or replace view ora$user$
+as
+select u.user# id#,
+       u.name  name,
+       u.type# type
+  from sys.user$ u
+ where u.type# in ( 0 /* role */,
+                    1 /* user */ )
+/
+
+--
+create or replace view ora$role$priv$
+as
+select /*+ ordered */
+       sa.grantee# grantee#,
+       decode( sa.grantee#, 1, 'PUBLIC', u1.name ) grantee,
+       u2.name granted_role,
+       u2.user# granted_role#
+  from sys.sysauth$ sa,
+       sys.user$ u1,
+       sys.user$ u2
+ where u1.user# = sa.grantee#
+   and u2.user# = sa.privilege#
+/
+
+--
 create or replace view dba_hive_params
 as
 select name,
@@ -171,6 +197,49 @@ select *
   from dba_hive_filter_privs
  where grantee = user 
     or grantee = 'PUBLIC';
+
+--
+create or replace view dba_hive_privs
+as
+select a.tab  as table_name,
+       a.opr  as privilege,
+       b.name as grantee,
+       decode( b.type, 0, 'ROLE',
+                       1, 'USER',
+                          'UNKNOWN' ) as grantee_type
+  from auth$ a,
+       ora$user$ b
+ where a.id# = b.id#
+   and a.id# in ( select c.id#
+                    from ora$user$ c,
+                         ( select /*+ connect_by_filtering */
+                                  e.grantee#,
+                                  e.granted_role#
+                             from ora$role$priv$ e
+                          connect by e.grantee# = prior e.granted_role# ) d
+                   where c.id# = d.granted_role# );
+
+--
+create or replace view user_hive_privs
+as
+select a.tab  as table_name,
+       a.opr  as privilege,
+       b.name as grantee,
+       decode( b.type, 0, 'ROLE',
+                       1, 'USER',
+                          'UNKNOWN' ) as grantee_type
+  from auth$ a,
+       ora$user$ b
+ where a.id# = b.id#
+   and a.id# in ( select c.id#
+                    from ora$user$ c,
+                         ( select /*+ connect_by_filtering */
+                                  e.grantee#,
+                                  e.granted_role#
+                             from ora$role$priv$ e
+                          connect by e.grantee# = prior e.granted_role#
+                            start with e.grantee = user ) d
+                   where c.id# = d.granted_role# );
 
 --
 -- ... done!

@@ -606,6 +606,10 @@ public class hive_context
                 rmd = getResultSetMetaData();
         }
 
+
+        if ( ! hive_auth.permitted( sql_ ) )
+            rmd = null;
+
         return rmd;
     }
 

@@ -125,6 +125,12 @@ create or replace package impl as
                        con in  connection default null );
 
     --
+    procedure sql_priv( tab in varchar2,
+                        gnt in varchar2,
+                        opr in varchar2,
+                        act in number );
+
+    --
     ex_not_eligible exception;
     es_not_eligible constant varchar2( 256 ) := 'Parameter is not eligible for change at the session level';
     ec_not_eligible constant number          := -20103;

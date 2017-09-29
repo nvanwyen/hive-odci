@@ -674,5 +674,38 @@ public class hive implements SQLData
             throw ex;
         }
     }
+
+    //
+    static public void SqlPriv( String table, String grantee, String operation, int action )
+        throws SQLException, hive_exception
+    {
+        try
+        {
+            switch ( action )
+            {
+                case hive_auth.ACTION_GRANT:
+                    hive_auth.grant( table, grantee, operation );
+                    break;
+
+                case hive_auth.ACTION_REVOKE:
+                    hive_auth.revoke( table, grantee, operation );
+                    break;
+
+                default:
+                    throw new hive_exception( "Unknown authorization action enountered!" );
+            }
+        }
+        catch ( SQLException ex )
+        {
+            log.error( "hive::SqlPriv SQLException: " + log.stack( ex ) + log.code( ex ) );
+            throw ex;
+        }
+        catch ( Exception ex )
+        {
+            //
+            log.error( "hive::SqlPriv Exception: " + log.stack( ex ) );
+            throw ex;
+        }
+    }
 };
 

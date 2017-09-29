@@ -2,6 +2,13 @@
 --
 -- 2017-09-16, NV - drop_java.sql
 --
+
+-- It should be noted that the $ORACLE_HOME/bin/loadjava could be used instead
+-- of this script, which would be fine. The problem becomes when the JAR file
+-- has chnaged, the $ORACLE_HOME/bin/loadjava may not delete everything (e.g. a
+-- class was removed between the load and remove, not the script doesn't know
+-- aboubt the difference). This script simply deletes it all, no matter what JAR
+-- file it was loaded from
  
 --
 prompt ... running drop_java.sql

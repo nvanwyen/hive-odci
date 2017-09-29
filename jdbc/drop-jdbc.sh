@@ -111,30 +111,25 @@ if [ `ls ${dir}/*.jar | wc -l` -gt 0 ] ; then
 
         if [ -f ${jar} ] ; then
             #
-            echo                                              | tee --append ${dir}/load-jdbc.${dts}.log
-            echo "Loading jar: ${jar}"                        | tee --append ${dir}/load-jdbc.${dts}.log
-            echo "------------------------------------------" | tee --append ${dir}/load-jdbc.${dts}.log
+            echo                                              | tee --append ${dir}/drop-jdbc.${dts}.log
+            echo "Dropping jar: ${jar}"                       | tee --append ${dir}/drop-jdbc.${dts}.log
+            echo "------------------------------------------" | tee --append ${dir}/drop-jdbc.${dts}.log
 
             #
             (
-                loadjava -force \
-                         -genmissing \
-                         -order \
+                dropjava 
                          -verbose \
-                         -resolve \
-                         -recursivejars \
-                         -resolver "((* hive) (* sys) (* public))" \
                          -user "${u}" \
                          -schema hive \
                          ${jar} << !
 ${p}
 
 !
-            ) 2>&1 | tee --append ${dir}/load-jdbc.${dts}.log \
+            ) 2>&1 | tee --append ${dir}/drop-jdbc.${dts}.log \
                    | egrep "^Classes|^Resources|^Sources|^Published|^Classes|^Classes|^Synonyms|^Errors"
         else
 
-            echo "Cannot find file [${jar}] to load!"
+            echo "Cannot find file [${jar}] to drop!"
             exit 1
 
         fi
@@ -181,15 +176,15 @@ ${p}
     et="`date +%Y-%b-%d` `date +%H:%M:%S`" ; et=${et^^}
 
     #
-    echo                | tee --append ${dir}/load-jdbc.${dts}.log
-    echo "Start: ${st}" | tee --append ${dir}/load-jdbc.${dts}.log
-    echo "Ended: ${et}" | tee --append ${dir}/load-jdbc.${dts}.log
-    echo                | tee --append ${dir}/load-jdbc.${dts}.log
+    echo                | tee --append ${dir}/drop-jdbc.${dts}.log
+    echo "Start: ${st}" | tee --append ${dir}/drop-jdbc.${dts}.log
+    echo "Ended: ${et}" | tee --append ${dir}/drop-jdbc.${dts}.log
+    echo                | tee --append ${dir}/drop-jdbc.${dts}.log
 
 else
 
     #
-    echo "No Jar files to load found!"
+    echo "No Jar files to drop found!"
     exit 1
 
 fi
